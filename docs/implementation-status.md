@@ -60,27 +60,49 @@ Python 3.9 fails at import.
   - Tests: `tests/test_engine.py`, `tests/test_planner.py`, `tests/test_safety.py`.
   - `tests/conftest.py` adds `make_state()` / `state` fixture.
 
-Total: 59 tests passing.
+- **Session API** (`feat/c3-session-api`)
+  - `app/core/errors.py` — `AppError` hierarchy (`SESSION_NOT_FOUND`,
+    `SLOT_NOT_FOUND`, `SESSION_ALREADY_COMPLETED`, `SLOT_VALIDATION_FAILED`,
+    `SUMMARY_NOT_READY`) + `install_error_handlers` emitting the section-4
+    envelope with a `request_id`.
+  - `app/core/store.py` — `SessionStore` Protocol + `InMemorySessionStore`
+    (the C6 swap point). Holds sessions and generated summaries.
+  - `app/core/flow.py` — `start_session`, `ingest_message` (transcript → safety →
+    extract → apply → advance), `advance_after_action`, `finalise`.
+  - `app/api/deps.py` — `get_store`, `get_llm` (returns `FakeLLM`; C4 swaps here).
+  - `app/api/schemas.py` — HTTP request/response DTOs, separate from domain models.
+  - `app/api/sessions.py` — all 7 endpoints from api-contract.md, wired into
+    `app/core/main.py`.
+  - Tests: `tests/test_sessions_api.py` — create/fetch, error envelope, message
+    extraction, safety short-circuit, confirm/edit/skip, full flow to summary,
+    completion conflicts.
+
+Total: 66 tests passing. First end-to-end flow (Milestone 2 backend side) works
+against `FakeLLM`.
 
 ### In progress
 
 - (nothing yet)
 
-### Next
+### Next (outside the skeleton)
 
-- `feat/c3-session-api` — wire `app/api/sessions.py` to the engine, in-memory
-  session store, error envelope, integration tests with `FakeLLM`.
+- Explicit "patient approves summary" gate (with C1/C2) before `completed` feeds
+  the clinician view.
+- Swap `InMemorySessionStore` for C6's DB-backed store.
+- Replace `FakeLLM` with C4's adapter via `app/api/deps.py::get_llm`.
+- Safety patterns/wording need team + supervisor sign-off.
 
 ### Stubs / deferred
 
 - `database_url` in settings is unused until C6 wires persistence.
 - `llm_*` settings unused until C4 wires the adapter.
+- Sessions live in process memory only — lost on restart until C6.
 
 ## How to run
 
 ```bash
 cd backend
-python -m venv venv && source venv/bin/activate
+python3.11 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.core.main:app --reload   # http://localhost:8000/api/health
 pytest
