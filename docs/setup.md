@@ -2,14 +2,15 @@
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.11+ (the code uses 3.10+ typing syntax; macOS system Python 3.9 will
+  not work — use e.g. `python3.11`)
 - Node.js 20+
 
 ## Backend
 
 ```bash
 cd backend
-python -m venv venv
+python3.11 -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env            # then fill in values
