@@ -40,7 +40,27 @@ Python 3.9 fails at import.
     `GeneratedSummary`. This is the C3<->C4 contract.
   - `app/llm/fake.py` — `FakeLLM`, rule-based, no network. Implements the
     protocol so C3 can be built/tested without C4.
-  - Tests: `tests/test_schema.py`, `tests/test_fake_llm.py`. 12 passing total.
+  - Tests: `tests/test_schema.py`, `tests/test_fake_llm.py`.
+
+- **Deterministic state engine** (`feat/c3-state-engine`)
+  - `app/core/engine.py` — `validate_value` (per SlotType), `apply_candidate` /
+    `apply_extraction` (record LLM candidates, never auto-confirm),
+    `confirm_slot` / `edit_slot` / `skip_slot` (patient actions),
+    `detect_contradiction`, `is_slot_active` / `active_slot_defs` (conditional
+    slots evaluated dynamically, no stored flag). Outcomes: accepted / rejected /
+    contradiction / inactive / unknown_slot.
+  - `app/core/planner.py` — `compute_completeness` (coverage vs resolution),
+    `select_next_slot` (required-first, schema order), `should_stop`
+    (all-required-addressed / question-limit / abandoned). `DEFAULT_MAX_QUESTIONS
+    = 12`.
+  - `app/core/safety.py` — `check_safety`: regex match against `SAFETY_RULES`
+    (cardiac, breathing, stroke, anaphylaxis, self_harm, severe_bleeding) →
+    fixed approved wording + stop. **Patterns/wording are placeholders pending
+    team + supervisor sign-off.** Not triage or diagnosis.
+  - Tests: `tests/test_engine.py`, `tests/test_planner.py`, `tests/test_safety.py`.
+  - `tests/conftest.py` adds `make_state()` / `state` fixture.
+
+Total: 59 tests passing.
 
 ### In progress
 
@@ -48,9 +68,6 @@ Python 3.9 fails at import.
 
 ### Next
 
-- `feat/c3-state-engine` — `app/core/engine.py`: candidate validation, state
-  transitions, contradiction/correction handling, conditional-slot activation,
-  completeness/resolution, next-slot selection, stopping rules, safety check.
 - `feat/c3-session-api` — wire `app/api/sessions.py` to the engine, in-memory
   session store, error envelope, integration tests with `FakeLLM`.
 
