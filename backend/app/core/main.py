@@ -11,8 +11,9 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health
+from app.api import health, sessions
 from app.core.config import get_settings
+from app.core.errors import install_error_handlers
 
 
 def create_app() -> FastAPI:
@@ -31,8 +32,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Routers. C3 session APIs are added in feat/c3-session-api.
     app.include_router(health.router, prefix="/api")
+    app.include_router(sessions.router, prefix="/api")
+
+    install_error_handlers(app)
 
     return app
 
