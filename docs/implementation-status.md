@@ -80,6 +80,22 @@ Python 3.9 fails at import.
 Total: 66 tests passing. First end-to-end flow (Milestone 2 backend side) works
 against `FakeLLM`.
 
+- **Error envelope coverage fix** (`fix/c3-error-envelope-coverage`)
+  - Found while smoke-testing the merged skeleton by hand: a malformed/mistyped
+    request body returned FastAPI's default `{"detail": [...]}` shape instead
+    of the section-4 envelope — a real contract violation, not just a missing
+    nicety.
+  - `app/core/errors.py` now also registers handlers for
+    `RequestValidationError` (`REQUEST_VALIDATION_FAILED`, 422) and a catch-all
+    `Exception` (`INTERNAL`, 500), both emitting the same envelope as
+    `AppError`. `docs/api-contract.md` updated with the two extra codes.
+  - Tests: `test_malformed_json_body_still_uses_the_error_envelope`,
+    `test_wrong_field_type_still_uses_the_error_envelope`.
+
+Total: 68 tests passing. Manually smoke-tested end to end against a live
+`uvicorn` process (create → message → confirm/edit → complete → summary) —
+matches the automated tests.
+
 ### In progress
 
 - (nothing yet)
