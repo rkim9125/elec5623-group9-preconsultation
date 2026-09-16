@@ -63,6 +63,7 @@ anything that doesn't fit.
 
 ## Docs
 
+- [Component breakdown & team collaboration](docs/component-breakdown.md)
 - [Implementation spec](docs/implementation-spec.md)
 - [Implementation status](docs/implementation-status.md) — what is actually built
 - [API contract](docs/api-contract.md)
