@@ -166,19 +166,17 @@ Work should proceed in parallel. For example, UI contributors can use mock API r
 
 ## 6. Preference and Allocation Template
 
-Each person can enter **1–3 preferred components**, with a lead/support preference. The table records preferences rather than final assignments.
+Agreed allocation, as of this update. C2 and C5 were unassigned when the template first went out; both are now covered by overlap rather than a sixth/seventh person.
 
 | Team member | Preferred components (1–3) | Lead / support preference | Notes or collaboration interests |
 |---|---|---|---|
-| Member 1 | To be selected | To be discussed | |
-| Member 2 | To be selected | To be discussed | |
-| Member 3 | To be selected | To be discussed | |
-| Member 4 | To be selected | To be discussed | |
-| Member 5 | To be selected | To be discussed | |
+| Heeran | C1, C2 | Lead on both | C1 and C2 share a summary component, so picking up C2 alongside C1 is mostly the same frontend surface, not separate work. |
+| Robin | C3, C5 | Lead C3; C5 once C3 is in a stable place | C5 is the scope-noted engineering extension (not required) — deliberately sequenced after C3, not in parallel with it. |
+| Alan | C4 | Lead | |
+| Bob | C6 | Lead | |
+| Tom | C7 | Lead | |
 
-After collecting preferences, confirm coverage of all seven components, name coordinators, agree shared tasks and balance implementation, evaluation and documentation work.
-
-**Please share your preferred 1–3 components and whether you would like to lead or support each one. We can finalise the allocation together and use overlapping areas to build closer collaboration across the team.**
+All seven components are covered. Two decisions still open before UI work goes further (tracked in `docs/implementation-status.md`): where the "patient approves the final summary" step lives, and sign-off on the safety-interruption wording in `app/core/safety.py`.
 
 ## 7. Proposal Reference and Scope Alignment
 
