@@ -30,6 +30,10 @@ until v1.0.
 | `POST` | `/api/sessions/{session_id}/complete` | Finalise intake and generate clinician summary |
 | `GET`  | `/api/sessions/{session_id}/summary` | Clinician-facing structured summary |
 
+All bodies are JSON. `POST /api/sessions` takes `{"patient_ref": null, "locale": "en-AU"}`
+(both optional) and returns the [session state object](#2-session-state-object)
+with `201`.
+
 Example — `POST /api/sessions/{session_id}/messages`:
 
 ```json
@@ -41,13 +45,60 @@ Example — `POST /api/sessions/{session_id}/messages`:
     "session_id": "sess_a1b2c3",
     "status": "in_progress",
     "next_prompt": {
-      "slot_id": "symptom_duration",
+      "slot_id": "symptom_duration_days",
       "text": "How many days have you had these symptoms?"
     },
-    "updated_slots": ["chief_complaint", "associated_symptoms"]
+    "updated_slots": ["chief_complaint", "associated_symptoms"],
+    "stopped": false,
+    "stop_reason": null,
+    "safety": { "triggered": false, "category": null, "message": null },
+    "completeness": { "coverage": 0.0, "resolution": 0.0, "unresolved_required": ["symptom_duration_days", "symptom_severity", "current_medications", "allergies"] }
   }
 }
 ```
+
+When `safety.triggered` is `true` the turn short-circuits: `stopped` is `true`,
+`updated_slots` is empty, `next_prompt` is `null`, and `safety.message` carries
+the fixed wording to show the patient.
+
+Example — `POST /api/sessions/{session_id}/slots/{slot_id}`:
+
+```json
+{
+  "request": { "action": "edit", "value": "moderate" },
+  "response": {
+    "session_id": "sess_a1b2c3",
+    "status": "in_progress",
+    "slot_id": "symptom_severity",
+    "outcome": "accepted",
+    "detail": null,
+    "next_prompt": { "slot_id": "current_medications", "text": "..." },
+    "completeness": { "coverage": 0.4, "resolution": 0.25, "unresolved_required": ["current_medications", "allergies"] }
+  }
+}
+```
+
+`action` is `confirm` (promotes the top candidate, or uses `value` if given),
+`edit` (requires `value`), or `skip`. `outcome` is `accepted` / `rejected` /
+`contradiction` / `inactive` / `unknown_slot`; a `rejected` value returns `422`.
+
+Example — `POST /api/sessions/{session_id}/complete` → `{"session_id", "status": "completed", "summary_ref": "sum_sess_a1b2c3"}`.
+
+Example — `GET /api/sessions/{session_id}/summary` (only after `complete`, else `409`):
+
+```json
+{
+  "session_id": "sess_a1b2c3",
+  "summary_ref": "sum_sess_a1b2c3",
+  "sections": { "Main reason for the visit": "sore throat", "Current severity": "moderate" },
+  "patient_questions": ["What are the most likely causes of my symptoms?"],
+  "model": "fake-llm-0"
+}
+```
+
+> **v0.1 gap:** there is no explicit "patient approves the summary" step yet.
+> `completed` currently means the patient confirmed slots individually and hit
+> finish. To be settled with C1/C2 before the clinician view is trusted.
 
 ---
 
@@ -57,6 +108,7 @@ Returned by `GET /api/sessions/{session_id}` and embedded (partially) in message
 responses.
 
 - `status`: `in_progress` | `awaiting_confirmation` | `completed` | `abandoned`
+- `schema_version`: consultation schema the session was created against (`"0.1"`)
 - `slots`: map of `slot_id` → [slot object](#3-slot-schema)
 - `current_prompt`: the slot the intake flow is currently asking about, or `null`
 - `summary_ref`: id of the generated summary once `status` is `completed`
@@ -69,7 +121,8 @@ responses.
   "updated_at": "2026-09-10T04:20:00Z",
   "patient_ref": "pat_9f8e7d",
   "locale": "en-AU",
-  "current_prompt": { "slot_id": "symptom_duration", "text": "How many days have you had these symptoms?" },
+  "schema_version": "0.1",
+  "current_prompt": { "slot_id": "symptom_duration_days", "text": "How many days have you had these symptoms?" },
   "slots": {
     "chief_complaint": {
       "slot_id": "chief_complaint",
@@ -150,8 +203,11 @@ is the stable machine string.
 ```
 
 Common codes: `SESSION_NOT_FOUND` (404), `SESSION_ALREADY_COMPLETED` (409),
-`SLOT_NOT_FOUND` (404), `SLOT_VALIDATION_FAILED` (422), `LLM_UNAVAILABLE` (503),
-`RATE_LIMITED` (429), `INTERNAL` (500).
+`SLOT_NOT_FOUND` (404), `SLOT_VALIDATION_FAILED` (422),
+`REQUEST_VALIDATION_FAILED` (422, malformed/mistyped body — FastAPI's own
+validation, normalised into this envelope), `SUMMARY_NOT_READY` (409),
+`LLM_UNAVAILABLE` (503), `RATE_LIMITED` (429), `INTERNAL` (500, catch-all for
+anything unhandled — also normalised into this envelope).
 
 ---
 
