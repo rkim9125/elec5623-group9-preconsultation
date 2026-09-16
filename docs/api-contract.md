@@ -203,8 +203,11 @@ is the stable machine string.
 ```
 
 Common codes: `SESSION_NOT_FOUND` (404), `SESSION_ALREADY_COMPLETED` (409),
-`SLOT_NOT_FOUND` (404), `SLOT_VALIDATION_FAILED` (422), `LLM_UNAVAILABLE` (503),
-`RATE_LIMITED` (429), `INTERNAL` (500).
+`SLOT_NOT_FOUND` (404), `SLOT_VALIDATION_FAILED` (422),
+`REQUEST_VALIDATION_FAILED` (422, malformed/mistyped body — FastAPI's own
+validation, normalised into this envelope), `SUMMARY_NOT_READY` (409),
+`LLM_UNAVAILABLE` (503), `RATE_LIMITED` (429), `INTERNAL` (500, catch-all for
+anything unhandled — also normalised into this envelope).
 
 ---
 

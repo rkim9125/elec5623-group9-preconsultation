@@ -38,6 +38,26 @@ def test_unknown_session_returns_envelope():
     assert err["request_id"].startswith("req_")
 
 
+def test_malformed_json_body_still_uses_the_error_envelope():
+    sid = _new_session()
+    r = client.post(
+        f"/api/sessions/{sid}/messages",
+        content=b'{"text": }',
+        headers={"content-type": "application/json"},
+    )
+    assert r.status_code == 422
+    err = r.json()["error"]
+    assert err["code"] == "REQUEST_VALIDATION_FAILED"
+    assert err["request_id"].startswith("req_")
+
+
+def test_wrong_field_type_still_uses_the_error_envelope():
+    sid = _new_session()
+    r = client.post(f"/api/sessions/{sid}/messages", json={"text": 123})
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "REQUEST_VALIDATION_FAILED"
+
+
 def test_message_extracts_and_returns_next_prompt():
     sid = _new_session()
     r = client.post(
