@@ -84,6 +84,12 @@ def select_next_slot(state: SessionState) -> str | None:
 
 
 def should_stop(state: SessionState, asked_count: int = 0) -> StopDecision:
+    """Stops once every active *required* slot is addressed — deliberately,
+    even if optional slots (family/social history, symptom detail, etc.) are
+    still empty. Per the project boundary, coverage means coverage of the
+    fields we chose to ask, not an exhaustive medical history; optional slots
+    exist to be filled opportunistically (LLM extraction from free text, or
+    direct confirm/edit calls) rather than to force a longer interview."""
     from app.core.models import SessionStatus
 
     if state.status == SessionStatus.ABANDONED:

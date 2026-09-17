@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from app.core.models import Slot, SlotStatus, SlotType
 
-SCHEMA_VERSION = "0.1"
+SCHEMA_VERSION = "0.2"
 
 
 class SlotActivation(BaseModel):
@@ -40,6 +40,11 @@ class SlotDef(BaseModel):
 
 
 CONSULTATION_SCHEMA: list[SlotDef] = [
+    # -- History of presenting complaint -------------------------------- #
+    # Domain split follows a standard clinical history-taking checklist
+    # (onset/location/character/severity/progression/triggers/relieving
+    # factors/treatments-tried) — see docs/implementation-status.md for the
+    # references this was checked against (v0.2).
     SlotDef(
         slot_id="chief_complaint",
         label="Main reason for the visit",
@@ -48,11 +53,33 @@ CONSULTATION_SCHEMA: list[SlotDef] = [
         prompt_hint="In your own words, what is the main reason for this visit?",
     ),
     SlotDef(
+        slot_id="symptom_onset",
+        label="How the symptoms started",
+        type=SlotType.ENUM,
+        required=False,
+        options=["sudden", "gradual"],
+        prompt_hint="Did this come on suddenly, or build up gradually?",
+    ),
+    SlotDef(
         slot_id="symptom_duration_days",
         label="How long symptoms have lasted (days)",
         type=SlotType.NUMBER,
         required=True,
         prompt_hint="How many days have you had these symptoms?",
+    ),
+    SlotDef(
+        slot_id="symptom_location",
+        label="Where the symptoms are located",
+        type=SlotType.STRING,
+        required=False,
+        prompt_hint="Where on your body do you notice this?",
+    ),
+    SlotDef(
+        slot_id="symptom_character",
+        label="What the symptoms feel like",
+        type=SlotType.STRING,
+        required=False,
+        prompt_hint="How would you describe it (e.g. sharp, dull, throbbing)?",
     ),
     SlotDef(
         slot_id="symptom_severity",
@@ -63,11 +90,51 @@ CONSULTATION_SCHEMA: list[SlotDef] = [
         prompt_hint="Right now, would you say it is mild, moderate or severe?",
     ),
     SlotDef(
+        slot_id="symptom_progression",
+        label="How the symptoms are changing over time",
+        type=SlotType.ENUM,
+        required=False,
+        options=["improving", "worsening", "unchanged"],
+        prompt_hint="Is it getting better, getting worse, or staying about the same?",
+    ),
+    SlotDef(
+        slot_id="symptom_triggers",
+        label="Things that bring it on or make it worse",
+        type=SlotType.LIST,
+        required=False,
+        prompt_hint="Does anything seem to bring this on or make it worse?",
+    ),
+    SlotDef(
+        slot_id="symptom_relieving_factors",
+        label="Things that make it better",
+        type=SlotType.LIST,
+        required=False,
+        prompt_hint="Does anything make it feel better?",
+    ),
+    SlotDef(
+        slot_id="treatments_tried",
+        label="Treatments already tried",
+        type=SlotType.LIST,
+        required=False,
+        prompt_hint="Have you tried anything already (medication, rest, etc.)?",
+    ),
+    # -- Associated symptoms --------------------------------------------- #
+    SlotDef(
         slot_id="associated_symptoms",
         label="Other symptoms noticed",
         type=SlotType.LIST,
-        required=False,
+        required=True,
         prompt_hint="Have you noticed any other symptoms alongside this?",
+    ),
+    SlotDef(
+        slot_id="denied_symptoms",
+        label="Symptoms explicitly ruled out",
+        type=SlotType.LIST,
+        required=False,
+        prompt_hint=(
+            "Is there anything you specifically have NOT noticed "
+            "(e.g. no fever, no shortness of breath)?"
+        ),
     ),
     SlotDef(
         slot_id="fever_duration_days",
@@ -77,6 +144,7 @@ CONSULTATION_SCHEMA: list[SlotDef] = [
         activation=SlotActivation(when_slot="associated_symptoms", contains="fever"),
         prompt_hint="How many days have you had a fever?",
     ),
+    # -- Past medical history / medications ------------------------------ #
     SlotDef(
         slot_id="current_medications",
         label="Current medications",
@@ -97,6 +165,67 @@ CONSULTATION_SCHEMA: list[SlotDef] = [
         type=SlotType.LIST,
         required=False,
         prompt_hint="Any past medical conditions the clinician should know about?",
+    ),
+    SlotDef(
+        slot_id="hospitalizations",
+        label="Past hospitalisations or surgeries",
+        type=SlotType.LIST,
+        required=False,
+        prompt_hint="Have you been hospitalised or had any surgeries before?",
+    ),
+    SlotDef(
+        slot_id="specialist_care",
+        label="Ongoing specialist care",
+        type=SlotType.LIST,
+        required=False,
+        prompt_hint="Are you currently under the care of any specialists?",
+    ),
+    # -- Family history ---------------------------------------------------#
+    SlotDef(
+        slot_id="family_history",
+        label="Relevant family history",
+        type=SlotType.LIST,
+        required=False,
+        prompt_hint="Does this run in your family, or any related family history?",
+    ),
+    # -- Social history --------------------------------------------------- #
+    SlotDef(
+        slot_id="smoking_status",
+        label="Smoking status",
+        type=SlotType.ENUM,
+        required=False,
+        options=["never", "former", "current"],
+        prompt_hint="Do you currently smoke, used to, or never have?",
+    ),
+    SlotDef(
+        slot_id="alcohol_use",
+        label="Alcohol use",
+        type=SlotType.ENUM,
+        required=False,
+        options=["none", "occasional", "regular"],
+        prompt_hint="How would you describe your alcohol use?",
+    ),
+    SlotDef(
+        slot_id="occupation",
+        label="Occupation",
+        type=SlotType.STRING,
+        required=False,
+        prompt_hint="What's your occupation?",
+    ),
+    # -- Other contextual information -------------------------------------#
+    SlotDef(
+        slot_id="travel_history",
+        label="Recent travel",
+        type=SlotType.LIST,
+        required=False,
+        prompt_hint="Have you travelled anywhere recently?",
+    ),
+    SlotDef(
+        slot_id="additional_notes",
+        label="Anything else for the doctor",
+        type=SlotType.STRING,
+        required=False,
+        prompt_hint="Is there anything else you'd like the doctor to know?",
     ),
 ]
 

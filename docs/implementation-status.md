@@ -115,6 +115,42 @@ matches the automated tests.
 
 Total: 72 tests passing.
 
+- **Consultation schema expanded to v0.2** — checked against a standard
+  clinical history-taking checklist and a commercial intake product before
+  writing more code, per team discussion:
+  - [Evaluation of Prompt Design and Internal Reasoning in Chatbot-Based
+    Medical History Taking](https://pmc.ncbi.nlm.nih.gov/articles/PMC13501399/)
+    (JMIR Medical Informatics, 2026) — its coverage checklist has 6 domains:
+    history of presenting complaint, associated symptoms, past medical
+    history, family history, social history, other context.
+  - [Infermedica's "Intake" interview
+    type](https://developer.infermedica.com/documentation/platform-api/interview-types/intake/)
+    — a commercial pre-visit intake product; same domains plus a
+    User/Patient/Survey entity split relevant to C6's schema.
+  - `SCHEMA_VERSION` bumped `"0.1"` → `"0.2"` (interface change — C4/C6 should
+    review). `CONSULTATION_SCHEMA` grew from 8 to 24 slots, organised by the
+    6 domains above (`app/core/schema.py`): HPC detail (onset, location,
+    character, progression, triggers, relieving factors, treatments tried),
+    associated symptoms (now including explicitly *denied* symptoms), past
+    medical history (+ hospitalisations, specialist care), family history,
+    social history (smoking, alcohol, occupation), and other context (travel,
+    free-text notes).
+  - `associated_symptoms` promoted to **required**; everything else new is
+    **optional** — deliberately. `planner.should_stop()` still stops once
+    required slots are addressed, even with optional slots empty, because the
+    project boundary is "coverage of chosen fields," not an exhaustive
+    history. Optional slots are opportunistic: filled by LLM extraction from
+    free text, or by direct confirm/edit calls the UI can offer, but the
+    planner will not proactively march through all of them. Documented on
+    `should_stop`'s docstring so it isn't mistaken for an oversight later.
+  - Tests: `test_slot_ids_are_unique`,
+    `test_covers_the_six_history_taking_domains`,
+    `test_associated_symptoms_is_required_but_richness_fields_are_optional` in
+    `test_schema.py`; existing planner/session tests updated for the new
+    active-slot counts and required set.
+
+Total: 75 tests passing.
+
 ### In progress
 
 - (nothing yet)
