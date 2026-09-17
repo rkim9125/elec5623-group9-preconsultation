@@ -2,8 +2,9 @@
 stopping rules. No LLM calls.
 
 Definitions (see the proposal's coverage/resolution distinction):
-- **coverage**  - active slots that have been *addressed* (confirmed or skipped)
-                  over all active slots. "Have we been through it?"
+- **coverage**  - active slots that have been *addressed* (confirmed, skipped,
+                  or answered "I don't know") over all active slots. "Have we
+                  been through it?"
 - **resolution** - active *required* slots that are *confirmed* over all active
                   required slots. "Did we actually get the answer?"
 """
@@ -20,7 +21,7 @@ from app.core.schema import all_slot_ids
 
 _SCHEMA_ORDER = {slot_id: i for i, slot_id in enumerate(all_slot_ids())}
 
-_ADDRESSED = {SlotStatus.CONFIRMED, SlotStatus.SKIPPED}
+_ADDRESSED = {SlotStatus.CONFIRMED, SlotStatus.SKIPPED, SlotStatus.UNKNOWN}
 _PENDING = {SlotStatus.EMPTY, SlotStatus.CANDIDATE}
 
 DEFAULT_MAX_QUESTIONS = 12

@@ -27,6 +27,7 @@ from app.core.engine import (
     SlotNotFound as EngineSlotNotFound,
     confirm_slot,
     edit_slot,
+    mark_unknown,
     skip_slot,
 )
 from app.core.errors import (
@@ -114,6 +115,8 @@ def slot_action(
             if body.value is None:
                 raise SlotValidationFailed("'edit' requires a value")
             result = edit_slot(state, slot_id, body.value)
+        elif body.action == "unknown":
+            result = mark_unknown(state, slot_id)
         else:  # skip
             result = skip_slot(state, slot_id)
     except EngineSlotNotFound:
