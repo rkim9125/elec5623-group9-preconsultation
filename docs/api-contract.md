@@ -79,7 +79,9 @@ Example — `POST /api/sessions/{session_id}/slots/{slot_id}`:
 ```
 
 `action` is `confirm` (promotes the top candidate, or uses `value` if given),
-`edit` (requires `value`), or `skip`. `outcome` is `accepted` / `rejected` /
+`edit` (requires `value`), `skip` (patient declined to answer), or `unknown`
+(patient answered "I don't know" — distinct from `skip`, see
+[slot schema](#3-slot-schema)). `outcome` is `accepted` / `rejected` /
 `contradiction` / `inactive` / `unknown_slot`; a `rejected` value returns `422`.
 
 Example — `POST /api/sessions/{session_id}/complete` → `{"session_id", "status": "completed", "summary_ref": "sum_sess_a1b2c3"}`.
@@ -149,7 +151,10 @@ responses.
 One structured field the intake flow tries to fill.
 
 - `type`: `string` | `number` | `boolean` | `enum` | `date` | `list`
-- `status`: `empty` | `candidate` (LLM-proposed, unconfirmed) | `confirmed` | `skipped`
+- `status`: `empty` | `candidate` (LLM-proposed, unconfirmed) | `confirmed` |
+  `skipped` (patient declined to answer) | `unknown` (patient answered "I don't
+  know" — an affirmative answer, not a decline; present it differently in the
+  clinician summary)
 - `source`: `patient` (typed directly) | `llm` (extracted) | `clinician` (overridden)
 - `options`: present only when `type` is `enum`
 - `candidates`: [LLM candidate values](#5-llm-extraction-candidate-value) not yet confirmed

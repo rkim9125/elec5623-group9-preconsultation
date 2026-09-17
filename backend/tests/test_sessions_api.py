@@ -121,7 +121,17 @@ def test_confirm_edit_skip_slot_flow():
     )
     assert r.json()["outcome"] == "accepted"
 
-    # unknown slot
+    # "I don't know" is a distinct action/status from skip
+    r = client.post(
+        f"/api/sessions/{sid}/slots/current_medications", json={"action": "unknown"}
+    )
+    assert r.status_code == 200
+    assert r.json()["outcome"] == "accepted"
+    state = client.get(f"/api/sessions/{sid}").json()
+    assert state["slots"]["current_medications"]["status"] == "unknown"
+    assert state["slots"]["past_conditions"]["status"] == "skipped"
+
+    # nonexistent slot
     r = client.post(f"/api/sessions/{sid}/slots/not_real", json={"action": "skip"})
     assert r.status_code == 404
     assert r.json()["error"]["code"] == "SLOT_NOT_FOUND"

@@ -31,7 +31,8 @@ class SlotStatus(str, Enum):
     EMPTY = "empty"
     CANDIDATE = "candidate"  # LLM-proposed, not yet confirmed
     CONFIRMED = "confirmed"
-    SKIPPED = "skipped"
+    SKIPPED = "skipped"  # patient declined to answer
+    UNKNOWN = "unknown"  # patient answered "I don't know" — distinct from skip
 
 
 class SlotSource(str, Enum):

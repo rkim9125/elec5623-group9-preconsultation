@@ -192,7 +192,9 @@ def apply_candidate(state: SessionState, cand: ExtractedCandidate) -> ApplyResul
 
     slot.candidates.append(_as_candidate(cand, value))
     slot.candidates.sort(key=lambda c: c.confidence, reverse=True)
-    if slot.status == SlotStatus.EMPTY:
+    if slot.status in (SlotStatus.EMPTY, SlotStatus.SKIPPED, SlotStatus.UNKNOWN):
+        # A previously skipped/unknown slot gets reopened for confirmation if
+        # new information about it shows up later in the conversation.
         slot.status = SlotStatus.CANDIDATE
     _touch(state, slot)
     return ApplyResult(slot_id=cand.slot_id, outcome=ApplyOutcome.ACCEPTED)
@@ -263,9 +265,24 @@ def edit_slot(
 
 
 def skip_slot(state: SessionState, slot_id: str) -> ApplyResult:
-    """Patient chose 'skip' or 'I don't know'. Slot is addressed but unresolved."""
+    """Patient declined to answer. Distinct from `mark_unknown`: this means
+    'I'd rather not say', not 'I don't know'. Slot is addressed but unresolved."""
     slot = _require_slot(state, slot_id)
     slot.status = SlotStatus.SKIPPED
+    slot.value = None
+    slot.source = SlotSource.PATIENT
+    slot.candidates = []
+    _touch(state, slot)
+    return ApplyResult(slot_id=slot_id, outcome=ApplyOutcome.ACCEPTED)
+
+
+def mark_unknown(state: SessionState, slot_id: str) -> ApplyResult:
+    """Patient answered 'I don't know'. Distinct from `skip_slot`: this is an
+    affirmative answer (they tried and don't have the information), which the
+    clinician summary should present differently from a declined answer.
+    Slot is addressed but unresolved, same as skip for completeness purposes."""
+    slot = _require_slot(state, slot_id)
+    slot.status = SlotStatus.UNKNOWN
     slot.value = None
     slot.source = SlotSource.PATIENT
     slot.candidates = []

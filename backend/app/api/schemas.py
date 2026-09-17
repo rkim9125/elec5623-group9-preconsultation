@@ -20,7 +20,7 @@ class MessageRequest(BaseModel):
 
 
 class SlotActionRequest(BaseModel):
-    action: Literal["confirm", "edit", "skip"]
+    action: Literal["confirm", "edit", "skip", "unknown"]
     value: Any = None
 
 

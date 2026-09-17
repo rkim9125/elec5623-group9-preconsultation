@@ -8,6 +8,7 @@ from app.core.engine import (
     detect_contradiction,
     edit_slot,
     is_slot_active,
+    mark_unknown,
     skip_slot,
     validate_value,
 )
@@ -110,6 +111,25 @@ def test_skip_marks_slot_addressed_but_unresolved(state):
     assert res.outcome == ApplyOutcome.ACCEPTED
     assert state.slots["past_conditions"].status == SlotStatus.SKIPPED
     assert state.slots["past_conditions"].value is None
+
+
+def test_mark_unknown_is_distinct_from_skip(state):
+    res = mark_unknown(state, "current_medications")
+    assert res.outcome == ApplyOutcome.ACCEPTED
+    slot = state.slots["current_medications"]
+    assert slot.status == SlotStatus.UNKNOWN
+    assert slot.status != SlotStatus.SKIPPED
+    assert slot.value is None
+
+
+def test_new_candidate_reopens_a_skipped_or_unknown_slot(state):
+    skip_slot(state, "allergies")
+    apply_candidate(state, _cand("allergies", "penicillin"))
+    assert state.slots["allergies"].status == SlotStatus.CANDIDATE
+
+    mark_unknown(state, "past_conditions")
+    apply_candidate(state, _cand("past_conditions", "asthma"))
+    assert state.slots["past_conditions"].status == SlotStatus.CANDIDATE
 
 
 def test_require_slot_raises_for_unknown(state):

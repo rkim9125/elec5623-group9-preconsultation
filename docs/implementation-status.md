@@ -96,6 +96,25 @@ Total: 68 tests passing. Manually smoke-tested end to end against a live
 `uvicorn` process (create → message → confirm/edit → complete → summary) —
 matches the automated tests.
 
+- **"I don't know" vs "skip" as distinct slot states** (`feat/c3-unknown-slot-status`)
+  - Prompted by comparing our design against Infermedica's evidence model
+    (present/absent/unknown tri-state) — `docs/component-breakdown.md` C1 scope
+    already listed "I don't know" and "skip" as separate patient actions, but
+    the engine only had one `SKIPPED` status for both.
+  - `SlotStatus.UNKNOWN` added, distinct from `SKIPPED`: skip = declined to
+    answer, unknown = tried and doesn't have the information. Both count toward
+    coverage, neither toward resolution — same treatment as before, just split.
+  - `app/core/engine.py`: new `mark_unknown()`. Also fixed a latent bug found
+    while doing this: a new LLM candidate arriving for an already-skipped slot
+    used to sit in `candidates[]` unused since only `EMPTY` promoted to
+    `CANDIDATE` — now `SKIPPED`/`UNKNOWN` slots reopen for confirmation too.
+  - `app/api/schemas.py` / `app/api/sessions.py`: `SlotActionRequest.action`
+    gains `"unknown"`. `docs/api-contract.md` updated (section 3 status enum,
+    section 1 slot-action example).
+  - Tests added in `test_engine.py`, `test_planner.py`, `test_sessions_api.py`.
+
+Total: 72 tests passing.
+
 ### In progress
 
 - (nothing yet)

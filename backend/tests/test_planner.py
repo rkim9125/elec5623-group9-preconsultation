@@ -1,4 +1,4 @@
-from app.core.engine import apply_candidate, confirm_slot, skip_slot
+from app.core.engine import apply_candidate, confirm_slot, mark_unknown, skip_slot
 from app.core.models import SessionStatus
 from app.core.planner import (
     DEFAULT_MAX_QUESTIONS,
@@ -38,6 +38,15 @@ def test_fresh_state_completeness_is_zero(state):
 
 def test_skipped_counts_for_coverage_not_resolution(state):
     skip_slot(state, "chief_complaint")
+    c = compute_completeness(state)
+    assert c.addressed == 1
+    assert c.coverage > 0
+    assert c.resolution == 0.0
+    assert "chief_complaint" in c.unresolved_required
+
+
+def test_unknown_counts_for_coverage_not_resolution_same_as_skip(state):
+    mark_unknown(state, "chief_complaint")
     c = compute_completeness(state)
     assert c.addressed == 1
     assert c.coverage > 0
@@ -115,4 +124,10 @@ def test_stops_when_abandoned(state):
 def test_skipping_required_still_allows_stop(state):
     for sid in REQUIRED:
         skip_slot(state, sid)
+    assert should_stop(state).stop is True
+
+
+def test_marking_required_unknown_still_allows_stop(state):
+    for sid in REQUIRED:
+        mark_unknown(state, sid)
     assert should_stop(state).stop is True
