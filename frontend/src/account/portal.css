@@ -1,0 +1,539 @@
+.portal {
+  min-height: 100svh;
+  background: #fcfcf9;
+}
+.portal-layout {
+  max-width: 1320px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 65px;
+  padding: 44px 32px 65px;
+  min-height: calc(100svh - 171px);
+}
+.portal-nav nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.portal-nav nav a {
+  display: flex;
+  gap: 17px;
+  align-items: center;
+  text-decoration: none;
+  padding: 17px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  min-height: 54px;
+  color: #627268;
+}
+.portal-nav nav a > span {
+  font-size: 23px;
+  width: 24px;
+  text-align: center;
+}
+.portal-nav nav a[aria-current="page"] {
+  background: #eaf0e6;
+  color: #245c49;
+  font-weight: 600;
+}
+.portal-nav .nav-caption {
+  margin-bottom: 24px;
+}
+.portal-nav-bottom {
+  border-top: 1px solid var(--line);
+  margin: 80px 16px 0;
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+.portal-nav-bottom small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.portal-nav-bottom a {
+  font-size: 12px;
+  margin-top: 18px;
+  min-height: 44px;
+  align-content: center;
+  text-decoration: none;
+}
+.portal-header-end {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.portal-main {
+  min-width: 0;
+  padding-top: 10px;
+}
+.portal-intro {
+  margin-bottom: 35px;
+}
+.portal-intro .lead {
+  margin-bottom: 0;
+  font-size: 15px;
+}
+.portal-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+}
+.portal-title-row h1 {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.portal-title-row .secondary {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.portal-intro h1 {
+  font-size: 30px;
+}
+.portal-footer {
+  border-top: 1px solid var(--line);
+  max-width: 1256px;
+  margin: auto;
+  padding: 24px 0;
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+}
+.account-loading {
+  padding: 90px 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.loading-dot {
+  width: 9px;
+  height: 9px;
+  background: #52734e;
+  border-radius: 50%;
+}
+.account-error {
+  padding: 45px 20px;
+}
+.account-error h2 {
+  font-size: 22px;
+}
+.account-error p {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 15px 0 25px;
+}
+.auth-main {
+  max-width: 990px;
+  margin: 60px auto 80px;
+  display: grid;
+  grid-template-columns: minmax(0, 430px) minmax(0, 300px);
+  gap: 110px;
+  padding: 0 35px;
+  align-items: start;
+}
+.auth-panel {
+  padding-top: 16px;
+}
+.auth-panel .portal-intro {
+  margin-bottom: 32px;
+}
+.auth-panel .portal-intro h1 {
+  font-size: 29px;
+}
+.auth-panel .portal-intro .lead {
+  font-size: 14px;
+}
+.auth-panel .input-group {
+  margin-bottom: 24px;
+}
+.auth-panel input {
+  height: 52px;
+}
+.auth-panel label {
+  font-size: 14px;
+}
+.auth-panel .info-note {
+  margin-bottom: 24px;
+}
+.password-field {
+  position: relative;
+}
+.password-field input {
+  padding-right: 70px;
+}
+.password-field button {
+  position: absolute;
+  right: 7px;
+  top: 4px;
+  font-size: 12px;
+}
+.password-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin-bottom: 15px;
+}
+.field-error {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #8a3325;
+  margin-top: 7px;
+}
+.auth-submit {
+  width: 100%;
+  margin-top: 8px;
+  justify-content: space-between;
+}
+.auth-switch {
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted);
+  margin: 20px 0;
+}
+.auth-switch a {
+  display: inline-block;
+  padding: 12px;
+  color: #245c49;
+}
+.guest-link {
+  display: block;
+  text-align: center;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  text-decoration: none;
+  color: #245c49;
+}
+.auth-context {
+  background: #eff2e9;
+  padding: 26px;
+}
+.auth-context .paper-icon {
+  margin-top: 25px;
+  margin-bottom: 24px;
+}
+.auth-context h2 {
+  font-size: 19px;
+  margin-top: 30px;
+  letter-spacing: -0.5px;
+}
+.auth-context > p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: #53674e;
+  margin-top: 12px;
+}
+.demo-accounts {
+  margin-top: 24px;
+  border-top: 1px solid #d4ddcf;
+}
+.demo-accounts button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-bottom: 1px solid #d4ddcf;
+  padding: 15px 0;
+  color: #2f4e39;
+}
+.demo-accounts strong {
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.demo-accounts small {
+  font-size: 10px;
+  color: #53674e;
+  font-weight: 400;
+}
+.demo-accounts button > span {
+  font-size: 11px;
+  display: block;
+  margin-top: 7px;
+}
+.auth-context .demo-password {
+  font-size: 11px;
+  margin-top: 20px;
+}
+.demo-password code {
+  display: block;
+  font-size: 13px;
+  margin-top: 5px;
+}
+.auth-context details {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+@media (max-width: 1050px) {
+  .portal-layout {
+    gap: 30px;
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+  .portal-footer {
+    margin: 0 32px;
+  }
+  .auth-main {
+    gap: 50px;
+  }
+  .portal-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .account-intake-bar {
+    margin: 0 32px;
+  }
+  .record-state {
+    max-width: 150px;
+  }
+}
+@media (max-width: 650px) {
+  .portal-header-end {
+    gap: 5px;
+  }
+  .portal-header-end .text-button {
+    font-size: 11px;
+    padding: 7px;
+  }
+  .portal .header {
+    padding: 0 18px;
+  }
+  .portal-layout {
+    display: block;
+    padding: 0 22px 38px;
+  }
+  .portal-nav {
+    padding: 16px 0 0;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+  .portal-nav .nav-caption,
+  .portal-nav-bottom {
+    display: none;
+  }
+  .portal-nav nav {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 2px;
+  }
+  .portal-nav nav a {
+    padding: 12px 5px;
+    font-size: 12px;
+    min-height: 48px;
+    gap: 0;
+    border-radius: 0;
+  }
+  .portal-nav nav a > span {
+    display: none;
+  }
+  .portal-nav nav a[aria-current="page"] {
+    background: transparent;
+    border-bottom: 2px solid #245c49;
+  }
+  .portal-main {
+    padding-top: 0;
+  }
+  .portal-intro {
+    margin-bottom: 26px;
+  }
+  .portal-intro h1 {
+    font-size: 24px;
+  }
+  .portal-intro .lead {
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .portal-title-row {
+    gap: 15px;
+  }
+  .portal-footer {
+    margin: 0 22px;
+    padding: 23px 0;
+    gap: 16px;
+    font-size: 10px;
+  }
+  .portal-footer > span:first-child {
+    max-width: 240px;
+    line-height: 1.8;
+  }
+  .section-heading {
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  .section-heading h2 {
+    font-size: 16px;
+  }
+  .section-heading a {
+    font-size: 11px;
+  }
+  .home-next {
+    padding: 19px;
+  }
+  .home-next .section-heading {
+    padding-bottom: 10px;
+  }
+  .next-top h2 {
+    font-size: 23px;
+  }
+  .next-top p {
+    font-size: 12px;
+  }
+  .next-date {
+    display: none;
+  }
+  .next-top {
+    margin-bottom: 20px;
+  }
+  .home-section {
+    margin-top: 28px;
+  }
+  .record-main h3 {
+    font-size: 14px;
+  }
+  .record-main h3 span {
+    display: block;
+    font-size: 12px;
+  }
+  .record-main p {
+    font-size: 12px;
+  }
+  .record-main small {
+    font-size: 10px;
+  }
+  .intake-row {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 20px 0;
+  }
+  .intake-row .record-main {
+    flex-basis: 100%;
+  }
+  .intake-row .record-state {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: none;
+  }
+  .appointment-row {
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 20px 0;
+  }
+  .appointment-row .record-main {
+    flex-basis: calc(100% - 70px);
+  }
+  .appointment-row .record-state {
+    flex-direction: row;
+    align-items: center;
+    max-width: none;
+    margin-left: 62px;
+  }
+  .row-arrow {
+    margin-left: auto;
+  }
+  .date-stamp {
+    min-width: 48px;
+    padding-right: 12px;
+  }
+  .date-stamp strong {
+    font-size: 24px;
+  }
+  .filter-tabs {
+    gap: 20px;
+  }
+  .filter-tabs button {
+    font-size: 12px;
+  }
+  .inline-empty {
+    display: block;
+    font-size: 13px;
+  }
+  .inline-empty button {
+    margin-top: 18px;
+  }
+  .detail-facts > div {
+    grid-template-columns: 85px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .detail-facts dt {
+    font-size: 12px;
+  }
+  .detail-facts dd {
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .account-empty {
+    padding: 30px 5px;
+  }
+  .account-empty p {
+    font-size: 12px;
+  }
+  .portal-page-bottom {
+    margin-top: 40px;
+    font-size: 10px;
+  }
+  .auth-main {
+    display: flex;
+    flex-direction: column;
+    padding: 0 23px;
+    margin: 26px auto 35px;
+    gap: 30px;
+  }
+  .auth-panel {
+    width: 100%;
+    padding-top: 5px;
+  }
+  .auth-panel .portal-intro h1 {
+    font-size: 25px;
+  }
+  .auth-context {
+    width: 100%;
+    padding: 22px;
+  }
+  .auth-context .paper-icon {
+    display: none;
+  }
+  .auth-context h2 {
+    margin-top: 17px;
+    font-size: 18px;
+  }
+  .auth-context > p br {
+    display: none;
+  }
+  .demo-accounts small {
+    font-size: 11px;
+  }
+  .account-intake-bar {
+    margin: 0 23px;
+    font-size: 10px;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 5px 0;
+  }
+  .account-intake-bar .text-button {
+    padding: 5px;
+    font-size: 11px;
+  }
+  .guest-import {
+    padding: 20px 17px;
+  }
+  .guest-import .secondary {
+    font-size: 12px;
+  }
+  .portal-title-row .secondary {
+    white-space: normal;
+    text-align: left;
+    font-size: 12px;
+  }
+}
