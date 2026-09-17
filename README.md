@@ -70,7 +70,7 @@ anything that doesn't fit.
 
 ## Patient frontend prototype
 
-한국어 환자용 문진 데모가 `frontend/`에 구현되어 있습니다. 백엔드 없이 실행합니다.
+영어·한국어 환자용 문진 데모가 `frontend/`에 구현되어 있습니다. 백엔드 없이 실행합니다.
 
 ```bash
 cd frontend
@@ -81,3 +81,5 @@ npm run dev
 [실행 방법과 mock 범위](frontend/README.md) · [UX 설계·검증·화면 캡처](docs/patient-prototype.md)
 
 환자 계정 데모: `http://127.0.0.1:5173/#/login`. [계정·예약·문진 경로와 체험 안내](docs/patient-account.md)를 참고하세요.
+
+언어 전환: 최초 방문은 English이며 공통 헤더에서 korean으로 변경할 수 있습니다. [다국어 구현·검증 안내](docs/localization.md).

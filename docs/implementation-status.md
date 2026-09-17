@@ -131,3 +131,7 @@ React/Vite patient demo added independently of the backend: Korean hybrid intake
 ## Patient account frontend — 2026-09-17
 
 Added mock signup/login, patient home, appointment lists/details, intake lists/details, account information and logout. Reuses the existing intake editor. Account-scoped demo storage, explicit guest import, readonly sent snapshots, safe internal return paths, request generation guards, expiry and retry states. No authentication/appointment API exists in the current backend; it is not called or changed. See [patient account documentation](patient-account.md).
+
+## Bilingual patient UI — 2026-09-17
+
+Added English-default UI with a shared English/korean selector across guest and account screens. Separate translation resources, persistent language preference, localized dates/titles/notifications, immutable patient text, and language switches that preserve form/route/filter state. No new dependencies or backend changes. See [localization documentation](localization.md).
