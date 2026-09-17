@@ -10,6 +10,7 @@ import {
   completedStages,
 } from "../../model.js";
 import { ko as t } from "../../copy.js";
+import { go, RouteLink } from "../../account/router.jsx";
 import { mock, extractExplicitOnset } from "../../api/mock.js";
 const group = (s) =>
   s === "reason"
@@ -44,11 +45,17 @@ function Choice({ name, value, selected, onChange, children }) {
     </label>
   );
 }
-export default function App() {
-  const [data, setData] = useState(restore),
+export default function App({ account = null, onAccountSave }) {
+  const [data, setData] = useState(() =>
+      account ? structuredClone(account.record.data) : restore(),
+    ),
     latest = useRef(data);
   latest.current = data;
-  const [step, setStep] = useState(() => location.hash.slice(1) || "start");
+  const [step, setStep] = useState(() =>
+    account
+      ? location.hash.split("/").at(-1) || account.record.step
+      : location.hash.slice(1) || "start",
+  );
   const [editing, setEditing] = useState(() => Boolean(history.state?.editing)),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -65,7 +72,7 @@ export default function App() {
     setBusy(false);
     setError("");
     setEditing(keepEditing);
-    const hash = `#${s}`;
+    const hash = account ? `#/intakes/${account.record.id}/edit/${s}` : `#${s}`;
     if (location.hash !== hash)
       history.pushState({ editing: keepEditing }, "", hash);
     setStep(s);
@@ -77,7 +84,11 @@ export default function App() {
       setBusy(false);
       setError("");
       setEditing(Boolean(history.state?.editing));
-      setStep(location.hash.slice(1) || "start");
+      setStep(
+        account
+          ? location.hash.split("/").at(-1)
+          : location.hash.slice(1) || "start",
+      );
     };
     window.addEventListener("popstate", listener);
     return () => {
@@ -98,9 +109,13 @@ export default function App() {
   }, [step]);
   useEffect(() => {
     try {
-      sessionStorage.setItem(KEY, JSON.stringify(data));
-      sessionStorage.setItem(`${KEY}-step`, step);
-      setStorageError(false);
+      if (account) {
+        setStorageError(!onAccountSave(data, step));
+      } else {
+        sessionStorage.setItem(KEY, JSON.stringify(data));
+        sessionStorage.setItem(`${KEY}-step`, step);
+        setStorageError(false);
+      }
     } catch {
       setStorageError(true);
     }
@@ -389,7 +404,7 @@ export default function App() {
           className="brand"
           onClick={(e) => {
             e.preventDefault();
-            navigate("start");
+            account ? go("/my") : navigate("start");
           }}
         >
           <span className="brand-symbol" aria-hidden="true">
@@ -403,6 +418,27 @@ export default function App() {
           체험용 데모
         </span>
       </header>
+      <div className="account-intake-bar">
+        {account ? (
+          <>
+            <span>{account.user.name} · 계정 문진 작성 중</span>
+            <button
+              className="text-button"
+              onClick={() => {
+                onAccountSave(data, step);
+                go("/intakes");
+              }}
+            >
+              저장하고 내 문진으로 →
+            </button>
+          </>
+        ) : (
+          <>
+            <span>계정 없이 문진을 체험하고 있어요</span>
+            <RouteLink to="/login">로그인 · 내 진료노트 →</RouteLink>
+          </>
+        )}
+      </div>
       <div className="app-layout">
         <aside className="navigation">
           <div className="nav-caption">나의 진료 준비</div>

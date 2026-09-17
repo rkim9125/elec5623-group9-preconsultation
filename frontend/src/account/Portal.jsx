@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import IntakeApp from "../pages/patient/App.jsx";
+import { KEY, steps, summary } from "../model.js";
 import { accountService as api } from "./service.js";
 import { useRoute, go, RouteLink } from "./router.jsx";
 import {
@@ -16,10 +17,15 @@ import "./portal.css";
 const nav = [
   ["/my", "마이페이지"],
   ["/appointments", "예약 현황"],
+  ["/intakes", "내 문진"],
   ["/account", "계정 정보"],
 ];
 const titleOf = (r) =>
   r.data.reasons.find((x) => x.trim()) || "방문 이유 작성 전";
+const editPath = (r) =>
+  r.snapshot
+    ? `/intakes/${r.id}`
+    : `/intakes/${r.id}/edit/${r.status === "completed" ? "review" : r.step}`;
 function Status({ kind, children }) {
   return <span className={`account-status status-${kind}`}>{children}</span>;
 }
@@ -458,17 +464,80 @@ function AppointmentRows({ items, intakes }) {
     </div>
   );
 }
-function IntakeRows({items, appointments}) {
- return <div className="record-list">{items.map(r => <div className="intake-row" key={r.id}><div className="record-main"><h3>{titleOf(r)}</h3><p>{appointments.find(a => a.id === r.appointmentId)?.hospital || '예약 미연결'}</p><small>최종 수정 {formatDate(r.updatedAt)}</small></div><Status kind={r.status}>{intakeLabels[r.status]}</Status></div>)}</div>;
+function IntakeRows({ items, appointments }) {
+  return (
+    <div className="record-list">
+      {items.map((r) => {
+        const a = appointments.find((a) => a.id === r.appointmentId);
+        return (
+          <div className="intake-row" key={r.id}>
+            <div className="record-main">
+              <RouteLink to={`/intakes/${r.id}`}>
+                <h3>{titleOf(r)}</h3>
+              </RouteLink>
+              <p>{a ? `${a.hospital} · ${a.department}` : "예약 미연결"}</p>
+              <small>최종 수정 {formatDate(r.updatedAt)}</small>
+            </div>
+            <div className="record-state">
+              <Status kind={r.status}>{intakeLabels[r.status]}</Status>
+              <RouteLink className="row-action" to={editPath(r)}>
+                {r.status === "draft"
+                  ? "이어서 작성"
+                  : r.status === "completed"
+                    ? "요약 검토·수정"
+                    : "문진 보기"}{" "}
+                →
+              </RouteLink>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 function RecordsPage({ path, scope, bundle, refresh }) {
-  const [appointmentFilter, setAppointmentFilter] = useState("upcoming"),
+  const [filter, setFilter] = useState("all"),
+    [appointmentFilter, setAppointmentFilter] = useState("upcoming"),
+    [error, setError] = useState(""),
     [confirmReset, setConfirmReset] = useState(false);
   const { appointments, intakes } = bundle;
   const recent = [...intakes].sort(
     (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
   );
   const next = sortAppointments(appointments, "upcoming")[0];
+  const guest = () => {
+    try {
+      return JSON.parse(sessionStorage.getItem(KEY));
+    } catch {
+      return null;
+    }
+  };
+  const [guestAvailable, setGuestAvailable] = useState(
+    () => !!guest()?.reasons?.some((x) => x.trim()),
+  );
+  function start(appointmentId = null) {
+    try {
+      const r = api.startIntake(scope, appointmentId);
+      go(editPath(r));
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+  function importGuest() {
+    try {
+      const r = api.importGuest(
+        scope,
+        guest(),
+        sessionStorage.getItem(`${KEY}-step`) || "reason",
+      );
+      sessionStorage.removeItem(KEY);
+      sessionStorage.removeItem(`${KEY}-step`);
+      setGuestAvailable(false);
+      go(`/intakes/${r.id}`);
+    } catch (e) {
+      setError(e.message);
+    }
+  }
   const testControls = (
     <details className="account-test">
       <summary>데모 테스트</summary>
@@ -551,12 +620,16 @@ function RecordsPage({ path, scope, bundle, refresh }) {
           ) : (
             <div className="inline-empty">
               <p>작성 중인 문진이 없어요.</p>
+              <button className="secondary" onClick={() => start()}>
+                예약 없이 문진 작성
+              </button>
             </div>
           )}
         </section>
         <section className="home-section">
           <div className="section-heading">
             <h2>최근 문진</h2>
+            <RouteLink to="/intakes">내 문진 전체 보기 ↗</RouteLink>
           </div>
           {recent.filter((r) => r.id !== draft?.id).length ? (
             <IntakeRows
@@ -571,6 +644,24 @@ function RecordsPage({ path, scope, bundle, refresh }) {
             </p>
           )}
         </section>
+        {guestAvailable && (
+          <div className="guest-import">
+            <h2>계정 없이 작성한 문진이 있어요</h2>
+            <p>
+              이 계정의 기록으로 옮길 때만 아래 버튼을 선택해 주세요. 예약에는
+              연결되지 않습니다.
+            </p>
+            <button className="secondary" onClick={importGuest}>
+              내 계정으로 가져오기
+            </button>
+            <button
+              className="text-button"
+              onClick={() => setGuestAvailable(false)}
+            >
+              지금은 안 할게요
+            </button>
+          </div>
+        )}
       </>
     );
   } else if (path === "/appointments") {
@@ -616,6 +707,57 @@ function RecordsPage({ path, scope, bundle, refresh }) {
           시간이 지난 예약도 실제 진료 완료 정보가 없으면 ‘예약 확정’ 상태를
           유지합니다.
         </p>
+      </>
+    );
+  } else if (path === "/intakes") {
+    const items = recent.filter((r) => filter === "all" || r.status === filter);
+    content = (
+      <>
+        <Intro
+          eyebrow="MY NOTES"
+          title="내 문진"
+          action={
+            <button className="secondary" onClick={() => start()}>
+              ＋ 예약 없이 문진 작성
+            </button>
+          }
+        >
+          작성한 이야기를 이어 쓰거나, 진료 전 요약을 다시 확인하세요.
+        </Intro>
+        <div className="filter-tabs" role="group" aria-label="문진 상태 필터">
+          {[
+            ["all", "전체"],
+            ["draft", "작성 중"],
+            ["completed", "작성 완료"],
+            ["sent", "전달 완료"],
+          ].map(([v, l]) => (
+            <button
+              key={v}
+              aria-pressed={filter === v}
+              onClick={() => setFilter(v)}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <p className="list-count" role="status">
+          {items.length}개의 문진
+        </p>
+        {items.length ? (
+          <IntakeRows items={items} appointments={appointments} />
+        ) : (
+          <Empty
+            title={
+              intakes.length
+                ? "이 상태의 문진이 없어요"
+                : "아직 작성한 문진이 없어요"
+            }
+          >
+            {intakes.length
+              ? "다른 필터를 선택하면 작성한 문진을 볼 수 있어요."
+              : "예약 없이 문진 작성을 시작하거나 예약 현황을 확인해 보세요."}
+          </Empty>
+        )}
       </>
     );
   } else if (path === "/account") {
@@ -742,9 +884,66 @@ function RecordsPage({ path, scope, bundle, refresh }) {
                   ? "취소된 예약에는 새 문진을 작성할 수 없어요."
                   : "아직 연결된 문진이 없어요. 방문 이유부터 정리해 보세요."}
               </p>
+              {a.status !== "cancelled" && (
+                <button className="primary" onClick={() => start(a.id)}>
+                  문진 작성<span>→</span>
+                </button>
+              )}
             </div>
           )}
         </section>
+      </>
+    ) : (
+      <NotFound />
+    );
+  } else if (/^\/intakes\/[^/]+$/.test(path)) {
+    const r = intakes.find((r) => r.id === path.split("/")[2]);
+    const a = r && appointments.find((a) => a.id === r.appointmentId);
+    content = r ? (
+      <>
+        <RouteLink className="back-link" to="/intakes">
+          ← 내 문진
+        </RouteLink>
+        <Intro
+          eyebrow={r.snapshot ? "SENT NOTE · READ ONLY" : "NOTE DETAILS"}
+          title={titleOf(r)}
+        >
+          최종 수정 {formatDate(r.updatedAt)}
+        </Intro>
+        <Status kind={r.status}>{intakeLabels[r.status]}</Status>
+        <p className="record-appointment">
+          {a ? (
+            <RouteLink to={`/appointments/${a.id}`}>
+              {a.hospital} · {a.department} · 관련 예약 보기 ↗
+            </RouteLink>
+          ) : (
+            "예약 미연결"
+          )}
+        </p>
+        {r.snapshot ? (
+          <div className="info-note">
+            <strong>전달 당시의 기록 · 읽기 전용</strong>
+            <p>
+              {formatDate(r.snapshot.sentAt)}에 전달 과정을 체험한 요약입니다.
+              실제 병원에 전송되지 않았으며 의료진 확인 정보는 없습니다.
+            </p>
+          </div>
+        ) : (
+          <div className="actions">
+            <RouteLink className="primary" to={editPath(r)}>
+              {r.status === "draft" ? "이어서 작성" : "요약 검토·수정"}
+              <span>→</span>
+            </RouteLink>
+          </div>
+        )}
+        <div className="summary">
+          {(r.snapshot?.sections || summary(r.data)).map((s) => (
+            <section key={s.title}>
+              <h2>{s.title}</h2>
+              <p>{s.text}</p>
+            </section>
+          ))}
+        </div>
       </>
     ) : (
       <NotFound />
@@ -753,6 +952,11 @@ function RecordsPage({ path, scope, bundle, refresh }) {
   return (
     <>
       {content}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       <div className="portal-page-bottom">
         <span>나의 이야기가, 더 잘 전해지도록.</span>
         {testControls}
@@ -804,6 +1008,29 @@ function ProtectedContent({ path, user, scope }) {
         <ErrorView error={result.error} retry={refresh} />
       </Shell>
     );
+  const match = path.match(/^\/intakes\/([^/]+)\/edit\/([a-z]+)$/);
+  if (match) {
+    const record = result.bundle.intakes.find((i) => i.id === match[1]);
+    if (!record || !steps.includes(match[2]))
+      return (
+        <Shell user={user} path={path}>
+          <NotFound />
+        </Shell>
+      );
+    if (record.snapshot) return <ReadOnlyRedirect id={record.id} />;
+    return (
+      <IntakeApp
+        key={`${user.id}:${record.id}`}
+        account={{ record, scope, user }}
+        onAccountSave={(data, step) => {
+          const saved = api.saveIntake(scope, record.id, data, step);
+          if (saved.record.snapshot)
+            go(`/intakes/${record.id}`, { replace: true });
+          return saved.saved;
+        }}
+      />
+    );
+  }
   return (
     <Shell user={user} path={path}>
       <RecordsPage
@@ -815,6 +1042,10 @@ function ProtectedContent({ path, user, scope }) {
       />
     </Shell>
   );
+}
+function ReadOnlyRedirect({ id }) {
+  useEffect(() => go(`/intakes/${id}`, { replace: true }), [id]);
+  return <Loading />;
 }
 function LoginRedirect({ path }) {
   useEffect(
