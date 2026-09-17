@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  KEY,
   initial,
   activeSteps,
   change,
@@ -18,6 +19,16 @@ const group = (s) =>
       : ["history", "medicines", "allergies", "questions"].includes(s)
         ? 2
         : 3;
+function restore() {
+  try {
+    const d = JSON.parse(sessionStorage.getItem(KEY));
+    return d?.version === 1 && Array.isArray(d.reasons) && d.allergies?.items
+      ? d
+      : initial();
+  } catch {
+    return initial();
+  }
+}
 function Choice({ name, value, selected, onChange, children }) {
   return (
     <label className={"choice " + (selected ? "selected" : "")}>
@@ -34,7 +45,7 @@ function Choice({ name, value, selected, onChange, children }) {
   );
 }
 export default function App() {
-  const [data, setData] = useState(initial),
+  const [data, setData] = useState(restore),
     latest = useRef(data);
   latest.current = data;
   const [step, setStep] = useState(() => location.hash.slice(1) || "start");
@@ -42,6 +53,7 @@ export default function App() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
+    [storageError, setStorageError] = useState(false),
     [resetOpen, setResetOpen] = useState(false);
   const heading = useRef(null),
     lock = useRef(false),
@@ -84,6 +96,15 @@ export default function App() {
     document.title = `${step === "start" ? "시작 안내" : t.stages[group(step)]} · ${t.brand}`;
     setNotice("");
   }, [step]);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(KEY, JSON.stringify(data));
+      sessionStorage.setItem(`${KEY}-step`, step);
+      setStorageError(false);
+    } catch {
+      setStorageError(true);
+    }
+  }, [data, step]);
   const update = (key, value) => {
     generation.current++;
     lock.current = false;
@@ -91,6 +112,7 @@ export default function App() {
     setError("");
     setData((d) => change(d, key, value));
   };
+  const edit = (s) => navigate(s, true);
   const answer = (status, value = "") =>
     update(step, { ...data[step], status, value });
   const fail = (message) => {
@@ -187,6 +209,25 @@ export default function App() {
     else navigate(target, editing);
   }
 
+  function download() {
+    const text =
+      "진료노트 — 데모 문진 요약\n실제 병원에 전송되지 않았습니다.\n\n" +
+      summary(data)
+        .map((s) => s.title + "\n" + s.text)
+        .join("\n\n");
+    const url = URL.createObjectURL(
+      new Blob([text], { type: "text/plain;charset=utf-8" }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "진료노트-데모-요약.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+    setNotice("요약 텍스트를 다운로드했습니다.");
+  }
+  const incomplete = activeSteps(data).filter(
+    (k) => data[k]?.status === "unasked",
+  );
   const completed = completedStages(data);
   const current = group(step),
     field = t.fields[step],
@@ -410,7 +451,7 @@ export default function App() {
                   : `${String(current + 1).padStart(2, "0")} / ${t.stages[current]}`}
             </span>
             <span className="save-state">
-              현재 화면에서 작성 중
+              {storageError ? "이 탭에 저장할 수 없음" : "✓ 이 탭에 임시 저장"}
             </span>
           </div>
           <div className="page-content" key={step}>
@@ -684,8 +725,151 @@ export default function App() {
                   </p>
                 </form>
               </>
+            ) : step === "review" ? (
+              <>
+                <p className="lead">
+                  직접 알려주신 내용만 정리했어요.
+                  <br />
+                  빠지거나 다른 내용이 있으면 수정해 주세요.
+                </p>
+                <div className="review-notice">
+                  가상 문진 요약 <span>의료적 판단이 포함되지 않습니다</span>
+                </div>
+                <div className="summary">
+                  {summary(data).map((s) => (
+                    <section key={s.title}>
+                      <div className="row">
+                        <h2>{s.title}</h2>
+                        {s.step && (
+                          <button
+                            className="text-button"
+                            aria-label={`${s.title} 수정`}
+                            onClick={() => edit(s.step)}
+                          >
+                            수정 ↗
+                          </button>
+                        )}
+                      </div>
+                      <p>{s.text}</p>
+                      {s.step === "onset" && (
+                        <div className="inline-edits">
+                          {[
+                            "course",
+                            ...(data.course.value === "반복돼요"
+                              ? ["frequency"]
+                              : []),
+                            "severity",
+                            "impact",
+                          ].map((k) => (
+                            <button
+                              key={k}
+                              className="text-button"
+                              onClick={() => edit(k)}
+                            >
+                              {t.fields[k].label} 수정
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  ))}
+                </div>
+                {data.reasons.some((value) => !value.trim()) && (
+                  <div className="info-note">
+                    <strong>방문 이유에 비어 있는 항목이 있어요</strong>
+                    <p>내용을 적거나 비어 있는 추가 항목을 삭제해 주세요.</p>
+                    <button
+                      className="text-button"
+                      onClick={() => edit("reason")}
+                    >
+                      방문 이유 확인 →
+                    </button>
+                  </div>
+                )}
+                {incomplete.length > 0 && (
+                  <div className="info-note">
+                    <strong>아직 확인하지 않은 질문이 있어요</strong>
+                    <p>
+                      수정으로 새로 필요한 질문도 한 번 확인해 주세요. 답변하지
+                      않고 계속할 수도 있어요.
+                    </p>
+                    <button
+                      className="text-button"
+                      onClick={() => edit(incomplete[0])}
+                    >
+                      미확인 질문으로 →
+                    </button>
+                  </div>
+                )}
+                <label className="approval">
+                  <input
+                    type="checkbox"
+                    checked={data.approved}
+                    disabled={busy}
+                    onChange={(e) =>
+                      setData((d) => ({ ...d, approved: e.target.checked }))
+                    }
+                  />
+                  <span>요약을 읽었으며, 내가 작성한 내용과 일치합니다.</span>
+                </label>
+                <p className="footnote">
+                  답변을 수정하면 이 확인은 해제됩니다.
+                </p>
+                {errors}
+                <div className="actions">
+                  <button
+                    className="primary"
+                    disabled={
+                      !data.approved ||
+                      busy ||
+                      incomplete.length > 0 ||
+                      data.reasons.some((value) => !value.trim())
+                    }
+                    onClick={() =>
+                      data.sent ? navigate("done") : request("send", "done")
+                    }
+                  >
+                    {busy
+                      ? "전달 과정 체험 중…"
+                      : data.sent
+                        ? "시뮬레이션 완료 화면 보기"
+                        : "확인하고 전달 시뮬레이션"}
+                    <span>→</span>
+                  </button>
+                </div>
+                <p className="footnote">
+                  실제 의료진이나 병원에 전송되지 않습니다.
+                </p>
+              </>
             ) : (
-              <><p className="lead">작성한 내용을 확인해 주세요.</p><div className="summary">{summary(data).map(s => <section key={s.title}><h2>{s.title}</h2><p>{s.text}</p></section>)}</div><button className="secondary" onClick={() => navigate("questions")}>이전 질문으로</button></>
+              <>
+                <div className="completion-mark" aria-hidden="true">
+                  ✓
+                </div>
+                <p className="lead">
+                  작성한 이야기가 요약으로 정리됐어요.
+                  <br />
+                  실제 의사나 병원에 전송된 내용은 없습니다.
+                </p>
+                <div className="info-note">
+                  <strong>다음 진료를 위한 나의 메모</strong>
+                  <p>
+                    요약을 다시 확인하거나 텍스트로 내려받을 수 있어요. 예약이나
+                    접수는 진행되지 않았습니다.
+                  </p>
+                </div>
+                <div className="actions">
+                  <button className="primary" onClick={download}>
+                    요약 텍스트 다운로드 ↓
+                  </button>
+                  <button
+                    className="secondary"
+                    onClick={() => navigate("review")}
+                  >
+                    요약 다시 보기
+                  </button>
+                </div>
+              </>
             )}
           </div>
           <footer className="workspace-footer">
@@ -771,7 +955,9 @@ export default function App() {
         {busy
           ? "요청 처리 중입니다."
           : notice ||
-            `${title} 화면입니다.`}
+            (storageError
+              ? "임시 저장이 불가능합니다. 새로고침하면 답변이 사라질 수 있습니다."
+              : `${title} 화면입니다.`)}
       </div>
       {resetOpen && (
         <div className="modal-backdrop">
