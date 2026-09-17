@@ -1,6 +1,8 @@
+import { tr, message, messageText, getLocale } from "../i18n/core.js";
+import { useI18n, LanguageSelect } from "../i18n/react.jsx";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import IntakeApp from "../pages/patient/App.jsx";
-import { KEY, steps, summary } from "../model.js";
+import { KEY, steps } from "../model.js";
 import { accountService as api } from "./service.js";
 import { useRoute, go, RouteLink } from "./router.jsx";
 import {
@@ -12,16 +14,17 @@ import {
   intakeLabels,
   appointmentLabels,
   appointmentGroup,
+  recordSummary,
 } from "./domain.js";
 import "./portal.css";
-const nav = [
-  ["/my", "마이페이지"],
-  ["/appointments", "예약 현황"],
-  ["/intakes", "내 문진"],
-  ["/account", "계정 정보"],
+const nav = () => [
+  ["/my", tr("my.home")],
+  ["/appointments", tr("appointments")],
+  ["/intakes", tr("my.notes")],
+  ["/account", tr("account")],
 ];
 const titleOf = (r) =>
-  r.data.reasons.find((x) => x.trim()) || "방문 이유 작성 전";
+  r.data.reasons.find((x) => x.trim()) || tr("reason.for.visit.not.entered");
 const editPath = (r) =>
   r.snapshot
     ? `/intakes/${r.id}`
@@ -30,10 +33,14 @@ function Status({ kind, children }) {
   return <span className={`account-status status-${kind}`}>{children}</span>;
 }
 function Loading() {
+  const locale = useI18n();
+  useEffect(() => {
+    document.title = tr("loading.demo.information") + " · " + tr("visit.notes");
+  }, [locale]);
   return (
     <div className="account-loading" role="status">
       <span className="loading-dot" />
-      데모 정보를 확인하고 있어요.
+      {tr("loading.demo.information")}
     </div>
   );
 }
@@ -47,22 +54,30 @@ function Empty({ title, children }) {
   );
 }
 function ErrorView({ error, retry }) {
+  const locale = useI18n();
+  useEffect(() => {
+    document.title =
+      tr("unable.to.load.information") + " · " + tr("visit.notes");
+  }, [locale]);
   return (
     <div className="account-error" role="alert">
-      <h2>정보를 불러오지 못했어요</h2>
-      <p>{error.message}</p>
+      <h2>{tr("unable.to.load.information")}</h2>
+      <p>{messageText(error.message)}</p>
       <button className="secondary" onClick={retry}>
-        다시 시도
+        {tr("try.again")}
       </button>
     </div>
   );
 }
 function Intro({ eyebrow, title, children, action }) {
+  const locale = useI18n();
   const ref = useRef(null);
   useEffect(() => {
+    document.title = tr("value.visit.notes", { p0: title });
+  }, [title, locale]);
+  useEffect(() => {
     ref.current?.focus();
-    document.title = `${title} · 진료노트`;
-  }, [title]);
+  }, []);
   return (
     <div className="portal-intro">
       <div className="eyebrow">{eyebrow}</div>
@@ -87,19 +102,22 @@ function Shell({ user, path, children }) {
           document.querySelector("h1")?.focus();
         }}
       >
-        본문으로 이동
+        {tr("skip.to.content")}
       </a>
       <header className="header">
         <RouteLink to={user ? "/my" : "start"} className="brand">
           <span className="brand-symbol" aria-hidden="true">
             ✳
           </span>
-          진료노트<span className="brand-sub">진료 전, 내 이야기 정리</span>
+          {tr("visit.notes")}
+          <span className="brand-sub">
+            {tr("your.story.ready.for.your.visit")}
+          </span>
         </RouteLink>
         <div className="portal-header-end">
           <span className="demo-badge">
             <span />
-            체험용 데모
+            {tr("demo")}
           </span>
           {user && (
             <button
@@ -109,17 +127,18 @@ function Shell({ user, path, children }) {
                 go("/login", { replace: true });
               }}
             >
-              로그아웃
+              {tr("log.out")}
             </button>
           )}
+          <LanguageSelect />
         </div>
       </header>
       {user ? (
         <div className="portal-layout">
           <aside className="portal-nav">
-            <p className="nav-caption">나의 진료 준비</p>
-            <nav aria-label="환자 계정 메뉴">
-              {nav.map(([to, text], i) => (
+            <p className="nav-caption">{tr("preparing.for.my.visit")}</p>
+            <nav aria-label={tr("patient.account.navigation")}>
+              {nav().map(([to, text], i) => (
                 <RouteLink
                   key={to}
                   to={to}
@@ -134,8 +153,10 @@ function Shell({ user, path, children }) {
             </nav>
             <div className="portal-nav-bottom">
               <strong>{user.name}</strong>
-              <small>가상 환자 계정</small>
-              <RouteLink to="start">비로그인 문진으로 ↗</RouteLink>
+              <small>{tr("demo.patient.account")}</small>
+              <RouteLink to="start">
+                {tr("try.the.guest.questionnaire")}
+              </RouteLink>
             </div>
           </aside>
           <main id="portal-main" className="portal-main">
@@ -148,8 +169,8 @@ function Shell({ user, path, children }) {
         </main>
       )}
       <footer className="portal-footer">
-        <span>데모 · 실제 계정과 병원에 연결되지 않습니다.</span>
-        <span>진료노트</span>
+        <span>{tr("demo.no.connection.to.real.accounts.or.hospitals")}</span>
+        <span>{tr("visit.notes")}</span>
       </footer>
     </div>
   );
@@ -183,17 +204,19 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
     e.preventDefault();
     if (lock.current) return;
     const err = {};
-    if (signup && !values.name.trim()) err.name = "이름을 입력해 주세요.";
-    if (!values.email.trim()) err.email = "이메일을 입력해 주세요.";
+    if (signup && !values.name.trim()) err.name = message("enter.your.name");
+    if (!values.email.trim()) err.email = message("enter.your.email.address");
     else if (!/^\S+@\S+\.\S+$/.test(values.email.trim()))
-      err.email = "이름@example.test 형식으로 입력해 주세요.";
-    if (!values.password) err.password = "비밀번호를 입력해 주세요.";
+      err.email = message("use.an.email.address.such.as.name.example.test");
+    if (!values.password) err.password = message("enter.your.password");
     else if (signup && !/(?=.*[A-Za-z])(?=.*\d).{8,}/.test(values.password))
-      err.password = "영문과 숫자를 포함해 8자 이상 입력해 주세요.";
+      err.password = message(
+        "use.at.least.8.characters.including.a.letter.and.a.number",
+      );
     if (signup && values.password !== values.confirm)
-      err.confirm = "비밀번호가 일치하지 않습니다. 다시 확인해 주세요.";
+      err.confirm = message("passwords.do.not.match.please.check.them.again");
     if (signup && !values.confirm)
-      err.confirm = "비밀번호를 한 번 더 입력해 주세요.";
+      err.confirm = message("enter.your.password.again");
     setErrors(err);
     if (Object.keys(err).length) {
       requestAnimationFrame(() =>
@@ -271,17 +294,17 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
             <button
               type="button"
               className="text-button"
-              aria-label={visible ? "비밀번호 숨기기" : "비밀번호 표시"}
+              aria-label={visible ? tr("hide.password") : tr("show.password")}
               aria-pressed={visible}
               onClick={() => setVisible((x) => !x)}
             >
-              {visible ? "숨기기" : "표시"}
+              {visible ? tr("hide") : tr("show")}
             </button>
           )}
         </div>
         {errors[key] && (
           <p className="field-error" id={`${key}-error`} role="alert">
-            {errors[key]}
+            {messageText(errors[key])}
           </p>
         )}
       </div>
@@ -291,68 +314,79 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
     <>
       <div className="auth-panel">
         <Intro
-          eyebrow="MY PRE-VISIT NOTE"
-          title={signup ? "내 진료노트 시작하기" : "다시 만나 반가워요"}
+          eyebrow={tr("eyebrow.auth")}
+          title={
+            signup ? tr("create.your.visit.notes.account") : tr("welcome.back")
+          }
         >
           {signup
-            ? "가상 정보로 계정을 만들고 문진을 관리해 보세요."
-            : "예약과 작성한 문진을 한곳에서 확인하세요."}
+            ? tr(
+                "use.fictional.details.to.try.an.account.and.manage.your.notes",
+              )
+            : tr("find.your.appointments.and.questionnaires.in.one.place")}
         </Intro>
         {authMessage && (
           <p className="info-note" role="status">
-            {authMessage}
+            {messageText(authMessage)}
           </p>
         )}
         {new URLSearchParams(location.hash.split("?")[1]).has("registered") && (
           <p className="info-note" role="status">
-            데모 가입이 완료됐어요. 가입한 이메일과 비밀번호로 로그인해 주세요.
-            이메일 인증은 진행하지 않습니다.
+            {tr(
+              "your.demo.account.is.ready.log.in.with.the.email.and.password.you",
+            )}
           </p>
         )}
         <form onSubmit={submit} noValidate>
-          {signup && field("name", "이름", "text", "name")}
-          {field("email", "이메일", "email", "username")}
+          {signup && field("name", tr("name"), "text", "name")}
+          {field("email", tr("email"), "email", "username")}
           {signup && (
             <p id="password-hint" className="password-hint">
-              데모 비밀번호: 영문과 숫자를 포함해 8자 이상. 실제 사용하는
-              비밀번호는 입력하지 마세요.
+              {tr(
+                "demo.password.at.least.8.characters.including.a.letter.and.a.numb",
+              )}
             </p>
           )}
           {field(
             "password",
-            "비밀번호",
+            tr("password"),
             "password",
             signup ? "new-password" : "current-password",
           )}
           {signup &&
-            field("confirm", "비밀번호 확인", "password", "new-password")}
+            field(
+              "confirm",
+              tr("confirm.password"),
+              "password",
+              "new-password",
+            )}
           {errors.form && (
             <p className="error" role="alert" tabIndex={-1}>
-              {errors.form}
+              {messageText(errors.form)}
             </p>
           )}
           <button disabled={busy} className="primary auth-submit">
-            {busy ? "처리 중…" : signup ? "회원가입" : "로그인"}
+            {busy ? tr("processing") : signup ? tr("sign.up") : tr("log.in")}
             <span aria-hidden="true">→</span>
           </button>
           <p className="auth-switch">
-            {signup ? "이미 계정이 있나요?" : "처음 이용하시나요?"}{" "}
+            {signup ? tr("already.have.an.account") : tr("new.here")}{" "}
             <RouteLink
               to={`/${signup ? "login" : "signup"}?returnTo=${encodeURIComponent(returnTo)}`}
             >
-              {signup ? "로그인" : "회원가입"}
+              {signup ? tr("log.in") : tr("sign.up")}
             </RouteLink>
           </p>
           <div className="sr-only" role="status">
-            {busy ? "요청 처리 중입니다." : notice}
+            {busy ? tr("processing.your.request") : messageText(notice)}
           </div>
         </form>
         <RouteLink className="guest-link" to="start">
-          계정 없이 문진 체험하기 ↗
+          {tr("try.the.questionnaire.without.an.account")}
         </RouteLink>
       </div>
       <aside className="auth-context">
-        <span className="context-label">체험 계정 안내</span>
+        <span className="context-label">{tr("try.a.demo.account")}</span>
         <div className="paper-icon" aria-hidden="true">
           <span>✳</span>
           <i />
@@ -360,11 +394,11 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
           <i />
           <b>✓</b>
         </div>
-        <h2>내 진료 준비를, 한곳에</h2>
+        <h2>{tr("your.visit.preparation.in.one.place")}</h2>
         <p>
-          서로 다른 기록과 빈 화면을
+          {tr("explore.different.records.and.empty.states")}
           <br />
-          가상 계정으로 살펴보세요.
+          {tr("using.fictional.accounts")}
         </p>
         <div className="demo-accounts">
           {demoUsers.map((u, i) => (
@@ -380,14 +414,22 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
                 });
                 setErrors({});
                 setNotice(
-                  `${u.name}의 체험용 이메일과 비밀번호를 입력했습니다.`,
+                  message("demo.email.and.password.entered.for.value", {
+                    p0: u.name,
+                  }),
                 );
               }}
             >
               <strong>
                 {u.name}
                 <small>
-                  {["예약·문진 기록", "다른 환자의 기록", "빈 상태"][i]}
+                  {
+                    [
+                      tr("appointments.and.notes"),
+                      tr("another.patient.s.records"),
+                      tr("empty.account"),
+                    ][i]
+                  }
                 </small>
               </strong>
               <span>{u.email}</span>
@@ -395,22 +437,26 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
           ))}
         </div>
         <p className="demo-password">
-          공통 비밀번호 <code>{DEMO_PASSWORD}</code>
+          {tr("shared.password")}
+          <code>{DEMO_PASSWORD}</code>
         </p>
         <p className="footnote">
-          새로 가입한 계정은 새로고침 전까지 체험할 수 있어요. 실제 인증
-          서비스가 아닙니다.
+          {tr(
+            "new.accounts.last.until.you.refresh.this.is.not.a.real.authentica",
+          )}
         </p>
         <details>
-          <summary>데모 테스트</summary>
+          <summary>{tr("demo.controls")}</summary>
           <button
             className="text-button"
             onClick={() => {
               api.failOnce();
-              setNotice("다음 가입 또는 로그인 요청이 한 번 실패합니다.");
+              setNotice(
+                message("the.next.signup.or.login.request.will.fail.once"),
+              );
             }}
           >
-            다음 인증 요청 실패
+            {tr("fail.next.authentication.request")}
           </button>
         </details>
       </aside>
@@ -430,16 +476,22 @@ function AppointmentRows({ items, intakes }) {
           >
             <div className="date-stamp">
               <span>
-                {new Intl.DateTimeFormat("ko-KR", {
-                  timeZone: "Asia/Seoul",
-                  month: "short",
-                }).format(new Date(a.startsAt))}
+                {new Intl.DateTimeFormat(
+                  getLocale() === "ko" ? "ko-KR" : "en-GB",
+                  {
+                    timeZone: "Asia/Seoul",
+                    month: "short",
+                  },
+                ).format(new Date(a.startsAt))}
               </span>
               <strong>
-                {new Intl.DateTimeFormat("ko-KR", {
-                  timeZone: "Asia/Seoul",
-                  day: "numeric",
-                })
+                {new Intl.DateTimeFormat(
+                  getLocale() === "ko" ? "ko-KR" : "en-GB",
+                  {
+                    timeZone: "Asia/Seoul",
+                    day: "numeric",
+                  },
+                )
                   .format(new Date(a.startsAt))
                   .replace("일", "")}
               </strong>
@@ -449,11 +501,13 @@ function AppointmentRows({ items, intakes }) {
                 {a.hospital} <span>· {a.department}</span>
               </h3>
               <p>{formatDate(a.startsAt)}</p>
-              <small>{a.clinician || "담당 의료진 미정"}</small>
+              <small>{a.clinician || tr("clinician.not.assigned")}</small>
             </div>
             <div className="record-state">
-              <Status kind={a.status}>{appointmentLabels[a.status]}</Status>
-              <small>{r ? intakeLabels[r.status] : "문진 미작성"}</small>
+              <Status kind={a.status}>{tr(appointmentLabels[a.status])}</Status>
+              <small>
+                {r ? tr(intakeLabels[r.status]) : tr("not.started")}
+              </small>
             </div>
             <span className="row-arrow" aria-hidden="true">
               ↗
@@ -475,17 +529,24 @@ function IntakeRows({ items, appointments }) {
               <RouteLink to={`/intakes/${r.id}`}>
                 <h3>{titleOf(r)}</h3>
               </RouteLink>
-              <p>{a ? `${a.hospital} · ${a.department}` : "예약 미연결"}</p>
-              <small>최종 수정 {formatDate(r.updatedAt)}</small>
+              <p>
+                {a
+                  ? `${a.hospital} · ${a.department}`
+                  : tr("no.linked.appointment")}
+              </p>
+              <small>
+                {tr("last.updated")}
+                {formatDate(r.updatedAt)}
+              </small>
             </div>
             <div className="record-state">
-              <Status kind={r.status}>{intakeLabels[r.status]}</Status>
+              <Status kind={r.status}>{tr(intakeLabels[r.status])}</Status>
               <RouteLink className="row-action" to={editPath(r)}>
                 {r.status === "draft"
-                  ? "이어서 작성"
+                  ? tr("continue.writing")
                   : r.status === "completed"
-                    ? "요약 검토·수정"
-                    : "문진 보기"}{" "}
+                    ? tr("review.and.edit")
+                    : tr("view.note")}{" "}
                 →
               </RouteLink>
             </div>
@@ -540,7 +601,7 @@ function RecordsPage({ path, scope, bundle, refresh }) {
   }
   const testControls = (
     <details className="account-test">
-      <summary>데모 테스트</summary>
+      <summary>{tr("demo.controls")}</summary>
       <div>
         <button
           onClick={() => {
@@ -548,7 +609,7 @@ function RecordsPage({ path, scope, bundle, refresh }) {
             refresh();
           }}
         >
-          조회 실패 체험
+          {tr("simulate.load.failure")}
         </button>
         <button
           onClick={() => {
@@ -556,9 +617,11 @@ function RecordsPage({ path, scope, bundle, refresh }) {
             refresh();
           }}
         >
-          느린 조회 체험
+          {tr("simulate.slow.loading")}
         </button>
-        <button onClick={() => api.expire()}>세션 만료 체험</button>
+        <button onClick={() => api.expire()}>
+          {tr("simulate.session.expiry")}
+        </button>
       </div>
     </details>
   );
@@ -568,68 +631,76 @@ function RecordsPage({ path, scope, bundle, refresh }) {
     content = (
       <>
         <Intro
-          eyebrow="MY CARE SPACE"
-          title={`${api.getSnapshot().user.name}님, 안녕하세요.`}
+          eyebrow={tr("eyebrow.home")}
+          title={tr("hello.value", { p0: api.getSnapshot().user.name })}
         >
-          다음 진료와 준비한 이야기를 확인해 보세요.
+          {tr("see.your.next.appointment.and.the.notes.you.have.prepared")}
         </Intro>
         <section className="home-next">
           <div className="section-heading">
-            <h2>다가오는 진료</h2>
-            <RouteLink to="/appointments">예약 전체 보기 ↗</RouteLink>
+            <h2>{tr("next.appointment")}</h2>
+            <RouteLink to="/appointments">
+              {tr("view.all.appointments")}
+            </RouteLink>
           </div>
           {next ? (
             <>
               <div className="next-top">
                 <div>
-                  <Status kind="scheduled">예약 확정</Status>
+                  <Status kind="scheduled">{tr("confirmed")}</Status>
                   <h2>
                     {next.hospital}
                     <span>{next.department}</span>
                   </h2>
                   <p>
-                    {formatDate(next.startsAt)} <small>한국 시간</small>
+                    {formatDate(next.startsAt)}{" "}
+                    <small>{tr("korea.time")}</small>
                   </p>
-                  <p>{next.clinician || "담당 의료진 미정"}</p>
+                  <p>{next.clinician || tr("clinician.not.assigned")}</p>
                 </div>
                 <div className="next-date" aria-hidden="true">
-                  {new Intl.DateTimeFormat("ko-KR", {
-                    timeZone: "Asia/Seoul",
-                    day: "numeric",
-                  }).format(new Date(next.startsAt))}
-                  <small>다음 진료일</small>
+                  {new Intl.DateTimeFormat(
+                    getLocale() === "ko" ? "ko-KR" : "en-GB",
+                    {
+                      timeZone: "Asia/Seoul",
+                      day: "numeric",
+                    },
+                  ).format(new Date(next.startsAt))}
+                  <small>{tr("next.visit")}</small>
                 </div>
               </div>
               <RouteLink className="primary" to={`/appointments/${next.id}`}>
-                예약 확인<span>→</span>
+                {tr("view.appointment")}
+                <span>→</span>
               </RouteLink>
             </>
           ) : (
-            <Empty title="예정된 예약이 없어요">
-              이 데모에서는 예약을 새로 만들지 않습니다. 예약 없이도 문진을
-              작성할 수 있어요.
+            <Empty title={tr("no.upcoming.appointments")}>
+              {tr(
+                "this.demo.does.not.create.appointments.you.can.write.a.questionna",
+              )}
             </Empty>
           )}
         </section>
         <section className="home-section">
           <div className="section-heading">
-            <h2>이어 작성할 문진</h2>
+            <h2>{tr("continue.your.questionnaire")}</h2>
           </div>
           {draft ? (
             <IntakeRows items={[draft]} appointments={appointments} />
           ) : (
             <div className="inline-empty">
-              <p>작성 중인 문진이 없어요.</p>
+              <p>{tr("no.questionnaires.in.progress")}</p>
               <button className="secondary" onClick={() => start()}>
-                예약 없이 문진 작성
+                {tr("start.without.an.appointment")}
               </button>
             </div>
           )}
         </section>
         <section className="home-section">
           <div className="section-heading">
-            <h2>최근 문진</h2>
-            <RouteLink to="/intakes">내 문진 전체 보기 ↗</RouteLink>
+            <h2>{tr("recent.notes")}</h2>
+            <RouteLink to="/intakes">{tr("view.all.my.notes")}</RouteLink>
           </div>
           {recent.filter((r) => r.id !== draft?.id).length ? (
             <IntakeRows
@@ -639,26 +710,27 @@ function RecordsPage({ path, scope, bundle, refresh }) {
           ) : (
             <p className="inline-empty">
               {recent.length
-                ? "이어서 작성할 문진 외에 최근 기록이 없어요."
-                : "아직 작성한 문진이 없습니다. 첫 문진을 작성하면 여기에 표시돼요."}
+                ? tr("no.other.recent.notes.besides.your.draft")
+                : tr("no.notes.yet.your.first.questionnaire.will.appear.here")}
             </p>
           )}
         </section>
         {guestAvailable && (
           <div className="guest-import">
-            <h2>계정 없이 작성한 문진이 있어요</h2>
+            <h2>{tr("you.have.a.guest.questionnaire")}</h2>
             <p>
-              이 계정의 기록으로 옮길 때만 아래 버튼을 선택해 주세요. 예약에는
-              연결되지 않습니다.
+              {tr(
+                "choose.below.only.if.you.want.to.move.it.into.this.account.it.wil",
+              )}
             </p>
             <button className="secondary" onClick={importGuest}>
-              내 계정으로 가져오기
+              {tr("import.into.my.account")}
             </button>
             <button
               className="text-button"
               onClick={() => setGuestAvailable(false)}
             >
-              지금은 안 할게요
+              {tr("not.now")}
             </button>
           </div>
         )}
@@ -668,14 +740,18 @@ function RecordsPage({ path, scope, bundle, refresh }) {
     const items = sortAppointments(appointments, appointmentFilter);
     content = (
       <>
-        <Intro eyebrow="APPOINTMENTS" title="예약 현황">
-          예약 시간은 모두 한국 시간(Asia/Seoul)으로 표시합니다.
+        <Intro eyebrow={tr("eyebrow.appointments")} title={tr("appointments")}>
+          {tr("all.appointment.times.are.shown.in.korea.time.asia.seoul")}
         </Intro>
-        <div className="filter-tabs" role="group" aria-label="예약 분류">
+        <div
+          className="filter-tabs"
+          role="group"
+          aria-label={tr("appointment.category")}
+        >
           {[
-            ["upcoming", "예정"],
-            ["past", "지난 예약"],
-            ["cancelled", "취소"],
+            ["upcoming", tr("upcoming")],
+            ["past", tr("past")],
+            ["cancelled", tr("cancel")],
           ].map(([v, l]) => (
             <button
               key={v}
@@ -687,7 +763,7 @@ function RecordsPage({ path, scope, bundle, refresh }) {
           ))}
         </div>
         <p className="list-count" role="status">
-          {items.length}개의 예약
+          {tr("appointments.count", { count: items.length })}
         </p>
         {items.length ? (
           <AppointmentRows items={items} intakes={intakes} />
@@ -695,17 +771,19 @@ function RecordsPage({ path, scope, bundle, refresh }) {
           <Empty
             title={
               appointments.length
-                ? "해당하는 예약이 없어요"
-                : "등록된 예약이 없어요"
+                ? tr("no.matching.appointments")
+                : tr("no.appointments.recorded")
             }
           >
-            이 화면은 가상 예약 조회용입니다. 예약 없이 작성한 문진도 내
-            문진에서 관리할 수 있어요.
+            {tr(
+              "these.are.fictional.appointment.records.you.can.also.manage.unlin",
+            )}
           </Empty>
         )}
         <p className="footnote">
-          시간이 지난 예약도 실제 진료 완료 정보가 없으면 ‘예약 확정’ 상태를
-          유지합니다.
+          {tr(
+            "past.appointments.remain.confirmed.unless.there.is.information.th",
+          )}
         </p>
       </>
     );
@@ -714,22 +792,26 @@ function RecordsPage({ path, scope, bundle, refresh }) {
     content = (
       <>
         <Intro
-          eyebrow="MY NOTES"
-          title="내 문진"
+          eyebrow={tr("eyebrow.notes")}
+          title={tr("my.notes")}
           action={
             <button className="secondary" onClick={() => start()}>
-              ＋ 예약 없이 문진 작성
+              {tr("start.without.an.appointment.2")}
             </button>
           }
         >
-          작성한 이야기를 이어 쓰거나, 진료 전 요약을 다시 확인하세요.
+          {tr("continue.writing.or.review.your.summary.before.your.visit")}
         </Intro>
-        <div className="filter-tabs" role="group" aria-label="문진 상태 필터">
+        <div
+          className="filter-tabs"
+          role="group"
+          aria-label={tr("questionnaire.status.filter")}
+        >
           {[
-            ["all", "전체"],
-            ["draft", "작성 중"],
-            ["completed", "작성 완료"],
-            ["sent", "전달 완료"],
+            ["all", tr("all")],
+            ["draft", tr("in.progress")],
+            ["completed", tr("completed")],
+            ["sent", tr("sent")],
           ].map(([v, l]) => (
             <button
               key={v}
@@ -741,7 +823,7 @@ function RecordsPage({ path, scope, bundle, refresh }) {
           ))}
         </div>
         <p className="list-count" role="status">
-          {items.length}개의 문진
+          {tr("notes.count", { count: items.length })}
         </p>
         {items.length ? (
           <IntakeRows items={items} appointments={appointments} />
@@ -749,13 +831,15 @@ function RecordsPage({ path, scope, bundle, refresh }) {
           <Empty
             title={
               intakes.length
-                ? "이 상태의 문진이 없어요"
-                : "아직 작성한 문진이 없어요"
+                ? tr("no.notes.with.this.status")
+                : tr("no.questionnaires.yet")
             }
           >
             {intakes.length
-              ? "다른 필터를 선택하면 작성한 문진을 볼 수 있어요."
-              : "예약 없이 문진 작성을 시작하거나 예약 현황을 확인해 보세요."}
+              ? tr("choose.another.filter.to.see.your.notes")
+              : tr(
+                  "start.a.questionnaire.without.an.appointment.or.check.your.appoin",
+                )}
           </Empty>
         )}
       </>
@@ -764,26 +848,27 @@ function RecordsPage({ path, scope, bundle, refresh }) {
     const user = api.getSnapshot().user;
     content = (
       <>
-        <Intro eyebrow="ACCOUNT" title="계정 정보">
-          이름과 이메일을 확인할 수 있어요.
+        <Intro eyebrow={tr("eyebrow.account")} title={tr("account")}>
+          {tr("view.your.name.and.email.address")}
         </Intro>
         <dl className="detail-facts">
           <div>
-            <dt>이름</dt>
+            <dt>{tr("name")}</dt>
             <dd>{user.name}</dd>
           </div>
           <div>
-            <dt>이메일</dt>
+            <dt>{tr("email")}</dt>
             <dd>{user.email}</dd>
           </div>
           <div>
-            <dt>계정 유형</dt>
-            <dd>가상 데모 계정</dd>
+            <dt>{tr("account.type")}</dt>
+            <dd>{tr("fictional.demo.account")}</dd>
           </div>
         </dl>
         <div className="info-note">
-          실제 보안 인증이 아닙니다. 회원가입에 입력한 비밀번호는 브라우저
-          저장소에 보관하지 않습니다.
+          {tr(
+            "this.is.not.secure.authentication.signup.passwords.are.not.stored",
+          )}
         </div>
         <div className="actions">
           <button
@@ -793,18 +878,19 @@ function RecordsPage({ path, scope, bundle, refresh }) {
               go("/login", { replace: true });
             }}
           >
-            로그아웃
+            {tr("log.out")}
           </button>
         </div>
         <div className="reset-zone">
-          <h2>현재 계정의 데모 기록 초기화</h2>
+          <h2>{tr("reset.this.account.s.demo.records")}</h2>
           <p>
-            이 계정의 예약과 문진만 비웁니다. 다른 계정과 비로그인 문진은
-            유지됩니다.
+            {tr(
+              "only.this.account.s.appointments.and.notes.will.be.cleared.other",
+            )}
           </p>
           {confirmReset ? (
             <div role="alert">
-              <p>이 계정의 가상 기록을 모두 지울까요?</p>
+              <p>{tr("clear.all.fictional.records.for.this.account")}</p>
               <button
                 className="secondary"
                 onClick={() => {
@@ -812,13 +898,13 @@ function RecordsPage({ path, scope, bundle, refresh }) {
                   refresh();
                 }}
               >
-                기록 초기화 확인
+                {tr("confirm.record.reset")}
               </button>
               <button
                 className="text-button"
                 onClick={() => setConfirmReset(false)}
               >
-                취소
+                {tr("cancel")}
               </button>
             </div>
           ) : (
@@ -826,7 +912,7 @@ function RecordsPage({ path, scope, bundle, refresh }) {
               className="text-button"
               onClick={() => setConfirmReset(true)}
             >
-              데모 기록 초기화
+              {tr("reset.demo.records")}
             </button>
           )}
         </div>
@@ -838,55 +924,65 @@ function RecordsPage({ path, scope, bundle, refresh }) {
     content = a ? (
       <>
         <RouteLink className="back-link" to="/appointments">
-          ← 예약 현황
+          {tr("appointments.3")}
         </RouteLink>
-        <Intro eyebrow="APPOINTMENT DETAILS" title={a.hospital}>
-          {a.department} · 예약 상세
+        <Intro eyebrow={tr("eyebrow.appointmentDetails")} title={a.hospital}>
+          {a.department}
+          {tr("appointment.details")}
         </Intro>
-        <Status kind={a.status}>{appointmentLabels[a.status]}</Status>
+        <Status kind={a.status}>{tr(appointmentLabels[a.status])}</Status>
         <dl className="detail-facts">
           <div>
-            <dt>예약 일시</dt>
+            <dt>{tr("appointment.date.and.time")}</dt>
             <dd>
               {formatDate(a.startsAt)}
-              <small>한국 시간(Asia/Seoul)</small>
+              <small>{tr("korea.time.asia.seoul")}</small>
             </dd>
           </div>
           <div>
-            <dt>진료과</dt>
+            <dt>{tr("department")}</dt>
             <dd>{a.department}</dd>
           </div>
           <div>
-            <dt>담당 의료진</dt>
-            <dd>{a.clinician || "아직 정해지지 않았어요"}</dd>
+            <dt>{tr("clinician")}</dt>
+            <dd>{a.clinician || tr("not.yet.assigned")}</dd>
           </div>
         </dl>
         {appointmentGroup(a) === "past" && a.status === "scheduled" && (
           <p className="info-note">
-            예약 시간이 지났습니다. 실제 진료 완료 여부는 확인되지 않았어요.
+            {tr(
+              "the.appointment.time.has.passed.whether.the.visit.took.place.is.n",
+            )}
           </p>
         )}
         <section className="home-section">
           <div className="section-heading">
-            <h2>이 예약의 문진</h2>
+            <h2>{tr("questionnaire.for.this.appointment")}</h2>
           </div>
           {r ? (
             <>
               <IntakeRows items={[r]} appointments={appointments} />
               <p className="footnote">
-                예약 상태와 문진 전달 상태는 별도로 관리합니다.
+                {tr(
+                  "appointment.and.questionnaire.handoff.statuses.are.tracked.separa",
+                )}
               </p>
             </>
           ) : (
             <div className="inline-empty">
               <p>
                 {a.status === "cancelled"
-                  ? "취소된 예약에는 새 문진을 작성할 수 없어요."
-                  : "아직 연결된 문진이 없어요. 방문 이유부터 정리해 보세요."}
+                  ? tr(
+                      "you.cannot.start.a.questionnaire.for.a.cancelled.appointment",
+                    )
+                  : tr(
+                      "no.questionnaire.is.linked.yet.start.with.your.reason.for.visitin",
+                    )}
               </p>
               {a.status !== "cancelled" && (
                 <button className="primary" onClick={() => start(a.id)}>
-                  문진 작성<span>→</span>
+                  {tr("start.questionnaire.2")}
+                  <span>→</span>
                 </button>
               )}
             </div>
@@ -902,42 +998,48 @@ function RecordsPage({ path, scope, bundle, refresh }) {
     content = r ? (
       <>
         <RouteLink className="back-link" to="/intakes">
-          ← 내 문진
+          {tr("my.notes.2")}
         </RouteLink>
         <Intro
-          eyebrow={r.snapshot ? "SENT NOTE · READ ONLY" : "NOTE DETAILS"}
+          eyebrow={r.snapshot ? tr("eyebrow.sent") : tr("eyebrow.noteDetails")}
           title={titleOf(r)}
         >
-          최종 수정 {formatDate(r.updatedAt)}
+          {tr("last.updated")}
+          {formatDate(r.updatedAt)}
         </Intro>
-        <Status kind={r.status}>{intakeLabels[r.status]}</Status>
+        <Status kind={r.status}>{tr(intakeLabels[r.status])}</Status>
         <p className="record-appointment">
           {a ? (
             <RouteLink to={`/appointments/${a.id}`}>
-              {a.hospital} · {a.department} · 관련 예약 보기 ↗
+              {a.hospital} · {a.department}
+              {tr("view.linked.appointment")}
             </RouteLink>
           ) : (
-            "예약 미연결"
+            tr("no.linked.appointment")
           )}
         </p>
         {r.snapshot ? (
           <div className="info-note">
-            <strong>전달 당시의 기록 · 읽기 전용</strong>
+            <strong>{tr("record.at.handoff.read.only")}</strong>
             <p>
-              {formatDate(r.snapshot.sentAt)}에 전달 과정을 체험한 요약입니다.
-              실제 병원에 전송되지 않았으며 의료진 확인 정보는 없습니다.
+              {formatDate(r.snapshot.sentAt)}
+              {tr(
+                "this.is.the.summary.from.the.handoff.simulation.nothing.was.sent",
+              )}
             </p>
           </div>
         ) : (
           <div className="actions">
             <RouteLink className="primary" to={editPath(r)}>
-              {r.status === "draft" ? "이어서 작성" : "요약 검토·수정"}
+              {r.status === "draft"
+                ? tr("continue.writing")
+                : tr("review.and.edit")}
               <span>→</span>
             </RouteLink>
           </div>
         )}
         <div className="summary">
-          {(r.snapshot?.sections || summary(r.data)).map((s) => (
+          {recordSummary(r, getLocale()).map((s) => (
             <section key={s.title}>
               <h2>{s.title}</h2>
               <p>{s.text}</p>
@@ -954,11 +1056,11 @@ function RecordsPage({ path, scope, bundle, refresh }) {
       {content}
       {error && (
         <p className="error" role="alert">
-          {error}
+          {messageText(error)}
         </p>
       )}
       <div className="portal-page-bottom">
-        <span>나의 이야기가, 더 잘 전해지도록.</span>
+        <span>{tr("helping.you.share.your.story.2")}</span>
         {testControls}
       </div>
     </>
@@ -967,11 +1069,11 @@ function RecordsPage({ path, scope, bundle, refresh }) {
 function NotFound() {
   return (
     <>
-      <Intro eyebrow="NOT FOUND" title="기록을 찾을 수 없어요">
-        주소가 올바르지 않거나 이 계정에서 볼 수 없는 기록입니다.
+      <Intro eyebrow={tr("eyebrow.notFound")} title={tr("record.not.found")}>
+        {tr("the.address.is.invalid.or.this.account.cannot.access.the.record")}
       </Intro>
       <RouteLink className="secondary" to="/my">
-        마이페이지로
+        {tr("go.to.my.home")}
       </RouteLink>
     </>
   );
@@ -1058,6 +1160,7 @@ function LoginRedirect({ path }) {
   return <Loading />;
 }
 export default function Portal() {
+  useI18n();
   const route = useRoute(),
     auth = useSyncExternalStore(api.subscribe, api.getSnapshot);
   const [path, query = ""] = route.split("?");

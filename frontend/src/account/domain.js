@@ -1,3 +1,4 @@
+import { getLocale } from "../i18n/core.js";
 import { initial, summary, activeSteps } from "../model.js";
 export const ACCOUNT_KEY = "jinryo-account-demo-v1";
 export const SESSION_KEY = "jinryo-session-demo-v1";
@@ -9,14 +10,14 @@ export const demoUsers = [
   { id: "patient-empty", name: "데모 새봄", email: "empty@example.test" },
 ];
 export const intakeLabels = {
-  draft: "작성 중",
-  completed: "작성 완료",
-  sent: "전달 완료(데모)",
+  draft: "in.progress",
+  completed: "completed",
+  sent: "status.sentDemo",
 };
 export const appointmentLabels = {
-  scheduled: "예약 확정",
-  completed: "진료 완료(데모)",
-  cancelled: "취소됨",
+  scheduled: "confirmed",
+  completed: "status.visitCompleted",
+  cancelled: "status.cancelled",
 };
 export function safeReturn(value) {
   return typeof value === "string" &&
@@ -42,7 +43,7 @@ export function sortAppointments(items, category, now = Date.now()) {
     );
 }
 export function formatDate(value) {
-  return new Intl.DateTimeFormat("ko-KR", {
+  return new Intl.DateTimeFormat(getLocale() === "ko" ? "ko-KR" : "en-GB", {
     timeZone: TIME_ZONE,
     year: "numeric",
     month: "long",
@@ -174,7 +175,11 @@ export function seedDatabase(now = Date.now()) {
       step: "done",
       status: "sent",
       updatedAt: at(-15),
-      snapshot: { sections: summary(sent), sentAt: at(-15) },
+      snapshot: {
+        sections: summary(sent),
+        data: structuredClone(sent),
+        sentAt: at(-15),
+      },
     },
     {
       id: "intake-b-draft",
@@ -187,4 +192,25 @@ export function seedDatabase(now = Date.now()) {
     },
   ];
   return { version: 1, appointments, intakes };
+}
+
+// Language is a presentation choice; never rewrite a handed-off record.
+export function recordSummary(record, locale) {
+  if (!record.snapshot) return summary(record.data, locale);
+  if (record.snapshot.data) return summary(record.snapshot.data, locale);
+  // Older snapshots stored text only. Re-render only when the retained answers
+  // demonstrably reproduce that exact snapshot; otherwise preserve its text.
+  if (
+    JSON.stringify(summary(record.data, "ko")) ===
+    JSON.stringify(record.snapshot.sections)
+  )
+    return summary(record.data, locale);
+  const original = summary(initial(), "ko");
+  const localized = summary(initial(), locale);
+  return record.snapshot.sections.map((section) => ({
+    ...section,
+    title:
+      localized[original.findIndex((s) => s.title === section.title)]?.title ||
+      section.title,
+  }));
 }

@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("visit-notes-language", "ko"),
+  );
+});
 const goNext = (page) => page.getByRole("button", { name: /^계속/ }).click();
 async function start(page) {
   await page.goto("/");
@@ -16,7 +21,7 @@ async function fillFlow(page) {
     await Promise.all(document.getAnimations().map((a) => a.finished));
   });
   await page.screenshot({
-    path: `../docs/screenshots/${page.viewportSize().width}-question.png`,
+    path: `test-results/screenshots/${page.viewportSize().width}-question.png`,
     fullPage: true,
   });
   await page.getByRole("radio", { name: "반복돼요", exact: true }).check();
@@ -67,7 +72,7 @@ for (const width of [360, 1440])
       await Promise.all(document.getAnimations().map((a) => a.finished));
     });
     await page.screenshot({
-      path: `../docs/screenshots/${width}-start.png`,
+      path: `test-results/screenshots/${width}-start.png`,
       fullPage: true,
     });
     await fillFlow(page);
@@ -110,7 +115,7 @@ for (const width of [360, 1440])
       await Promise.all(document.getAnimations().map((a) => a.finished));
     });
     await page.screenshot({
-      path: `../docs/screenshots/${width}-review.png`,
+      path: `test-results/screenshots/${width}-review.png`,
       fullPage: true,
     });
     const accessibility = await new AxeBuilder({ page })
@@ -137,7 +142,7 @@ for (const width of [360, 1440])
       await Promise.all(document.getAnimations().map((a) => a.finished));
     });
     await page.screenshot({
-      path: `../docs/screenshots/${width}-done.png`,
+      path: `test-results/screenshots/${width}-done.png`,
       fullPage: true,
     });
     const download = page.waitForEvent("download");
@@ -168,7 +173,7 @@ test("keyboard errors, browser history, storage, long input and stale responses"
     await Promise.all(document.getAnimations().map((a) => a.finished));
   });
   await page.screenshot({
-    path: "../docs/screenshots/360-reason.png",
+    path: "test-results/screenshots/360-reason.png",
     fullPage: true,
   });
   await goNext(page);

@@ -13,7 +13,7 @@ export function createMockService(delay = 650) {
       await new Promise((resolve) => setTimeout(resolve, delay));
       if (fail)
         throw new Error(
-          "데모 응답을 받지 못했어요. 입력은 그대로 보관되어 있습니다. 다시 시도해 주세요.",
+          "the.demo.response.failed.your.answers.are.still.here.please.try.a",
         );
       return { revision: snapshot.revision, sections: summary(snapshot), kind };
     },

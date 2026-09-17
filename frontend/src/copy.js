@@ -1,72 +1,169 @@
-export const ko = {
-  brand: "진료노트",
-  tagline: "진료 전, 내 이야기 정리",
-  stages: ["방문 이유", "증상 알아보기", "관련 정보", "요약 확인"],
-  start: "문진 시작",
-  next: "계속",
-  back: "이전",
-  editReturn: "수정하고 요약으로",
+import { translate } from "./i18n/core.js";
+
+// Choice values are unchanged for compatibility with saved questionnaires.
+// Only their labels are translated; free text never passes through this mapping.
+const definition = {
+  brand: "visit.notes",
+  tagline: "your.story.ready.for.your.visit",
+  stages: [
+    "reason.for.visit",
+    "your.symptoms",
+    "related.information",
+    "review.summary",
+  ],
+  start: "start.questionnaire",
+  next: "continue",
+  back: "back",
+  editReturn: "save.and.return.to.summary",
   fields: {
     onset: {
-      title: "언제부터 불편하셨나요?",
-      subtitle: "가장 먼저 이야기하고 싶은 증상을 기준으로 답해 주세요.",
-      label: "증상이 시작된 시점",
-      options: ["오늘부터", "며칠 전부터", "일주일 이상", "한 달 이상"],
-      help: "증상이 시작된 때를 정리하면 진료에서 경과를 설명하기 쉬워집니다.",
+      title: "when.did.your.symptoms.start",
+      subtitle: "think.about.the.symptom.you.want.to.discuss.first",
+      label: "when.symptoms.started",
+      options: [
+        {
+          value: "오늘부터",
+          labelKey: "today",
+        },
+        {
+          value: "며칠 전부터",
+          labelKey: "a.few.days.ago",
+        },
+        {
+          value: "일주일 이상",
+          labelKey: "at.least.a.week.ago",
+        },
+        {
+          value: "한 달 이상",
+          labelKey: "at.least.a.month.ago",
+        },
+      ],
+      help: "noting.when.symptoms.started.can.help.you.explain.how.they.have.c",
     },
     course: {
-      title: "증상이 어떻게 변하고 있나요?",
-      subtitle: "처음 시작됐을 때와 비교해 주세요.",
-      label: "증상의 경과",
-      options: ["비슷해요", "나아지고 있어요", "더 불편해졌어요", "반복돼요"],
-      help: "선택한 답변에 따라 반복 빈도를 추가로 물어봅니다. 데모 화면 분기이며 의료 판단이 아닙니다.",
+      title: "how.have.your.symptoms.changed",
+      subtitle: "compare.how.you.feel.now.with.when.they.started",
+      label: "how.symptoms.have.changed",
+      options: [
+        {
+          value: "비슷해요",
+          labelKey: "about.the.same",
+        },
+        {
+          value: "나아지고 있어요",
+          labelKey: "getting.better",
+        },
+        {
+          value: "더 불편해졌어요",
+          labelKey: "getting.worse",
+        },
+        {
+          value: "반복돼요",
+          labelKey: "they.come.and.go",
+        },
+      ],
+      help: "if.symptoms.come.and.go.we.ask.about.frequency.this.is.a.demo.que",
     },
     frequency: {
-      title: "얼마나 자주 반복되나요?",
-      subtitle: "앞에서 ‘반복돼요’를 선택해 추가된 질문이에요.",
-      label: "증상이 반복되는 빈도",
+      title: "how.often.do.they.come.and.go",
+      subtitle: "this.question.appears.because.you.selected.they.come.and.go",
+      label: "how.often.symptoms.occur",
       options: [
-        "하루에 여러 번",
-        "하루에 한 번 정도",
-        "며칠에 한 번",
-        "일정하지 않아요",
+        {
+          value: "하루에 여러 번",
+          labelKey: "several.times.a.day",
+        },
+        {
+          value: "하루에 한 번 정도",
+          labelKey: "about.once.a.day",
+        },
+        {
+          value: "며칠에 한 번",
+          labelKey: "every.few.days",
+        },
+        {
+          value: "일정하지 않아요",
+          labelKey: "no.regular.pattern",
+        },
       ],
-      help: "반복되는 양상을 본인의 말로 정리하기 위한 질문입니다.",
+      help: "this.helps.you.describe.the.pattern.in.your.own.words",
     },
     severity: {
-      title: "얼마나 불편하신가요?",
-      subtitle: "지금 느끼는 불편함에 가까운 것을 골라 주세요.",
-      label: "현재 불편 정도",
-      options: ["가벼워요", "보통이에요", "많이 불편해요"],
-      help: "본인이 느끼는 정도를 기록합니다. 진단이나 긴급도 판단에 사용하지 않습니다.",
+      title: "how.uncomfortable.do.you.feel",
+      subtitle: "choose.the.answer.closest.to.how.you.feel.now",
+      label: "current.discomfort",
+      options: [
+        {
+          value: "가벼워요",
+          labelKey: "mild",
+        },
+        {
+          value: "보통이에요",
+          labelKey: "moderate",
+        },
+        {
+          value: "많이 불편해요",
+          labelKey: "very.uncomfortable",
+        },
+      ],
+      help: "this.records.how.you.feel.it.is.not.used.for.diagnosis.or.to.asse",
     },
     impact: {
-      title: "일상에서 어떤 점이 어려운가요?",
-      subtitle: "수면, 식사, 일이나 움직임에 미치는 영향을 알려 주세요.",
-      label: "일상에 미치는 영향",
+      title: "how.is.this.affecting.daily.life",
+      subtitle: "tell.us.how.it.affects.sleep.eating.work.or.movement",
+      label: "impact.on.daily.life",
       options: [
-        "수면이 어려워요",
-        "일·공부에 집중하기 어려워요",
-        "움직이기 불편해요",
+        {
+          value: "수면이 어려워요",
+          labelKey: "difficulty.sleeping",
+        },
+        {
+          value: "일·공부에 집중하기 어려워요",
+          labelKey: "difficulty.concentrating.on.work.or.study",
+        },
+        {
+          value: "움직이기 불편해요",
+          labelKey: "difficulty.moving.around",
+        },
       ],
       none: true,
-      help: "진료에서 이야기하고 싶은 생활 속 어려움을 정리합니다.",
+      help: "note.the.everyday.difficulties.you.would.like.to.discuss.at.your",
     },
     history: {
-      title: "관련해서 알리고 싶은 병력이 있나요?",
-      subtitle: "진단받은 질환이나 수술·치료 경험을 적어 주세요.",
-      label: "관련 병력",
-      placeholder: "예: 3년 전부터 고혈압으로 치료 중이에요.",
+      title: "is.there.any.medical.history.you.want.to.share",
+      subtitle: "include.diagnosed.conditions.operations.or.treatments",
+      label: "medical.history",
+      placeholder:
+        "for.example.i.have.been.treated.for.high.blood.pressure.for.three",
       none: true,
-      help: "이번 방문에서 의료진과 이야기하고 싶은 병력만 적어도 됩니다.",
+      help: "you.only.need.to.include.the.history.you.want.to.discuss.at.this",
     },
     questions: {
-      title: "의사에게 무엇을 묻고 싶으신가요?",
-      subtitle: "걱정되는 점이나 진료 중 잊지 않고 물어볼 내용을 적어 주세요.",
-      label: "걱정되는 점·질문",
-      placeholder: "예: 일상생활에서 주의해야 할 점이 있나요?",
+      title: "what.would.you.like.to.ask.the.doctor",
+      subtitle: "note.any.concerns.or.questions.you.do.not.want.to.forget",
+      label: "concerns.and.questions",
+      placeholder:
+        "for.example.is.there.anything.i.should.be.careful.about.in.daily",
       none: true,
-      help: "진료에서 다루고 싶은 질문을 본인의 말로 기록합니다.",
+      help: "record.the.questions.you.want.to.discuss.in.your.own.words",
     },
   },
 };
+function localize(value, locale) {
+  if (Array.isArray(value)) return value.map((v) => localize(v, locale));
+  if (value && typeof value === "object") {
+    if (value.labelKey)
+      return { value: value.value, label: translate(locale, value.labelKey) };
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, localize(v, locale)]),
+    );
+  }
+  return typeof value === "string" ? translate(locale, value) : value;
+}
+export const getCopy = (locale) => localize(definition, locale);
+export function optionLabel(value, locale) {
+  const option = Object.values(definition.fields)
+    .flatMap((f) => f.options || [])
+    .find((o) => o.value === value);
+  return option ? translate(locale, option.labelKey) : value;
+}

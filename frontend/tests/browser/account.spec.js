@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 test.setTimeout(60000);
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("visit-notes-language", "ko"),
+  );
+});
 async function login(page, name = "데모 가람") {
   await page.getByRole("button", { name: new RegExp(name) }).click();
   await page.getByRole("button", { name: "로그인", exact: true }).click();
@@ -23,7 +28,7 @@ async function shot(page, name) {
     await Promise.all(document.getAnimations().map((a) => a.finished));
   });
   await page.screenshot({
-    path: `../docs/screenshots/account-${name}.png`,
+    path: `test-results/screenshots/account-${name}.png`,
     fullPage: true,
   });
   expect(

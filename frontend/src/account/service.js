@@ -67,7 +67,7 @@ export function createAccountService({
   }
   function assertScope(scope) {
     if (state.status === "authenticated" && state.expiresAt <= now())
-      clearSession("세션이 만료되었어요. 다시 로그인해 주세요.");
+      clearSession("your.session.has.expired.please.log.in.again");
     if (
       state.status !== "authenticated" ||
       scope?.epoch !== state.epoch ||
@@ -75,7 +75,7 @@ export function createAccountService({
     )
       throw fault(
         "SESSION_EXPIRED",
-        "세션이 만료되었어요. 다시 로그인해 주세요.",
+        "your.session.has.expired.please.log.in.again",
       );
   }
   async function wait(scope, canFail = true) {
@@ -86,10 +86,7 @@ export function createAccountService({
     await new Promise((r) => setTimeout(r, ms));
     if (scope) assertScope(scope);
     if (shouldFail)
-      throw fault(
-        "LOAD_FAILED",
-        "데모 요청을 처리하지 못했어요. 다시 시도해 주세요.",
-      );
+      throw fault("LOAD_FAILED", "the.demo.request.failed.please.try.again");
   }
   async function verifier(password, salt) {
     const bytes = new TextEncoder().encode(salt + password);
@@ -108,7 +105,8 @@ export function createAccountService({
       return state;
     },
     scope() {
-      if (!state.user) throw fault("SESSION_EXPIRED", "로그인이 필요합니다.");
+      if (!state.user)
+        throw fault("SESSION_EXPIRED", "please.log.in.to.continue");
       return { userId: state.user.id, epoch: state.epoch };
     },
     async restore() {
@@ -133,14 +131,14 @@ export function createAccountService({
         emit();
       } else
         clearSession(
-          session ? "세션이 만료되었어요. 다시 로그인해 주세요." : "",
+          session ? "your.session.has.expired.please.log.in.again" : "",
         );
     },
     async login(email, password, signal) {
       const epoch = state.epoch;
       await wait();
       if (state.epoch !== epoch || signal?.aborted)
-        throw fault("STALE", "로그인 요청이 취소되었습니다.");
+        throw fault("STALE", "login.request.cancelled");
       const user = users().find((u) => u.email === email.trim().toLowerCase());
       let valid = false;
       if (user) {
@@ -150,10 +148,9 @@ export function createAccountService({
           : demoUsers.some((u) => u.id === user.id) &&
             password === DEMO_PASSWORD;
       }
-      if (!valid)
-        throw fault("LOGIN_FAILED", "이메일 또는 비밀번호를 확인해 주세요.");
+      if (!valid) throw fault("LOGIN_FAILED", "check.your.email.and.password");
       if (state.epoch !== epoch || signal?.aborted)
-        throw fault("STALE", "로그인 요청이 취소되었습니다.");
+        throw fault("STALE", "login.request.cancelled");
       state = {
         status: "authenticated",
         user: clone(user),
@@ -174,12 +171,12 @@ export function createAccountService({
     },
     async signup({ name, email, password }, signal) {
       await wait();
-      if (signal?.aborted) throw fault("STALE", "가입 요청이 취소되었습니다.");
+      if (signal?.aborted) throw fault("STALE", "signup.request.cancelled");
       email = email.trim().toLowerCase();
       if (users().some((u) => u.email === email))
         throw fault(
           "EMAIL_EXISTS",
-          "이미 사용 중인 데모 이메일입니다. 다른 이메일을 입력해 주세요.",
+          "this.demo.email.is.already.in.use.please.enter.another.address",
         );
       if (
         !name.trim() ||
@@ -188,14 +185,14 @@ export function createAccountService({
       )
         throw fault(
           "INVALID",
-          "이름·이메일과 데모 비밀번호 조건을 확인해 주세요.",
+          "check.your.name.email.and.the.demo.password.requirements",
         );
       const id = crypto.randomUUID(),
         salt = crypto.randomUUID();
       const hash = await verifier(password, salt);
       if (users().some((u) => u.email === email))
-        throw fault("EMAIL_EXISTS", "이미 사용 중인 데모 이메일입니다.");
-      if (signal?.aborted) throw fault("STALE", "가입 요청이 취소되었습니다.");
+        throw fault("EMAIL_EXISTS", "this.demo.email.is.already.in.use");
+      if (signal?.aborted) throw fault("STALE", "signup.request.cancelled");
       registered.set(id, { id, name: name.trim(), email });
       credentials.set(id, { salt, hash });
       return { id, name: name.trim(), email };
@@ -205,7 +202,7 @@ export function createAccountService({
       memoryDb = null;
     },
     expire() {
-      clearSession("세션이 만료되었어요. 다시 로그인해 주세요.");
+      clearSession("your.session.has.expired.please.log.in.again");
       memoryDb = null;
     },
     failOnce() {
@@ -229,7 +226,7 @@ export function createAccountService({
         const appointment = db.appointments.find(
           (a) => a.id === appointmentId && a.userId === scope.userId,
         );
-        if (!appointment) throw fault("NOT_FOUND", "예약을 찾을 수 없어요.");
+        if (!appointment) throw fault("NOT_FOUND", "appointment.not.found");
         const existing = db.intakes.find(
           (i) => i.userId === scope.userId && i.appointmentId === appointmentId,
         );
@@ -237,7 +234,7 @@ export function createAccountService({
         if (appointment.status === "cancelled")
           throw fault(
             "CANCELLED",
-            "취소된 예약에는 새 문진을 작성할 수 없어요.",
+            "you.cannot.start.a.questionnaire.for.a.cancelled.appointment",
           );
       }
       const record = {
@@ -259,7 +256,7 @@ export function createAccountService({
       const index = db.intakes.findIndex(
         (i) => i.id === id && i.userId === scope.userId,
       );
-      if (index < 0) throw fault("NOT_FOUND", "문진을 찾을 수 없어요.");
+      if (index < 0) throw fault("NOT_FOUND", "questionnaire.not.found");
       const old = db.intakes[index];
       if (old.snapshot) return { record: clone(old), saved: true };
       if (
@@ -269,7 +266,7 @@ export function createAccountService({
       )
         throw fault(
           "REVIEW_REQUIRED",
-          "문진을 확인하고 요약을 다시 승인해 주세요.",
+          "please.review.your.questionnaire.and.confirm.the.summary.again",
         );
       if (
         JSON.stringify(old.data) === JSON.stringify(data) &&
@@ -284,7 +281,11 @@ export function createAccountService({
         updatedAt: new Date(now()).toISOString(),
       };
       if (data.sent)
-        record.snapshot = { sections: summary(data), sentAt: record.updatedAt };
+        record.snapshot = {
+          sections: summary(data),
+          data: clone(data),
+          sentAt: record.updatedAt,
+        };
       db.intakes[index] = record;
       const saved = persist(db);
       return { record: clone(record), saved };
@@ -292,7 +293,7 @@ export function createAccountService({
     importGuest(scope, data, step) {
       assertScope(scope);
       if (!data?.reasons?.some((s) => s.trim()))
-        throw fault("EMPTY", "가져올 방문 이유가 없어요.");
+        throw fault("EMPTY", "there.is.no.reason.for.visit.to.import");
       const db = database();
       const existing = db.intakes.find(
         (i) =>
@@ -310,7 +311,11 @@ export function createAccountService({
         importedGuest: JSON.stringify(data),
       };
       if (data.sent)
-        record.snapshot = { sections: summary(data), sentAt: record.updatedAt };
+        record.snapshot = {
+          sections: summary(data),
+          data: clone(data),
+          sentAt: record.updatedAt,
+        };
       db.intakes.unshift(record);
       persist(db);
       return clone(record);

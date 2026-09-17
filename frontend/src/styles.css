@@ -978,3 +978,136 @@ legend,
     font-size: 12px;
   }
 }
+
+/* Shared language control: stays mounted while labels and page content change. */
+.header {
+  min-height: 96px;
+  height: auto;
+  gap: 16px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.header-tools,
+.portal-header-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.language-control {
+  position: relative;
+  flex-shrink: 0;
+}
+.language-control select {
+  font: inherit;
+  font-size: 14px;
+  min-height: 44px;
+  min-width: 112px;
+  max-width: 100%;
+  padding: 8px 28px 8px 12px;
+  border: 1px solid #bbc8bf;
+  border-radius: 6px;
+  color: #245c49;
+  background: #fff;
+  cursor: pointer;
+}
+.language-warning {
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: min(260px, 78vw);
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #bbc8bf;
+  padding: 12px;
+  font-size: 12px;
+}
+.primary,
+.secondary {
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.primary > span,
+.secondary > span {
+  flex-shrink: 0;
+}
+.brand {
+  flex-shrink: 0;
+}
+html[lang="en"] h1 {
+  letter-spacing: -0.8px;
+  line-height: 1.25;
+}
+@media (max-width: 650px) {
+  .header {
+    flex-wrap: wrap;
+    padding: 14px 22px;
+    gap: 10px;
+  }
+  .portal .header {
+    padding: 14px 18px;
+  }
+  .header .brand {
+    font-size: 20px;
+    gap: 8px;
+  }
+  .header .brand-symbol {
+    font-size: 28px;
+  }
+  .header-tools,
+  .portal-header-end {
+    margin-left: auto;
+    gap: 10px;
+  }
+  .header-tools .demo-badge,
+  .portal-header-end .demo-badge {
+    font-size: 10px;
+  }
+  .portal .portal-header-end {
+    flex: 1 0 100%;
+    justify-content: flex-end;
+  }
+  .portal-nav nav {
+    flex-wrap: wrap;
+  }
+  .portal-nav nav a {
+    flex: 1 1 20%;
+    justify-content: center;
+    text-align: center;
+  }
+  .portal .filter-tabs {
+    gap: 12px;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  .portal .filter-tabs button {
+    white-space: normal;
+    flex: 1;
+  }
+  .portal .account-status {
+    white-space: normal;
+  }
+  .portal-title-row .secondary {
+    white-space: normal;
+  }
+  .section-heading {
+    flex-wrap: wrap;
+  }
+  .auth-panel .password-field input {
+    padding-right: 76px;
+  }
+  .bottom {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 650px) {
+  .account-intake-bar {
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+}

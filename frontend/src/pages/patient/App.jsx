@@ -1,3 +1,5 @@
+import { tr, message, messageText } from "../../i18n/core.js";
+import { useI18n, LanguageSelect } from "../../i18n/react.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   KEY,
@@ -9,7 +11,7 @@ import {
   describe,
   completedStages,
 } from "../../model.js";
-import { ko as t } from "../../copy.js";
+import { getCopy } from "../../copy.js";
 import { go, RouteLink } from "../../account/router.jsx";
 import { mock, extractExplicitOnset } from "../../api/mock.js";
 const group = (s) =>
@@ -46,6 +48,8 @@ function Choice({ name, value, selected, onChange, children }) {
   );
 }
 export default function App({ account = null, onAccountSave }) {
+  const locale = useI18n();
+  const t = getCopy(locale);
   const [data, setData] = useState(() =>
       account ? structuredClone(account.record.data) : restore(),
     ),
@@ -104,9 +108,12 @@ export default function App({ account = null, onAccountSave }) {
   useEffect(() => {
     heading.current?.focus();
     window.scrollTo(0, 0);
-    document.title = `${step === "start" ? "시작 안내" : t.stages[group(step)]} · ${t.brand}`;
+
     setNotice("");
   }, [step]);
+  useEffect(() => {
+    document.title = `${step === "start" ? tr("before.you.start") : t.stages[group(step)]} · ${t.brand}`;
+  }, [step, locale]);
   useEffect(() => {
     try {
       if (account) {
@@ -128,8 +135,8 @@ export default function App({ account = null, onAccountSave }) {
     setData((d) => change(d, key, value));
   };
   const edit = (s) => navigate(s, true);
-  const answer = (status, value = "") =>
-    update(step, { ...data[step], status, value });
+  const answer = (status, value = "", option = null) =>
+    update(step, { ...data[step], status, value, option });
   const fail = (message) => {
     setError(message);
     requestAnimationFrame(() =>
@@ -172,7 +179,9 @@ export default function App({ account = null, onAccountSave }) {
       (!data.reasons[0]?.trim() || data.reasons.some((x) => !x.trim()))
     )
       return fail(
-        "방문 이유를 적어 주세요. 비어 있는 추가 항목은 삭제할 수 있어요.",
+        message(
+          "enter.a.reason.for.your.visit.you.can.remove.any.empty.additional",
+        ),
       );
     if (
       data[step]?.status === "answered" &&
@@ -180,14 +189,16 @@ export default function App({ account = null, onAccountSave }) {
       !data[step].value.trim()
     )
       return fail(
-        "직접 설명을 적거나 아래에서 모름·답변 원하지 않음을 선택해 주세요.",
+        message(
+          "write.your.answer.or.choose.not.sure.or.prefer.not.to.answer.belo",
+        ),
       );
     if (
       ["medicines", "allergies"].includes(step) &&
       data[step].status === "answered" &&
       !data[step].items.length
     )
-      return fail("항목을 추가하거나 없음·모름을 선택해 주세요.");
+      return fail(message("add.an.item.or.choose.none.or.not.sure"));
     let draft = data;
     if (draft[step]?.status === "unasked")
       draft = change(draft, step, { ...draft[step], status: "unanswered" });
@@ -226,8 +237,8 @@ export default function App({ account = null, onAccountSave }) {
 
   function download() {
     const text =
-      "진료노트 — 데모 문진 요약\n실제 병원에 전송되지 않았습니다.\n\n" +
-      summary(data)
+      tr("visit.notes.demo.summary.this.has.not.been.sent.to.a.hospital") +
+      summary(data, locale)
         .map((s) => s.title + "\n" + s.text)
         .join("\n\n");
     const url = URL.createObjectURL(
@@ -235,10 +246,10 @@ export default function App({ account = null, onAccountSave }) {
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "진료노트-데모-요약.txt";
+    a.download = tr("visit.notes.demo.summary.txt");
     a.click();
     URL.revokeObjectURL(url);
-    setNotice("요약 텍스트를 다운로드했습니다.");
+    setNotice(message("summary.text.downloaded"));
   }
   const incomplete = activeSteps(data).filter(
     (k) => data[k]?.status === "unasked",
@@ -249,23 +260,23 @@ export default function App({ account = null, onAccountSave }) {
     a = data[step];
   const title =
     step === "start"
-      ? "진료 전에,\n차근차근 정리해요."
+      ? tr("before.your.visit.put.your.story.into.words")
       : step === "reason"
-        ? "어떤 이유로 방문하시나요?"
+        ? tr("what.brings.you.in")
         : field?.title ||
           (step === "medicines"
-            ? "현재 복용하는 약이 있나요?"
+            ? tr("are.you.taking.any.medicines")
             : step === "allergies"
-              ? "알고 있는 알레르기가 있나요?"
+              ? tr("do.you.have.any.known.allergies")
               : step === "review"
-                ? "진료 전에 한 번 확인해 주세요."
-                : "전달 시뮬레이션 완료");
+                ? tr("review.your.notes.before.your.visit")
+                : tr("handoff.simulation.complete"));
   const modes = (none = false) => (
     <div className="alternatives">
       {[
-        ...(none ? [["none", "없음"]] : []),
-        ["unknown", "모름"],
-        ["declined", "답변 원하지 않음"],
+        ...(none ? [["none", tr("none")]] : []),
+        ["unknown", tr("not.sure")],
+        ["declined", tr("prefer.not.to.answer")],
       ].map(([v, l]) => (
         <button
           type="button"
@@ -286,7 +297,9 @@ export default function App({ account = null, onAccountSave }) {
         aria-describedby={error ? "form-error" : undefined}
       >
         <legend>
-          {step === "medicines" ? "복용약 유무" : "알레르기 유무"}
+          {step === "medicines"
+            ? tr("do.you.take.any.medicines")
+            : tr("do.you.have.any.allergies")}
         </legend>
         <Choice
           name={step}
@@ -300,7 +313,7 @@ export default function App({ account = null, onAccountSave }) {
             })
           }
         >
-          있어요 · 직접 입력
+          {tr("yes.enter.details")}
         </Choice>
         {modes(true)}
       </fieldset>
@@ -310,24 +323,25 @@ export default function App({ account = null, onAccountSave }) {
             <div className="item" key={i}>
               <div className="row">
                 <h3>
-                  {step === "medicines" ? "복용약" : "알레르기"} {i + 1}
+                  {step === "medicines" ? tr("medicines") : tr("allergies")}{" "}
+                  {i + 1}
                 </h3>
                 <button
                   type="button"
                   className="text-button"
-                  aria-label={`${i + 1}번 항목 삭제`}
+                  aria-label={tr("remove.item.value", { p0: i + 1 })}
                   onClick={() => {
                     update(step, {
                       ...a,
                       items: a.items.filter((_, j) => i !== j),
                     });
-                    setNotice("항목을 삭제했습니다.");
+                    setNotice(message("item.removed"));
                     requestAnimationFrame(() =>
                       document.querySelector(".items .add")?.focus(),
                     );
                   }}
                 >
-                  삭제
+                  {tr("remove")}
                 </button>
               </div>
               {["name", "detail"].map((k) => (
@@ -335,12 +349,12 @@ export default function App({ account = null, onAccountSave }) {
                   <label htmlFor={`${step}-${i}-${k}`}>
                     {k === "name"
                       ? step === "medicines"
-                        ? "약 이름"
-                        : "알레르기 원인"
+                        ? tr("medicine.name")
+                        : tr("allergy.trigger")
                       : step === "medicines"
-                        ? "용량·복용 방법"
-                        : "경험한 반응"}{" "}
-                    <span className="muted">(모르면 비워 두세요)</span>
+                        ? tr("dose.and.how.you.take.it")
+                        : tr("reaction.experienced")}{" "}
+                    <span className="muted">{tr("leave.blank.if.unsure")}</span>
                   </label>
                   <input
                     id={`${step}-${i}-${k}`}
@@ -367,7 +381,7 @@ export default function App({ account = null, onAccountSave }) {
                 ...a,
                 items: [...a.items, { name: "", detail: "" }],
               });
-              setNotice("새 항목이 추가되었습니다.");
+              setNotice(message("new.item.added"));
               requestAnimationFrame(() =>
                 document
                   .getElementById(`${step}-${a.items.length}-name`)
@@ -375,7 +389,9 @@ export default function App({ account = null, onAccountSave }) {
               );
             }}
           >
-            ＋ {step === "medicines" ? "복용약" : "알레르기"} 추가
+            {tr("add.item", {
+              item: step === "medicines" ? tr("medicines") : tr("allergies"),
+            })}
           </button>
         </div>
       )}
@@ -383,7 +399,7 @@ export default function App({ account = null, onAccountSave }) {
   );
   const errors = error && (
     <p role="alert" id="form-error" className="error">
-      {error}
+      {messageText(error)}
     </p>
   );
   return (
@@ -396,7 +412,7 @@ export default function App({ account = null, onAccountSave }) {
           heading.current?.focus();
         }}
       >
-        본문으로 이동
+        {tr("skip.to.content")}
       </a>
       <header className="header">
         <a
@@ -413,15 +429,21 @@ export default function App({ account = null, onAccountSave }) {
           {t.brand}
           <span className="brand-sub">{t.tagline}</span>
         </a>
-        <span className="demo-badge">
-          <span />
-          체험용 데모
-        </span>
+        <div className="header-tools">
+          <span className="demo-badge">
+            <span />
+            {tr("demo")}
+          </span>
+          <LanguageSelect />
+        </div>
       </header>
       <div className="account-intake-bar">
         {account ? (
           <>
-            <span>{account.user.name} · 계정 문진 작성 중</span>
+            <span>
+              {account.user.name}
+              {tr("writing.an.account.note")}
+            </span>
             <button
               className="text-button"
               onClick={() => {
@@ -429,20 +451,20 @@ export default function App({ account = null, onAccountSave }) {
                 go("/intakes");
               }}
             >
-              저장하고 내 문진으로 →
+              {tr("save.and.go.to.my.notes")}
             </button>
           </>
         ) : (
           <>
-            <span>계정 없이 문진을 체험하고 있어요</span>
-            <RouteLink to="/login">로그인 · 내 진료노트 →</RouteLink>
+            <span>{tr("you.are.trying.the.questionnaire.as.a.guest")}</span>
+            <RouteLink to="/login">{tr("log.in.my.visit.notes")}</RouteLink>
           </>
         )}
       </div>
       <div className="app-layout">
         <aside className="navigation">
-          <div className="nav-caption">나의 진료 준비</div>
-          <ol aria-label="문진 단계">
+          <div className="nav-caption">{tr("preparing.for.my.visit")}</div>
+          <ol aria-label={tr("questionnaire.stages")}>
             {t.stages.map((label, i) => (
               <li
                 key={label}
@@ -458,9 +480,9 @@ export default function App({ account = null, onAccountSave }) {
                   {label}
                   <small>
                     {step !== "start" && step !== "done" && current === i
-                      ? "작성 중"
+                      ? tr("in.progress")
                       : completed.includes(i)
-                        ? "작성 완료"
+                        ? tr("completed")
                         : ""}
                   </small>
                 </span>
@@ -470,10 +492,11 @@ export default function App({ account = null, onAccountSave }) {
           <div className="nav-note">
             <span aria-hidden="true">♧</span>
             <p>
-              내 속도에 맞춰 작성하세요.
+              {tr("take.your.time")}
               <br />
-              이전 답변은 언제든
-              <br className="desktop" /> 수정할 수 있어요.
+              {tr("you.can.change.previous.answers")}
+              <br className="desktop" />
+              {tr("at.any.time")}
             </p>
           </div>
         </aside>
@@ -481,24 +504,26 @@ export default function App({ account = null, onAccountSave }) {
           <div className="topline">
             <span>
               {step === "start"
-                ? "시작 안내"
+                ? tr("before.you.start")
                 : step === "done"
-                  ? "작성 완료"
+                  ? tr("completed")
                   : `${String(current + 1).padStart(2, "0")} / ${t.stages[current]}`}
             </span>
             <span className="save-state">
-              {storageError ? "이 탭에 저장할 수 없음" : "✓ 이 탭에 임시 저장"}
+              {storageError
+                ? tr("unable.to.save.in.this.tab")
+                : tr("saved.in.this.tab")}
             </span>
           </div>
           <div className="page-content" key={step}>
             <div className="eyebrow">
               {step === "start"
-                ? "PRE-VISIT NOTE"
+                ? tr("eyebrow.start")
                 : step === "done"
-                  ? "READY FOR YOUR VISIT"
+                  ? tr("eyebrow.done")
                   : editing
-                    ? "답변 수정"
-                    : "MY VISIT NOTE"}
+                    ? tr("edit.answer")
+                    : tr("eyebrow.writing")}
             </div>
             <h1 ref={heading} tabIndex={-1}>
               {title}
@@ -506,39 +531,45 @@ export default function App({ account = null, onAccountSave }) {
             {step === "start" ? (
               <>
                 <p className="lead">
-                  증상부터 궁금한 점까지.
+                  {tr("from.symptoms.to.questions")}
                   <br />
-                  진료 중 나누고 싶은 이야기를 미리 적어 보세요.
+                  {tr("write.down.what.you.want.to.discuss.at.your.visit")}
                 </p>
                 <div className="intro-list">
                   <div>
                     <span>01</span>
                     <p>
-                      <strong>내 이야기를 적어요</strong>
-                      <small>짧은 질문에 선택하거나 직접 답해 주세요.</small>
+                      <strong>{tr("tell.your.story")}</strong>
+                      <small>
+                        {tr("choose.an.option.or.write.a.short.answer")}
+                      </small>
                     </p>
                   </div>
                   <div>
                     <span>02</span>
                     <p>
-                      <strong>요약을 확인하고 고쳐요</strong>
-                      <small>작성한 내용을 한눈에 살펴볼 수 있어요.</small>
+                      <strong>{tr("review.and.edit.your.summary")}</strong>
+                      <small>
+                        {tr("see.everything.you.have.shared.in.one.place")}
+                      </small>
                     </p>
                   </div>
                   <div>
                     <span>03</span>
                     <p>
-                      <strong>전달 과정을 체험해요</strong>
-                      <small>실제 의료진이나 병원에는 전송되지 않아요.</small>
+                      <strong>{tr("try.the.handoff.simulation")}</strong>
+                      <small>
+                        {tr("nothing.is.sent.to.a.real.clinician.or.hospital")}
+                      </small>
                     </p>
                   </div>
                 </div>
                 <div className="info-note">
-                  <strong>가상 정보로만 체험해 주세요</strong>
+                  <strong>{tr("use.fictional.information.only")}</strong>
                   <p>
-                    이 버전에서는 이 탭을 사용하는 사람만 내용을 볼 수 있어요.
-                    실제 개인정보는 입력하지 마세요. 의료 판단·진단을 제공하지
-                    않습니다.
+                    {tr(
+                      "only.people.using.this.tab.can.view.these.notes.do.not.enter.real",
+                    )}
                   </p>
                 </div>
                 <div className="actions">
@@ -552,21 +583,21 @@ export default function App({ account = null, onAccountSave }) {
                   <button
                     className="text-button"
                     onClick={() => {
-                      setData(example());
+                      setData(example(locale));
                       navigate("reason");
-                      setNotice("가상 방문 이유를 불러왔습니다.");
+                      setNotice(message("fictional.reason.for.visit.loaded"));
                     }}
                   >
-                    가상 예시로 체험하기 ↗
+                    {tr("try.a.fictional.example")}
                   </button>
                 </div>
               </>
             ) : step === "reason" ? (
               <>
                 <p className="lead">
-                  가장 이야기하고 싶은 문제부터 적어 주세요.
+                  {tr("start.with.the.issue.you.most.want.to.discuss")}
                   <br />
-                  정확한 의학 용어를 몰라도 괜찮아요.
+                  {tr("you.do.not.need.to.know.the.medical.terms")}
                 </p>
                 <form
                   onSubmit={(e) => {
@@ -580,10 +611,10 @@ export default function App({ account = null, onAccountSave }) {
                       <div className="row">
                         <label htmlFor={`reason-${i}`}>
                           {i === 0
-                            ? "가장 먼저 이야기할 문제"
-                            : "추가로 이야기할 문제"}{" "}
+                            ? tr("main.reason.for.your.visit")
+                            : tr("another.issue.to.discuss")}{" "}
                           <span className="muted">
-                            {i === 0 ? "필수" : i + 1}
+                            {i === 0 ? tr("required") : i + 1}
                           </span>
                         </label>
                         {i > 0 && (
@@ -595,10 +626,12 @@ export default function App({ account = null, onAccountSave }) {
                                 const r = [...data.reasons];
                                 [r[i - 1], r[i]] = [r[i], r[i - 1]];
                                 update("reasons", r);
-                                setNotice("문제의 우선순위를 올렸습니다.");
+                                setNotice(
+                                  message("issue.moved.up.in.priority"),
+                                );
                               }}
                             >
-                              ↑ 우선순위
+                              {tr("move.up")}
                             </button>
                             <button
                               type="button"
@@ -610,7 +643,7 @@ export default function App({ account = null, onAccountSave }) {
                                 )
                               }
                             >
-                              삭제
+                              {tr("remove")}
                             </button>
                           </div>
                         )}
@@ -619,7 +652,9 @@ export default function App({ account = null, onAccountSave }) {
                         id={`reason-${i}`}
                         rows={4}
                         maxLength={3000}
-                        placeholder="예: 며칠 전부터 머리가 아파요. 오후에 특히 불편해요."
+                        placeholder={tr(
+                          "for.example.i.have.had.a.headache.for.a.few.days.it.feels.worse.i",
+                        )}
                         value={value}
                         aria-invalid={!!error && !value.trim()}
                         aria-describedby={error ? "form-error" : undefined}
@@ -635,8 +670,12 @@ export default function App({ account = null, onAccountSave }) {
                       <div className="field-meta">
                         <span>
                           {i === 0
-                            ? "이 문제를 중심으로 추가 질문을 드릴게요."
-                            : "추가 문제는 요약에 함께 기록합니다."}
+                            ? tr(
+                                "we.will.ask.follow.up.questions.about.this.issue",
+                              )
+                            : tr(
+                                "additional.issues.will.also.appear.in.your.summary",
+                              )}
                         </span>
                         <span>{value.length}/3,000</span>
                       </div>
@@ -654,7 +693,7 @@ export default function App({ account = null, onAccountSave }) {
                       );
                     }}
                   >
-                    ＋ 다른 문제 추가
+                    {tr("add.another.issue")}
                   </button>
                   {errors}
                   <div className="actions">
@@ -663,10 +702,14 @@ export default function App({ account = null, onAccountSave }) {
                       className="secondary"
                       onClick={() => navigate(editing ? "review" : "start")}
                     >
-                      {editing ? "요약으로" : "← 이전"}
+                      {editing ? tr("back.to.summary") : tr("back.2")}
                     </button>
                     <button disabled={busy} className="primary">
-                      {busy ? "요약 정리 중…" : editing ? t.editReturn : t.next}
+                      {busy
+                        ? tr("preparing.summary")
+                        : editing
+                          ? t.editReturn
+                          : t.next}
                       <span>→</span>
                     </button>
                   </div>
@@ -676,11 +719,13 @@ export default function App({ account = null, onAccountSave }) {
               <>
                 <p className="lead">
                   {field?.subtitle ||
-                    "여러 개라면 하나씩 추가해 주세요. 정확히 몰라도 괜찮아요."}
+                    tr(
+                      "add.each.item.separately.it.is.okay.if.you.do.not.know.the.exact",
+                    )}
                 </p>
                 {field && (
                   <details className="help">
-                    <summary>왜 물어보나요?</summary>
+                    <summary>{tr("why.are.we.asking")}</summary>
                     <p>{field.help}</p>
                   </details>
                 )}
@@ -694,19 +739,25 @@ export default function App({ account = null, onAccountSave }) {
                   {field ? (
                     <fieldset>
                       <legend>{field.label}</legend>
-                      {field.options?.map((v) => (
+                      {field.options?.map(({ value: v, label }) => (
                         <Choice
                           name={step}
                           value={v}
-                          selected={a.status === "answered" && a.value === v}
+                          selected={
+                            a.status === "answered" &&
+                            (a.option === v ||
+                              (a.option === undefined && a.value === v))
+                          }
                           key={v}
-                          onChange={() => answer("answered", v)}
+                          onChange={() => answer("answered", v, v)}
                         >
-                          {v}
+                          {label}
                         </Choice>
                       ))}
                       <label className="input-label" htmlFor="free-answer">
-                        {field.options ? "내 말로 설명하기" : field.label}
+                        {field.options
+                          ? tr("describe.in.your.own.words")
+                          : field.label}
                       </label>
                       <textarea
                         id="free-answer"
@@ -714,11 +765,17 @@ export default function App({ account = null, onAccountSave }) {
                         maxLength={3000}
                         placeholder={
                           field.placeholder ||
-                          "선택지에 없다면 직접 적어 주세요."
+                          tr("if.no.option.fits.write.your.answer.here")
                         }
                         value={
                           a.status === "answered" &&
-                          !field.options?.includes(a.value)
+                          !a.option &&
+                          !(
+                            a.option === undefined &&
+                            field.options?.some(
+                              (option) => option.value === a.value,
+                            )
+                          )
                             ? a.value
                             : ""
                         }
@@ -749,40 +806,47 @@ export default function App({ account = null, onAccountSave }) {
                             )
                       }
                     >
-                      {editing ? "요약으로" : "← 이전"}
+                      {editing ? tr("back.to.summary") : tr("back.2")}
                     </button>
                     <button className="primary" disabled={busy}>
-                      {busy ? "요약 정리 중…" : editing ? t.editReturn : t.next}
+                      {busy
+                        ? tr("preparing.summary")
+                        : editing
+                          ? t.editReturn
+                          : t.next}
                       <span>→</span>
                     </button>
                   </div>
                   <p className="footnote">
-                    답을 선택하지 않고 계속하면 ‘미응답’으로 기록돼요.
+                    {tr(
+                      "continuing.without.an.answer.records.this.as.unanswered",
+                    )}
                   </p>
                 </form>
               </>
             ) : step === "review" ? (
               <>
                 <p className="lead">
-                  직접 알려주신 내용만 정리했어요.
+                  {tr("this.summary.only.includes.what.you.have.shared")}
                   <br />
-                  빠지거나 다른 내용이 있으면 수정해 주세요.
+                  {tr("please.edit.anything.that.is.missing.or.incorrect")}
                 </p>
                 <div className="review-notice">
-                  가상 문진 요약 <span>의료적 판단이 포함되지 않습니다</span>
+                  {tr("demo.questionnaire.summary")}
+                  <span>{tr("no.medical.assessment.is.included")}</span>
                 </div>
                 <div className="summary">
-                  {summary(data).map((s) => (
+                  {summary(data, locale).map((s) => (
                     <section key={s.title}>
                       <div className="row">
                         <h2>{s.title}</h2>
                         {s.step && (
                           <button
                             className="text-button"
-                            aria-label={`${s.title} 수정`}
+                            aria-label={tr("edit.value", { p0: s.title })}
                             onClick={() => edit(s.step)}
                           >
-                            수정 ↗
+                            {tr("edit")}
                           </button>
                         )}
                       </div>
@@ -802,7 +866,7 @@ export default function App({ account = null, onAccountSave }) {
                               className="text-button"
                               onClick={() => edit(k)}
                             >
-                              {t.fields[k].label} 수정
+                              {tr("edit.field", { field: t.fields[k].label })}
                             </button>
                           ))}
                         </div>
@@ -812,28 +876,37 @@ export default function App({ account = null, onAccountSave }) {
                 </div>
                 {data.reasons.some((value) => !value.trim()) && (
                   <div className="info-note">
-                    <strong>방문 이유에 비어 있는 항목이 있어요</strong>
-                    <p>내용을 적거나 비어 있는 추가 항목을 삭제해 주세요.</p>
+                    <strong>
+                      {tr("a.reason.for.your.visit.is.still.blank")}
+                    </strong>
+                    <p>
+                      {tr(
+                        "enter.an.answer.or.remove.the.empty.additional.item",
+                      )}
+                    </p>
                     <button
                       className="text-button"
                       onClick={() => edit("reason")}
                     >
-                      방문 이유 확인 →
+                      {tr("check.reason.for.visit")}
                     </button>
                   </div>
                 )}
                 {incomplete.length > 0 && (
                   <div className="info-note">
-                    <strong>아직 확인하지 않은 질문이 있어요</strong>
+                    <strong>
+                      {tr("there.are.questions.you.have.not.seen.yet")}
+                    </strong>
                     <p>
-                      수정으로 새로 필요한 질문도 한 번 확인해 주세요. 답변하지
-                      않고 계속할 수도 있어요.
+                      {tr(
+                        "please.review.any.questions.added.after.your.edits.you.may.contin",
+                      )}
                     </p>
                     <button
                       className="text-button"
                       onClick={() => edit(incomplete[0])}
                     >
-                      미확인 질문으로 →
+                      {tr("go.to.remaining.questions")}
                     </button>
                   </div>
                 )}
@@ -846,10 +919,14 @@ export default function App({ account = null, onAccountSave }) {
                       setData((d) => ({ ...d, approved: e.target.checked }))
                     }
                   />
-                  <span>요약을 읽었으며, 내가 작성한 내용과 일치합니다.</span>
+                  <span>
+                    {tr(
+                      "i.have.read.the.summary.and.it.matches.what.i.entered",
+                    )}
+                  </span>
                 </label>
                 <p className="footnote">
-                  답변을 수정하면 이 확인은 해제됩니다.
+                  {tr("editing.an.answer.clears.this.confirmation")}
                 </p>
                 {errors}
                 <div className="actions">
@@ -866,15 +943,15 @@ export default function App({ account = null, onAccountSave }) {
                     }
                   >
                     {busy
-                      ? "전달 과정 체험 중…"
+                      ? tr("simulating.handoff")
                       : data.sent
-                        ? "시뮬레이션 완료 화면 보기"
-                        : "확인하고 전달 시뮬레이션"}
+                        ? tr("view.simulation.result")
+                        : tr("confirm.and.simulate.handoff")}
                     <span>→</span>
                   </button>
                 </div>
                 <p className="footnote">
-                  실제 의료진이나 병원에 전송되지 않습니다.
+                  {tr("nothing.will.be.sent.to.a.real.clinician.or.hospital")}
                 </p>
               </>
             ) : (
@@ -883,39 +960,40 @@ export default function App({ account = null, onAccountSave }) {
                   ✓
                 </div>
                 <p className="lead">
-                  작성한 이야기가 요약으로 정리됐어요.
+                  {tr("your.notes.have.been.organised.into.a.summary")}
                   <br />
-                  실제 의사나 병원에 전송된 내용은 없습니다.
+                  {tr("nothing.has.been.sent.to.a.real.doctor.or.hospital")}
                 </p>
                 <div className="info-note">
-                  <strong>다음 진료를 위한 나의 메모</strong>
+                  <strong>{tr("my.notes.for.the.next.visit")}</strong>
                   <p>
-                    요약을 다시 확인하거나 텍스트로 내려받을 수 있어요. 예약이나
-                    접수는 진행되지 않았습니다.
+                    {tr(
+                      "review.your.summary.or.download.it.as.text.no.appointment.or.chec",
+                    )}
                   </p>
                 </div>
                 <div className="actions">
                   <button className="primary" onClick={download}>
-                    요약 텍스트 다운로드 ↓
+                    {tr("download.summary.text")}
                   </button>
                   <button
                     className="secondary"
                     onClick={() => navigate("review")}
                   >
-                    요약 다시 보기
+                    {tr("view.summary.again")}
                   </button>
                 </div>
               </>
             )}
           </div>
           <footer className="workspace-footer">
-            <span>내 이야기가, 더 잘 전해지도록.</span>
-            <span>진료노트</span>
+            <span>{tr("helping.you.share.your.story")}</span>
+            <span>{tr("visit.notes")}</span>
           </footer>
         </main>
         <aside className="context">
           <div className="context-label">
-            {step === "start" ? "작성 전 알아두세요" : "나의 문진 메모"}
+            {step === "start" ? tr("before.you.begin") : tr("my.visit.notes")}
           </div>
           <div className="paper-icon" aria-hidden="true">
             <span>✳</span>
@@ -926,56 +1004,60 @@ export default function App({ account = null, onAccountSave }) {
           </div>
           {step === "start" ? (
             <>
-              <h2>기억에만 맡기지 않도록</h2>
+              <h2>{tr("no.need.to.remember.everything")}</h2>
               <p>
-                증상, 복용약, 알레르기와
+                {tr("bring.together.your.symptoms.medicines.allergies")}
                 <br />
-                궁금한 점을 함께 정리해요.
+                {tr("and.questions")}
               </p>
               <div className="context-divider" />
               <p className="small">
-                답이 떠오르지 않으면
+                {tr("if.you.are.unsure")}
                 <br />
-                ‘모름’을 선택해도 괜찮아요.
+                {tr("it.is.okay.to.choose.not.sure")}
               </p>
             </>
           ) : (
             <>
-              <h2>먼저 나누고 싶은 이야기</h2>
+              <h2>{tr("what.i.want.to.discuss.first")}</h2>
               <p className="preview-text">
-                {data.reasons[0] || "방문 이유를 작성하면 여기에 표시됩니다."}
+                {data.reasons[0] ||
+                  tr("your.reason.for.visiting.will.appear.here")}
               </p>
               <div className="context-divider" />
               <dl>
-                <dt>증상 시작</dt>
-                <dd>{describe(data.onset)}</dd>
-                <dt>복용약</dt>
+                <dt>{tr("symptoms.started")}</dt>
+                <dd>{describe(data.onset, locale)}</dd>
+                <dt>{tr("medicines")}</dt>
                 <dd>
                   {data.medicines.status === "answered"
-                    ? `${data.medicines.items.length}개 입력`
-                    : describe(data.medicines)}
+                    ? tr("value.entered", { p0: data.medicines.items.length })
+                    : describe(data.medicines, locale)}
                 </dd>
               </dl>
               <p className="small">
-                작성한 답변은 마지막 단계에서
-                <br />한 번에 확인하고 수정할 수 있어요.
+                {tr("at.the.final.step.you.can")}
+                <br />
+                {tr("review.and.edit.all.your.answers")}
               </p>
             </>
           )}
         </aside>
       </div>
       <footer className="bottom">
-        <span>데모 · 실제 의료 서비스가 아닙니다</span>
+        <span>{tr("demo.not.a.real.healthcare.service")}</span>
         <div>
           <details>
-            <summary>데모 테스트</summary>
+            <summary>{tr("demo.controls")}</summary>
             <button
               onClick={() => {
                 mock.failOnce();
-                setNotice("다음 요약 또는 전달 요청이 한 번 실패합니다.");
+                setNotice(
+                  message("the.next.summary.or.handoff.request.will.fail.once"),
+                );
               }}
             >
-              다음 응답 실패시키기
+              {tr("fail.next.response")}
             </button>
           </details>
           <button
@@ -983,17 +1065,19 @@ export default function App({ account = null, onAccountSave }) {
             className="text-button"
             onClick={() => setResetOpen(true)}
           >
-            데모 데이터 초기화
+            {tr("reset.demo.data")}
           </button>
         </div>
       </footer>
       <div className="sr-only" aria-live="polite" role="status">
         {busy
-          ? "요청 처리 중입니다."
-          : notice ||
+          ? tr("processing.your.request")
+          : messageText(notice) ||
             (storageError
-              ? "임시 저장이 불가능합니다. 새로고침하면 답변이 사라질 수 있습니다."
-              : `${title} 화면입니다.`)}
+              ? tr(
+                  "temporary.saving.is.unavailable.refreshing.may.lose.your.answers",
+                )
+              : tr("value.screen", { p0: title }))}
       </div>
       {resetOpen && (
         <div className="modal-backdrop">
@@ -1017,8 +1101,8 @@ export default function App({ account = null, onAccountSave }) {
               }
             }}
           >
-            <h2 id="reset-title">작성한 데모 데이터를 지울까요?</h2>
-            <p>이 탭의 답변과 검토 상태를 초기화합니다.</p>
+            <h2 id="reset-title">{tr("clear.your.demo.answers")}</h2>
+            <p>{tr("this.resets.the.answers.and.review.status.in.this.tab")}</p>
             <div className="actions">
               <button
                 autoFocus
@@ -1028,7 +1112,7 @@ export default function App({ account = null, onAccountSave }) {
                   resetButton.current?.focus();
                 }}
               >
-                취소
+                {tr("cancel")}
               </button>
               <button
                 className="primary"
@@ -1037,10 +1121,10 @@ export default function App({ account = null, onAccountSave }) {
                   setEditing(false);
                   setResetOpen(false);
                   navigate("start");
-                  setNotice("데모 데이터를 초기화했습니다.");
+                  setNotice(message("demo.data.reset"));
                 }}
               >
-                초기화
+                {tr("reset")}
               </button>
             </div>
           </div>
