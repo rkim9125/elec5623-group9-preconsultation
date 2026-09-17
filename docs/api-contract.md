@@ -52,7 +52,7 @@ Example — `POST /api/sessions/{session_id}/messages`:
     "stopped": false,
     "stop_reason": null,
     "safety": { "triggered": false, "category": null, "message": null },
-    "completeness": { "coverage": 0.0, "resolution": 0.0, "unresolved_required": ["symptom_duration_days", "symptom_severity", "current_medications", "allergies"] }
+    "completeness": { "coverage": 0.0, "resolution": 0.0, "unresolved_required": ["symptom_duration_days", "symptom_severity", "associated_symptoms", "current_medications", "allergies"] }
   }
 }
 ```
@@ -73,7 +73,7 @@ Example — `POST /api/sessions/{session_id}/slots/{slot_id}`:
     "outcome": "accepted",
     "detail": null,
     "next_prompt": { "slot_id": "current_medications", "text": "..." },
-    "completeness": { "coverage": 0.4, "resolution": 0.25, "unresolved_required": ["current_medications", "allergies"] }
+    "completeness": { "coverage": 0.09, "resolution": 0.33, "unresolved_required": ["associated_symptoms", "current_medications", "allergies"] }
   }
 }
 ```
