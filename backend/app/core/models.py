@@ -53,6 +53,17 @@ class TranscriptRole(str, Enum):
     ASSISTANT = "assistant"
 
 
+class SlotHistoryEvent(str, Enum):
+    """What kind of change a HistoryEntry records. See app/core/engine.py for
+    which functions emit which event."""
+
+    CONFIRMED = "confirmed"  # empty/candidate/skipped/unknown -> confirmed
+    CORRECTED = "corrected"  # confirmed -> confirmed with a different value
+    SKIPPED = "skipped"
+    MARKED_UNKNOWN = "marked_unknown"
+    REOPENED = "reopened"  # skipped/unknown -> candidate (new evidence arrived)
+
+
 class Candidate(BaseModel):
     """One LLM-extracted value for a slot. Never written straight to Slot.value.
 
@@ -95,6 +106,25 @@ class Prompt(BaseModel):
     text: str
 
 
+class SlotHistoryEntry(BaseModel):
+    """One audit-log entry for a slot state transition. Append-only — nothing
+    in app/core ever edits or removes a history entry, only appends.
+
+    This is the provenance/correction-history trail the proposal requires
+    (P3). C6 persists `SessionState.history` verbatim; it does not recompute
+    or deduplicate it.
+    """
+
+    slot_id: str
+    event: SlotHistoryEvent
+    previous_value: Any = None
+    previous_status: SlotStatus
+    new_value: Any = None
+    new_status: SlotStatus
+    source: SlotSource
+    at: datetime = Field(default_factory=_now)
+
+
 class SessionState(BaseModel):
     session_id: str
     status: SessionStatus = SessionStatus.IN_PROGRESS
@@ -106,4 +136,5 @@ class SessionState(BaseModel):
     current_prompt: Prompt | None = None
     slots: dict[str, Slot] = Field(default_factory=dict)
     transcript: list[TranscriptEntry] = Field(default_factory=list)
+    history: list[SlotHistoryEntry] = Field(default_factory=list)
     summary_ref: str | None = None

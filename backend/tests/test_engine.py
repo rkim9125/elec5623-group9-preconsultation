@@ -12,7 +12,7 @@ from app.core.engine import (
     skip_slot,
     validate_value,
 )
-from app.core.models import SlotSource, SlotStatus
+from app.core.models import SlotHistoryEvent, SlotSource, SlotStatus
 from app.core.schema import get_slot_def
 from app.llm.base import ExtractedCandidate
 
@@ -180,3 +180,76 @@ def test_conditional_slot_inactive_until_dependency_matches(state):
     assert is_slot_active(state, fever_def) is True
     res = apply_candidate(state, _cand("fever_duration_days", 2))
     assert res.outcome == ApplyOutcome.ACCEPTED
+
+
+# --- correction / audit history --------------------------------------- #
+
+def test_confirm_records_a_confirmed_history_entry(state):
+    confirm_slot(state, "chief_complaint", value="sore throat")
+    assert len(state.history) == 1
+    entry = state.history[0]
+    assert entry.slot_id == "chief_complaint"
+    assert entry.event == SlotHistoryEvent.CONFIRMED
+    assert entry.previous_value is None
+    assert entry.previous_status == SlotStatus.EMPTY
+    assert entry.new_value == "sore throat"
+    assert entry.new_status == SlotStatus.CONFIRMED
+    assert entry.source == SlotSource.PATIENT
+
+
+def test_correction_records_previous_and_new_value(state):
+    confirm_slot(state, "symptom_severity", value="mild")
+    edit_slot(state, "symptom_severity", "severe")
+
+    corrections = [e for e in state.history if e.event == SlotHistoryEvent.CORRECTED]
+    assert len(corrections) == 1
+    entry = corrections[0]
+    assert entry.slot_id == "symptom_severity"
+    assert entry.previous_value == "mild"
+    assert entry.previous_status == SlotStatus.CONFIRMED
+    assert entry.new_value == "severe"
+
+
+def test_reconfirming_the_same_value_does_not_add_a_duplicate_entry(state):
+    confirm_slot(state, "symptom_severity", value="mild")
+    confirm_slot(state, "symptom_severity", value="mild")
+    assert len(state.history) == 1
+
+
+def test_skip_and_unknown_are_recorded_distinctly(state):
+    skip_slot(state, "past_conditions")
+    mark_unknown(state, "current_medications")
+
+    skip_entry = next(e for e in state.history if e.slot_id == "past_conditions")
+    unknown_entry = next(e for e in state.history if e.slot_id == "current_medications")
+    assert skip_entry.event == SlotHistoryEvent.SKIPPED
+    assert skip_entry.new_status == SlotStatus.SKIPPED
+    assert unknown_entry.event == SlotHistoryEvent.MARKED_UNKNOWN
+    assert unknown_entry.new_status == SlotStatus.UNKNOWN
+
+
+def test_reopening_a_skipped_slot_is_recorded(state):
+    skip_slot(state, "allergies")
+    apply_candidate(state, _cand("allergies", "penicillin"))
+
+    reopened = [e for e in state.history if e.event == SlotHistoryEvent.REOPENED]
+    assert len(reopened) == 1
+    assert reopened[0].slot_id == "allergies"
+    assert reopened[0].previous_status == SlotStatus.SKIPPED
+    assert reopened[0].source == SlotSource.LLM
+
+
+def test_history_is_append_only_and_in_order(state):
+    confirm_slot(state, "chief_complaint", value="a")
+    edit_slot(state, "chief_complaint", "b")
+    edit_slot(state, "chief_complaint", "c")
+
+    values = [e.new_value for e in state.history if e.slot_id == "chief_complaint"]
+    assert values == ["a", "b", "c"]
+
+
+def test_history_across_slots_does_not_interfere(state):
+    confirm_slot(state, "chief_complaint", value="x")
+    skip_slot(state, "past_conditions")
+    assert len(state.history) == 2
+    assert {e.slot_id for e in state.history} == {"chief_complaint", "past_conditions"}
