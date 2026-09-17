@@ -21,6 +21,8 @@ from app.core.models import (
     Candidate,
     SessionState,
     Slot,
+    SlotHistoryEntry,
+    SlotHistoryEvent,
     SlotSource,
     SlotStatus,
     SlotType,
@@ -153,6 +155,29 @@ def _touch(state: SessionState, slot: Slot) -> None:
     state.updated_at = _now()
 
 
+def _record_history(
+    state: SessionState,
+    slot_id: str,
+    event: SlotHistoryEvent,
+    previous_value: Any,
+    previous_status: SlotStatus,
+    new_value: Any,
+    new_status: SlotStatus,
+    source: SlotSource,
+) -> None:
+    state.history.append(
+        SlotHistoryEntry(
+            slot_id=slot_id,
+            event=event,
+            previous_value=previous_value,
+            previous_status=previous_status,
+            new_value=new_value,
+            new_status=new_status,
+            source=source,
+        )
+    )
+
+
 def detect_contradiction(slot: Slot, coerced_value: Any) -> bool:
     return slot.status == SlotStatus.CONFIRMED and slot.value != coerced_value
 
@@ -195,6 +220,12 @@ def apply_candidate(state: SessionState, cand: ExtractedCandidate) -> ApplyResul
     if slot.status in (SlotStatus.EMPTY, SlotStatus.SKIPPED, SlotStatus.UNKNOWN):
         # A previously skipped/unknown slot gets reopened for confirmation if
         # new information about it shows up later in the conversation.
+        if slot.status in (SlotStatus.SKIPPED, SlotStatus.UNKNOWN):
+            _record_history(
+                state, cand.slot_id, SlotHistoryEvent.REOPENED,
+                previous_value=slot.value, previous_status=slot.status,
+                new_value=None, new_status=SlotStatus.CANDIDATE, source=SlotSource.LLM,
+            )
         slot.status = SlotStatus.CANDIDATE
     _touch(state, slot)
     return ApplyResult(slot_id=cand.slot_id, outcome=ApplyOutcome.ACCEPTED)
@@ -246,11 +277,26 @@ def confirm_slot(
     if not ok:
         return ApplyResult(slot_id=slot_id, outcome=ApplyOutcome.REJECTED, detail=error)
 
+    previous_value, previous_status = slot.value, slot.status
+    already_this_value = previous_status == SlotStatus.CONFIRMED and previous_value == coerced
+
     slot.value = coerced
     slot.status = SlotStatus.CONFIRMED
     slot.source = source
     slot.candidates = []
     _touch(state, slot)
+
+    if not already_this_value:
+        event = (
+            SlotHistoryEvent.CORRECTED
+            if previous_status == SlotStatus.CONFIRMED
+            else SlotHistoryEvent.CONFIRMED
+        )
+        _record_history(
+            state, slot_id, event,
+            previous_value=previous_value, previous_status=previous_status,
+            new_value=coerced, new_status=SlotStatus.CONFIRMED, source=source,
+        )
     return ApplyResult(slot_id=slot_id, outcome=ApplyOutcome.ACCEPTED)
 
 
@@ -268,11 +314,17 @@ def skip_slot(state: SessionState, slot_id: str) -> ApplyResult:
     """Patient declined to answer. Distinct from `mark_unknown`: this means
     'I'd rather not say', not 'I don't know'. Slot is addressed but unresolved."""
     slot = _require_slot(state, slot_id)
+    previous_value, previous_status = slot.value, slot.status
     slot.status = SlotStatus.SKIPPED
     slot.value = None
     slot.source = SlotSource.PATIENT
     slot.candidates = []
     _touch(state, slot)
+    _record_history(
+        state, slot_id, SlotHistoryEvent.SKIPPED,
+        previous_value=previous_value, previous_status=previous_status,
+        new_value=None, new_status=SlotStatus.SKIPPED, source=SlotSource.PATIENT,
+    )
     return ApplyResult(slot_id=slot_id, outcome=ApplyOutcome.ACCEPTED)
 
 
@@ -282,9 +334,15 @@ def mark_unknown(state: SessionState, slot_id: str) -> ApplyResult:
     clinician summary should present differently from a declined answer.
     Slot is addressed but unresolved, same as skip for completeness purposes."""
     slot = _require_slot(state, slot_id)
+    previous_value, previous_status = slot.value, slot.status
     slot.status = SlotStatus.UNKNOWN
     slot.value = None
     slot.source = SlotSource.PATIENT
     slot.candidates = []
     _touch(state, slot)
+    _record_history(
+        state, slot_id, SlotHistoryEvent.MARKED_UNKNOWN,
+        previous_value=previous_value, previous_status=previous_status,
+        new_value=None, new_status=SlotStatus.UNKNOWN, source=SlotSource.PATIENT,
+    )
     return ApplyResult(slot_id=slot_id, outcome=ApplyOutcome.ACCEPTED)

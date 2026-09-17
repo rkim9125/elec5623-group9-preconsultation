@@ -131,6 +131,14 @@ def test_confirm_edit_skip_slot_flow():
     assert state["slots"]["current_medications"]["status"] == "unknown"
     assert state["slots"]["past_conditions"]["status"] == "skipped"
 
+    # the audit trail is exposed on the session and skips rejected attempts
+    events = {(e["slot_id"], e["event"]) for e in state["history"]}
+    assert ("chief_complaint", "confirmed") in events
+    assert ("symptom_severity", "confirmed") in events
+    assert ("past_conditions", "skipped") in events
+    assert ("current_medications", "marked_unknown") in events
+    assert len(state["history"]) == 4  # the rejected "extreme" edit left no trace
+
     # nonexistent slot
     r = client.post(f"/api/sessions/{sid}/slots/not_real", json={"action": "skip"})
     assert r.status_code == 404

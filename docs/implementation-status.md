@@ -151,6 +151,30 @@ Total: 72 tests passing.
 
 Total: 75 tests passing.
 
+- **Correction / audit history tracking** (`feat/c3-correction-history`) —
+  closes a real gap: the proposal requires provenance/correction history
+  (P3), but `confirm_slot`/`edit_slot` used to just overwrite a value with no
+  record of what it changed from or why.
+  - `app/core/models.py`: `SlotHistoryEvent` enum (`confirmed`, `corrected`,
+    `skipped`, `marked_unknown`, `reopened`) + `SlotHistoryEntry`
+    (slot_id, event, previous/new value+status, source, timestamp).
+    `SessionState.history: list[SlotHistoryEntry]` — append-only, alongside
+    `transcript`.
+  - `app/core/engine.py`: every state-changing function
+    (`confirm_slot`/`edit_slot`, `skip_slot`, `mark_unknown`, and the
+    reopen-a-skipped-slot path in `apply_candidate`) appends a history entry.
+    Re-confirming a slot with the value it already has does not add a
+    duplicate entry; a rejected edit never reaches history.
+  - Exposed automatically via `GET /api/sessions/{id}` (embedded, same
+    pattern as `transcript`) — no new endpoint. `docs/api-contract.md`
+    section 2 updated.
+  - Tests: 7 new cases in `test_engine.py` (one per event type, ordering,
+    dedup, cross-slot isolation), plus an assertion in
+    `test_sessions_api.py` that the trail comes through the API and skips
+    rejected attempts.
+
+Total: 82 tests passing.
+
 ### In progress
 
 - (nothing yet)
@@ -159,7 +183,8 @@ Total: 75 tests passing.
 
 - Explicit "patient approves summary" gate (with C1/C2) before `completed` feeds
   the clinician view.
-- Swap `InMemorySessionStore` for C6's DB-backed store.
+- Swap `InMemorySessionStore` for C6's DB-backed store — `SessionState.history`
+  is exactly the correction-history/audit-log data C6's DAO needs to persist.
 - Replace `FakeLLM` with C4's adapter via `app/api/deps.py::get_llm`.
 - Safety patterns/wording need team + supervisor sign-off.
 
