@@ -2,7 +2,7 @@
 
 Living record of what is actually built. Updated in the same change as the code.
 
-Last updated: 2026-09-10
+Last updated: 2026-09-22
 
 Backend requires **Python 3.11+** (models use 3.10+ union syntax). macOS system
 Python 3.9 fails at import.
@@ -12,6 +12,8 @@ Python 3.9 fails at import.
 | ID | Component | Owner |
 |----|-----------|-------|
 | C3 | Backend — Core Logic | Robin Kim |
+| C5 | Document utilities and storage (this implementation) | Guopeng Tan |
+| C7 | Specification and test environment (this implementation) | Guopeng Tan |
 | others | — | TBD (see docs component breakdown) |
 
 ## C3 — Backend: Core Logic
@@ -181,8 +183,9 @@ Total: 82 tests passing.
 
 ### Next (outside the skeleton)
 
-- Explicit "patient approves summary" gate (with C1/C2) before `completed` feeds
-  the clinician view.
+- C1/C2 should wire the new explicit summary approval API and require
+  `approved: true` before a final clinician handoff. The backend gate is now
+  implemented; the existing review GET intentionally remains available.
 - Swap `InMemorySessionStore` for C6's DB-backed store — `SessionState.history`
   is exactly the correction-history/audit-log data C6's DAO needs to persist.
 - Replace `FakeLLM` with C4's adapter via `app/api/deps.py::get_llm`.
@@ -194,12 +197,69 @@ Total: 82 tests passing.
 - `llm_*` settings unused until C4 wires the adapter.
 - Sessions live in process memory only — lost on restart until C6.
 
+## C5 — Document utilities and object storage
+
+### Implemented in this change
+
+- `app/utils/document_processing.py`: validated TXT/PDF/DOCX/PNG/JPEG inputs,
+  bounded extraction with source locations, explicit OCR-required/partial
+  results, optional Tesseract + PDFium OCR. No clinical interpretation or slot
+  updates. DOCX embedded images require separate extraction/manual review.
+- `app/utils/document_rendering.py`: literal PDF/DOCX exports, pagination,
+  markup escaping, Latin/CJK PDF fonts and optional custom TrueType font.
+- `app/utils/storage.py`: private local files, AWS S3/S3-compatible and Aliyun
+  OSS adapters. Atomic local writes, path/symlink protection, secret-safe errors,
+  explicit readiness checks, cloud timeouts and optional SDK imports.
+- `app/utils/document_service.py`: upload/list/get/extract/download/delete and
+  approved-summary export tools; file hashes, status and error metadata; C6
+  `DocumentMetadataStore` protocol with in-memory implementation.
+- `app/api/documents.py`: session-scoped HTTP tools, bounded multipart bodies,
+  integration token, download proxy and no public storage URLs.
+- A minimal C3 integration adds version-bound summary approval. Export refuses
+  draft/stale summaries; completion does not imply approval. Error envelopes
+  now also cover HTTP/multipart parser errors.
+
+### Verified and remaining limits
+
+The automated suite covers parser/render roundtrips, source locations, OCR
+disabled/mocked recognition, approval/version conflicts, cross-session access,
+storage failures, rollback, limits, traversal, SDK contracts and the existing
+C3 tests. Local validation passed 225 tests, offline synthetic smoke and the
+actual running-server HTTP smoke for the complete document workflow.
+Cloud adapter tests use fake SDK clients: **no real AWS/OSS account has been
+provisioned or connected**. Tesseract recognition requires the optional runtime
+and language packs; mocked OCR tests do not establish recognition accuracy.
+
+The prototype is single-process. Metadata, summaries and approval records are
+lost on restart while object bytes may remain; C6 persistence is pending.
+The shared document integration key does not replace C3 patient authentication.
+Existing session routes are unauthenticated, so use local synthetic-data demos.
+The frontend scaffold still needs C1/C2 pages and has no complete build entry.
+
+## C7 — Specification and test environment
+
+- Populated implementation specification and C5 API/tool examples, plus
+  English storage setup and Chinese handoff documentation.
+- Bootable `.env.example`, tested direct dependency pins, separate cloud/OCR
+  extras, setup/start scripts, synthetic smoke and confined local reset.
+- Dockerfile/loopback compose recipe and an **inactive** GitHub Actions
+  pytest/smoke template at `ci/backend.yml`.
+  Container build requires Docker, which was unavailable on the implementation
+  host; no container execution is claimed by the local validation.
+- Active workflow publication was rejected because the publishing credential
+  lacks workflow-write permission. After merge, an authorized maintainer can
+  copy `ci/backend.yml` to `.github/workflows/backend.yml`, commit and publish it
+  using the [activation steps](setup.md#enable-github-actions-after-merge).
+  No GitHub Actions run or CI pass is claimed.
+- No placeholder DB reset/migration or live LLM dependency: those remain C6/C4
+  integration points and are identified in the specification.
+
 ## How to run
 
 ```bash
-cd backend
-python3.11 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.core.main:app --reload   # http://localhost:8000/api/health
-pytest
+./scripts/setup.sh
+./scripts/start.sh
+# Another terminal, from repository root:
+backend/.venv/bin/python -m pytest -q backend/tests
+backend/.venv/bin/python scripts/smoke.py
 ```

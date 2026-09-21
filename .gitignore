@@ -5,6 +5,8 @@ venv/
 .venv/
 *.egg-info/
 .pytest_cache/
+.data/
+*.log
 
 # Environment
 .env

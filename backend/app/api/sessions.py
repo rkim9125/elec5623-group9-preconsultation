@@ -6,9 +6,12 @@ persist through the store, and shape the response. All rules live in core.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends
 
 from app.api.deps import get_llm, get_store
+from app.api.document_auth import require_document_access
 from app.api.schemas import (
     CompletenessOut,
     CompleteResponse,
@@ -20,6 +23,7 @@ from app.api.schemas import (
     SlotActionRequest,
     SlotActionResponse,
     SummaryResponse,
+    SummaryApprovalRequest,
 )
 from app.core import flow
 from app.core.engine import (
@@ -38,6 +42,8 @@ from app.core.errors import (
 )
 from app.core.models import SessionState, SessionStatus
 from app.core.planner import Completeness, compute_completeness
+from app.core.summary_approval import summary_digest, summary_is_approved
+from app.utils.document_errors import DocumentError
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -172,4 +178,26 @@ def get_summary(session_id: str, store=Depends(get_store)) -> SummaryResponse:
         sections=summary.sections,
         patient_questions=summary.patient_questions,
         model=summary.model,
+        content_sha256=summary_digest(state, summary),
+        approved=summary_is_approved(state, summary),
+        approved_at=state.summary_approved_at.isoformat() if summary_is_approved(state, summary) else None,
     )
+
+
+@router.post("/{session_id}/summary/approve", response_model=SummaryResponse,
+             dependencies=[Depends(require_document_access)])
+def approve_summary(
+    session_id: str, body: SummaryApprovalRequest, store=Depends(get_store)
+) -> SummaryResponse:
+    state = store.get(session_id)
+    if state.status != SessionStatus.COMPLETED:
+        raise SummaryNotReady("Complete the session and review the summary first.")
+    summary = store.get_summary(session_id)
+    digest = summary_digest(state, summary)
+    if body.content_sha256 != digest:
+        raise DocumentError("SUMMARY_VERSION_CONFLICT", "The summary has changed; review it again before approving.", 409)
+    if not summary_is_approved(state, summary):
+        state.summary_approved_sha256 = digest
+        state.summary_approved_at = datetime.now(timezone.utc)
+        store.save(state)
+    return get_summary(session_id, store)
