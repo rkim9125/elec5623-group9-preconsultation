@@ -1,0 +1,3 @@
+# Also install the Tesseract executable and requested language packs.
+pytesseract==0.3.13
+pypdfium2==5.13.0

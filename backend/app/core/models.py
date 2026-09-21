@@ -138,3 +138,5 @@ class SessionState(BaseModel):
     transcript: list[TranscriptEntry] = Field(default_factory=list)
     history: list[SlotHistoryEntry] = Field(default_factory=list)
     summary_ref: str | None = None
+    summary_approved_sha256: str | None = None
+    summary_approved_at: datetime | None = None

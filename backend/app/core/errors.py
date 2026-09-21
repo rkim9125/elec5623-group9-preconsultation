@@ -13,6 +13,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
 class AppError(Exception):
@@ -76,6 +77,16 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _handle_app_error(request: Request, exc: AppError) -> JSONResponse:
         return _envelope(exc.status_code, exc.code, exc.message, exc.details, request)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def _handle_http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        # Framework/parser errors must not expose uploaded content or raw details.
+        codes = {400: "BAD_REQUEST", 404: "NOT_FOUND", 405: "METHOD_NOT_ALLOWED", 413: "FILE_TOO_LARGE"}
+        response = _envelope(exc.status_code, codes.get(exc.status_code, "HTTP_ERROR"),
+                             "The HTTP request could not be processed.", [], request)
+        for key, value in (exc.headers or {}).items():
+            response.headers[key] = value
+        return response
 
     @app.exception_handler(RequestValidationError)
     async def _handle_request_validation_error(

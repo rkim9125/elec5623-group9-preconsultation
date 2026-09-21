@@ -122,12 +122,14 @@ def advance_after_action(state: SessionState, llm: LLMClient) -> Prompt | None:
 def finalise(state: SessionState, llm: LLMClient):
     """Generate the summary from confirmed state and mark the session completed.
 
-    NOTE: there is no explicit 'patient approves the summary' gate yet. For now
-    'completed' means the patient confirmed slots individually and hit finish.
-    Add the approval step with C1 before this feeds the clinician view for real.
+    'completed' means intake is finished, not that the summary is approved.
+    The separate summary/approve route binds approval to this stored content;
+    C5 exports and the C2 final view require that approval.
     """
     summary = llm.generate_summary(state)
     state.summary_ref = f"sum_{state.session_id}"
+    state.summary_approved_sha256 = None
+    state.summary_approved_at = None
     state.status = SessionStatus.COMPLETED
     state.current_prompt = None
     return summary

@@ -74,3 +74,14 @@ class SummaryResponse(BaseModel):
     sections: dict[str, str]
     patient_questions: list[str]
     model: str
+    content_sha256: str
+    approved: bool = False
+    approved_at: str | None = None
+
+
+class SummaryApprovalRequest(BaseModel):
+    content_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class ExportRequest(BaseModel):
+    format: Literal["pdf", "docx"]

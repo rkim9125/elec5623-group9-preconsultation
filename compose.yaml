@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        INSTALL_OCR: ${INSTALL_OCR:-false}
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      APP_ENV: development
+      STORAGE_BACKEND: local
+      STORAGE_LOCAL_ROOT: /app/.data/objects
+      DOCUMENT_OCR_ENABLED: ${DOCUMENT_OCR_ENABLED:-false}
+      DOCUMENT_OCR_LANGUAGE: ${DOCUMENT_OCR_LANGUAGE:-eng}
+      FRONTEND_ORIGIN: http://localhost:5173
+    volumes:
+      - local-objects:/app/.data/objects
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  local-objects:

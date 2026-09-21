@@ -1,0 +1,38 @@
+name: Backend checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    env:
+      STORAGE_BACKEND: local
+      DOCUMENT_OCR_ENABLED: "false"
+      DOCUMENT_API_TOKEN: ""
+      PYTHONPATH: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-ocr.txt
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements.txt -r backend/requirements-ocr.txt
+      - name: Unit and API tests (offline)
+        working-directory: backend
+        run: python -m pytest -q
+      - name: Synthetic integration smoke (offline)
+        run: python scripts/smoke.py
