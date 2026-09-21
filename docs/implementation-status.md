@@ -2,7 +2,7 @@
 
 Living record of what is actually built. Updated in the same change as the code.
 
-Last updated: 2026-09-10
+Last updated: 2026-09-21
 
 Backend requires **Python 3.11+** (models use 3.10+ union syntax). macOS system
 Python 3.9 fails at import.
@@ -12,6 +12,7 @@ Python 3.9 fails at import.
 | ID | Component | Owner |
 |----|-----------|-------|
 | C3 | Backend — Core Logic | Robin Kim |
+| C4 | Backend — LLM Calls and Prompt Engineering | Alan |
 | others | — | TBD (see docs component breakdown) |
 
 ## C3 — Backend: Core Logic
@@ -69,7 +70,7 @@ Python 3.9 fails at import.
     (the C6 swap point). Holds sessions and generated summaries.
   - `app/core/flow.py` — `start_session`, `ingest_message` (transcript → safety →
     extract → apply → advance), `advance_after_action`, `finalise`.
-  - `app/api/deps.py` — `get_store`, `get_llm` (returns `FakeLLM`; C4 swaps here).
+  - `app/api/deps.py` — `get_store`, `get_llm` (provider selected by C4 config).
   - `app/api/schemas.py` — HTTP request/response DTOs, separate from domain models.
   - `app/api/sessions.py` — all 7 endpoints from api-contract.md, wired into
     `app/core/main.py`.
@@ -175,6 +176,60 @@ Total: 75 tests passing.
 
 Total: 82 tests passing.
 
+## C4 — Backend: LLM Calls and Prompt Engineering
+
+### Done
+
+- **Azure OpenAI-compatible adapter**
+  - `app/llm/azure.py` implements the existing `LLMClient` boundary for
+    `extract_candidates`, `phrase_question` and `generate_summary`.
+  - Uses the OpenAI Responses API with Pydantic structured outputs. The model
+    returns candidates and wording only; C3 remains responsible for accepting
+    values, selecting the target slot and controlling workflow state.
+  - Extraction is restricted to supplied slot IDs, declared slot types and
+    exact evidence spans from the patient's message. Unknown slot IDs and
+    evidence not present in the source message are discarded.
+  - Explicit negative list answers such as no medications or no known allergies
+    are normalised to empty lists rather than stored as list items.
+  - Question generation is locked to C3's selected slot and uses neutral,
+    non-diagnostic wording. Required non-list fields are not presented as
+    allowing a `none` response.
+  - Summary generation receives only confirmed, skipped or unknown slots.
+    Candidate values are excluded. Skipped and unknown states are rendered by
+    deterministic code, and suggested patient questions use confirmed facts
+    only.
+
+- **Configuration and dependency injection**
+  - `Settings.llm_provider` supports `fake` (default) and `azure`.
+  - `app/api/deps.py::get_llm` lazily constructs and caches the configured
+    provider. Team members without credentials continue to use `FakeLLM`.
+  - `.env.example` and `docs/setup.md` document provider selection without
+    containing credentials.
+
+- **Reliability and observability**
+  - 30-second client timeout and at most two SDK retries.
+  - Versioned prompts: `extract-v1`, `question-v1`, `summary-v1`.
+  - Logs operation, model, prompt version, latency and available input/output/
+    total token counts. Persistence of model-call records remains a C6 concern.
+  - API failures and missing parsed output use bounded deterministic fallbacks:
+    no extracted candidates, fixed question wording, or a summary built from
+    validated state.
+
+- **Testing**
+  - `tests/test_azure_llm.py` uses mocked SDK responses and never accesses the
+    network. It covers configuration validation, output filtering, evidence
+    grounding, structured output, fallbacks, retry/timeout configuration,
+    prompt-version/token/latency logging and exclusion of unconfirmed state.
+  - `tests/test_llm_provider.py` covers provider selection.
+  - `tests/test_sessions_api.py` explicitly overrides `get_llm` with `FakeLLM`,
+    keeping API tests deterministic and free of model cost.
+  - The Azure path was manually smoke-tested with synthetic data through the
+    complete HTTP -> C3 -> C4 -> Azure -> C3 -> HTTP flow.
+
+Total: 95 tests passing.
+
+## Remaining project work
+
 ### In progress
 
 - (nothing yet)
@@ -185,13 +240,11 @@ Total: 82 tests passing.
   the clinician view.
 - Swap `InMemorySessionStore` for C6's DB-backed store — `SessionState.history`
   is exactly the correction-history/audit-log data C6's DAO needs to persist.
-- Replace `FakeLLM` with C4's adapter via `app/api/deps.py::get_llm`.
 - Safety patterns/wording need team + supervisor sign-off.
 
 ### Stubs / deferred
 
 - `database_url` in settings is unused until C6 wires persistence.
-- `llm_*` settings unused until C4 wires the adapter.
 - Sessions live in process memory only — lost on restart until C6.
 
 ## How to run

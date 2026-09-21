@@ -7,6 +7,7 @@ See backend/.env.example for the full list of keys.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -26,7 +27,8 @@ class Settings(BaseSettings):
     # Database (unused until C6 wires persistence)
     database_url: str = "sqlite:///./preconsult.db"
 
-    # LLM provider (unused until C4 wires the adapter)
+    # LLM provider
+    llm_provider: Literal["fake", "azure"] = "fake"
     llm_api_key: str = ""
     llm_base_url: str = ""
     llm_model: str = ""
