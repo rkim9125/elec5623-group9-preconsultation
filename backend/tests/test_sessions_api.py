@@ -1,10 +1,13 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.deps import get_llm
 from app.core.main import app
 from app.core.store import get_store
+from app.llm.fake import FakeLLM
 
 client = TestClient(app)
+app.dependency_overrides[get_llm] = FakeLLM
 
 
 @pytest.fixture(autouse=True)
