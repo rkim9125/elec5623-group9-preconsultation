@@ -14,6 +14,15 @@ import {
 import { getCopy } from "../../copy.js";
 import { go, RouteLink } from "../../account/router.jsx";
 import { mock, extractExplicitOnset } from "../../api/mock.js";
+import TagChoices from "./TagChoices.jsx";
+import {
+  medicineOptions,
+  medicineTags,
+  hasMedicines,
+  editMedicines,
+} from "../../medicines.js";
+import HistoryInput from "./HistoryInput.jsx";
+import { hasHistory } from "../../history.js";
 const group = (s) =>
   s === "reason"
     ? 0
@@ -186,17 +195,21 @@ export default function App({ account = null, onAccountSave }) {
     if (
       data[step]?.status === "answered" &&
       !data[step].items &&
-      !data[step].value.trim()
+      !data[step].value.trim() &&
+      !(step === "history" && hasHistory(data.history))
     )
       return fail(
         message(
-          "write.your.answer.or.choose.not.sure.or.prefer.not.to.answer.belo",
+          step === "history"
+            ? "history.error"
+            : "write.your.answer.or.choose.not.sure.or.prefer.not.to.answer.belo",
         ),
       );
     if (
       ["medicines", "allergies"].includes(step) &&
       data[step].status === "answered" &&
-      !data[step].items.length
+      !data[step].items.length &&
+      !(step === "medicines" && hasMedicines(data.medicines))
     )
       return fail(message("add.an.item.or.choose.none.or.not.sure"));
     let draft = data;
@@ -284,16 +297,34 @@ export default function App({ account = null, onAccountSave }) {
           aria-pressed={a?.status === v}
           onClick={() => answer(v)}
         >
-          {l}
+          {step === "medicines" && v === "none" ? tr("medicine.none") : l}
         </button>
       ))}
     </div>
   );
   const listEditor = () => (
     <>
+      {step === "medicines" && (
+        <TagChoices
+          id="medicines"
+          title="medicine.selectedTypes"
+          help="medicine.help"
+          note="medicine.note"
+          options={medicineOptions}
+          selected={medicineTags(a)}
+          disabled={["none", "unknown", "declined"].includes(a.status)}
+          onChange={(tags) => update(step, editMedicines(a, { tags }))}
+        />
+      )}
+
       <fieldset
         tabIndex={-1}
-        aria-invalid={!!error && a.status === "answered" && !a.items.length}
+        aria-invalid={
+          !!error &&
+          a.status === "answered" &&
+          !a.items.length &&
+          !(step === "medicines" && hasMedicines(a))
+        }
         aria-describedby={error ? "form-error" : undefined}
       >
         <legend>
@@ -317,8 +348,25 @@ export default function App({ account = null, onAccountSave }) {
         </Choice>
         {modes(true)}
       </fieldset>
+      {step === "medicines" &&
+        ["none", "unknown", "declined"].includes(a.status) && (
+          <div className="info-note">
+            <p>{tr("medicine.inactive")}</p>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => update(step, editMedicines(a, {}))}
+            >
+              {tr("medicine.resume")}
+            </button>
+          </div>
+        )}
       {a.status === "answered" && (
         <div className="items">
+          {step === "medicines" && (
+            <p className="footnote">{tr("medicine.detailsHelp")}</p>
+          )}
+
           {a.items.map((item, i) => (
             <div className="item" key={i}>
               <div className="row">
@@ -331,10 +379,17 @@ export default function App({ account = null, onAccountSave }) {
                   className="text-button"
                   aria-label={tr("remove.item.value", { p0: i + 1 })}
                   onClick={() => {
-                    update(step, {
-                      ...a,
-                      items: a.items.filter((_, j) => i !== j),
-                    });
+                    update(
+                      step,
+                      step === "medicines"
+                        ? editMedicines(a, {
+                            items: a.items.filter((_, j) => i !== j),
+                          })
+                        : {
+                            ...a,
+                            items: a.items.filter((_, j) => i !== j),
+                          },
+                    );
                     setNotice(message("item.removed"));
                     requestAnimationFrame(() =>
                       document.querySelector(".items .add")?.focus(),
@@ -736,7 +791,13 @@ export default function App({ account = null, onAccountSave }) {
                     next();
                   }}
                 >
-                  {field ? (
+                  {step === "history" ? (
+                    <HistoryInput
+                      answer={a}
+                      onChange={(value) => update("history", value)}
+                      error={error}
+                    />
+                  ) : field ? (
                     <fieldset>
                       <legend>{field.label}</legend>
                       {field.options?.map(({ value: v, label }) => (
@@ -1031,7 +1092,12 @@ export default function App({ account = null, onAccountSave }) {
                 <dt>{tr("medicines")}</dt>
                 <dd>
                   {data.medicines.status === "answered"
-                    ? tr("value.entered", { p0: data.medicines.items.length })
+                    ? medicineTags(data.medicines).length
+                      ? tr("medicine.count", {
+                          p0: medicineTags(data.medicines).length,
+                          p1: data.medicines.items.length,
+                        })
+                      : tr("value.entered", { p0: data.medicines.items.length })
                     : describe(data.medicines, locale)}
                 </dd>
               </dl>

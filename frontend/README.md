@@ -95,3 +95,7 @@ Noto Sans KR은 Google Fonts에서 불러오며, 오프라인에서는 시스템
 환자·의사 모두 `/#/login`에서 로그인한다. 데모 의사 버튼은 입력값만 채우며 로그인 버튼을 눌러 제출한다. 기존 `/#/doctor/login` 링크는 통합 로그인으로 연결한다. 인증 결과의 역할로 목적지를 결정하며 회원가입은 환자만 생성한다.
 
 `visit-notes-auth-v2` 단일 세션을 사용한다. 기존 분리 로그인 세션은 초기화 시 폐기하여 재로그인을 요구하지만 저장된 문진·메모·검토 기록은 보존한다. 계정 전환·로그아웃은 공통 epoch로 이전 요청을 무효화한다. 브라우저 mock 검사이며 실제 서버 권한 검증은 아니다. 통합 인증 검증: `npm test`, `npm run test:e2e -- tests/browser/auth.spec.js`.
+
+## Medical history and medicine tags
+
+The shared guest/account history and medicine screens reuse checkbox tags. History keeps free text; medicine types stay separate from optional name/dose entries. Stable IDs, legacy compatibility, inactive drafts and snapshot behavior are documented in [History and medicine tags](../docs/history-tags.md). Run `npm test` and `npm run test:e2e -- tests/browser/history.spec.js tests/browser/medicines.spec.js` for focused coverage.

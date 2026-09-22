@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LanguageSelect, useI18n } from "../i18n/react.jsx";
+import { medicineText } from "../medicines.js";
+import { historyText } from "../history.js";
+import { getLocale } from "../i18n/core.js";
 import { tr } from "../i18n/core.js";
 import {
   go,
@@ -188,6 +191,16 @@ function Answer({ answer }) {
           <li key={i}>{value}</li>
         ))}
       </ol>
+    );
+  if (answer.field === "history")
+    return (
+      <span className="patient-text">
+        {historyText(answer, getLocale()) || t("unanswered")}
+      </span>
+    );
+  if (answer.field === "medicines")
+    return (
+      <span className="patient-text">{medicineText(answer, getLocale())}</span>
     );
   if (answer.items)
     return (

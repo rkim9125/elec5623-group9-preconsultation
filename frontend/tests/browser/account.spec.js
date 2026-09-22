@@ -101,17 +101,20 @@ for (const width of [360, 1440])
     ).toHaveCount(1);
     await open(page, "/intakes/intake-a-ready");
     await page.getByRole("link", { name: /요약 검토·수정/ }).click();
-    await expect(page.getByRole("checkbox")).toBeChecked();
+    await expect(page.locator(".approval input")).toBeChecked();
     await page
       .getByRole("button", { name: "관련 병력 수정", exact: true })
       .click();
+    await page
+      .getByRole("button", { name: "병력 선택과 설명 다시 편집" })
+      .click();
     await page.getByRole("textbox").fill("계정에서 수정한 가상 병력");
     await page.getByRole("button", { name: /수정하고 요약으로/ }).click();
-    await expect(page.getByRole("checkbox")).not.toBeChecked();
+    await expect(page.locator(".approval input")).not.toBeChecked();
     await expect(
       page.getByRole("button", { name: /확인하고 전달/ }),
     ).toBeDisabled();
-    await page.getByRole("checkbox").check();
+    await page.locator(".approval input").check();
     await page.getByRole("button", { name: /확인하고 전달/ }).click();
     await expect(page.getByText("전달 당시의 기록 · 읽기 전용")).toBeVisible();
     await expect(page.locator(".summary")).toContainText(
@@ -120,7 +123,7 @@ for (const width of [360, 1440])
     await shot(page, `${width}-sent`);
     await open(page, "/intakes/intake-a-ready/edit/review");
     await expect(page.getByText("전달 당시의 기록 · 읽기 전용")).toBeVisible();
-    await expect(page.getByRole("checkbox")).toHaveCount(0);
+    await expect(page.locator(".approval input")).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "관련 병력 수정", exact: true }),
     ).toHaveCount(0);
@@ -357,15 +360,15 @@ test("blank additional reason cannot bypass review via return button", async ({
   await expect(
     page.getByText("방문 이유에 비어 있는 항목이 있어요"),
   ).toBeVisible();
-  await page.getByRole("checkbox").check();
+  await page.locator(".approval input").check();
   await expect(
     page.getByRole("button", { name: /확인하고 전달/ }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "방문 이유 확인 →" }).click();
   await page.getByRole("button", { name: "삭제", exact: true }).click();
   await page.getByRole("button", { name: /수정하고 요약으로/ }).click();
-  await expect(page.getByRole("checkbox")).not.toBeChecked();
-  await page.getByRole("checkbox").check();
+  await expect(page.locator(".approval input")).not.toBeChecked();
+  await page.locator(".approval input").check();
   await expect(
     page.getByRole("button", { name: /확인하고 전달/ }),
   ).toBeEnabled();

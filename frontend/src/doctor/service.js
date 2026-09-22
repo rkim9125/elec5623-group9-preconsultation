@@ -1,3 +1,4 @@
+import { medicineDetailsMissing } from "../medicines.js";
 import { initial, activeSteps } from "../model.js";
 import { accountService, createAccountService } from "../account/service.js";
 import { demoUsers, TIME_ZONE } from "../account/domain.js";
@@ -54,7 +55,11 @@ export function freezeSubmission(
       .filter(
         (a) =>
           ["unknown", "unasked", "unanswered", "declined"].includes(a.status) ||
-          a.items?.some((i) => !i.name.trim() || !i.detail.trim()),
+          ((a.field !== "medicines" || a.status === "answered") &&
+            a.items?.some((i) => !i.name.trim() || !i.detail.trim())) ||
+          (a.field === "medicines" &&
+            a.status === "answered" &&
+            medicineDetailsMissing(a)),
       )
       .map((a) => a.field),
   ];

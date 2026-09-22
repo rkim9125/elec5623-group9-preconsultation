@@ -1,4 +1,6 @@
 import { translate } from "./i18n/core.js";
+import { medicineText, medicineDetailsMissing } from "./medicines.js";
+import { historyText } from "./history.js";
 import { optionLabel } from "./copy.js";
 const statusKeys = {
   unasked: "not.asked.yet",
@@ -26,8 +28,8 @@ export const initial = () => ({
   frequency: blank(),
   impact: blank(),
   severity: blank(),
-  history: blank(),
-  medicines: { ...blank(), items: [] },
+  history: { ...blank(), tags: [] },
+  medicines: { ...blank(), items: [], tags: [] },
   allergies: { ...blank(), items: [] },
   questions: blank(),
   completed: [],
@@ -66,10 +68,13 @@ export function change(d, key, value) {
   }
   return next;
 }
-export function describe(a, locale = "ko") {
+export function describe(a, locale = "ko", field) {
   const tr = (key) => translate(locale, key);
   if (a.status !== "answered")
     return tr(statusKeys[a.status] || statusKeys.unanswered);
+  if (field === "medicines" || (a.tags && a.items))
+    return medicineText(a, locale);
+  if (a.tags) return historyText(a, locale) || tr("unanswered");
   if (a.items)
     return a.items.length
       ? a.items
@@ -123,6 +128,8 @@ export function summary(d, locale = "ko") {
             `${k === "medicines" ? tr("medicines") : tr("allergies")}: ${i.name.trim() || tr("name.unknown")} · ${i.detail.trim() || tr("details.unknown")}`,
           );
       });
+  if (d.medicines.status === "answered" && medicineDetailsMissing(d.medicines))
+    uncertain.push(tr("medicine.unconfirmed"));
   return [
     {
       title: tr("reason.for.visit.2"),
@@ -148,7 +155,7 @@ export function summary(d, locale = "ko") {
     {
       title: tr("medicines"),
       step: "medicines",
-      text: describe(d.medicines, locale),
+      text: describe(d.medicines, locale, "medicines"),
     },
     {
       title: tr("allergies"),

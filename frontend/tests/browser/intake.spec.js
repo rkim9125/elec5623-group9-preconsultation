@@ -83,13 +83,13 @@ for (const width of [360, 1440])
     await expect(page.locator(".summary")).toContainText("가상 약 B");
     await expect(page.locator(".summary")).not.toContainText("삭제할 약");
     await expect(page.locator(".summary")).toContainText("가상 원인 B");
-    await page.getByRole("checkbox").check();
+    await page.locator(".approval input").check();
     await page
       .getByRole("button", { name: "증상의 경과 수정", exact: true })
       .click();
     await page.getByRole("radio", { name: "비슷해요", exact: true }).check();
     await page.getByRole("button", { name: /수정하고 요약으로/ }).click();
-    await expect(page.getByRole("checkbox")).not.toBeChecked();
+    await expect(page.locator(".approval input")).not.toBeChecked();
     await expect(page.locator(".summary")).not.toContainText("빈도:");
     await expect(
       page.getByRole("button", { name: /확인하고 전달/ }),
@@ -122,7 +122,7 @@ for (const width of [360, 1440])
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
       .analyze();
     expect(accessibility.violations).toEqual([]);
-    await page.getByRole("checkbox").check();
+    await page.locator(".approval input").check();
     await page.getByText("데모 테스트", { exact: true }).click();
     await page.getByRole("button", { name: "다음 응답 실패시키기" }).click();
     await page.getByText("데모 테스트", { exact: true }).click();
@@ -194,10 +194,13 @@ test("keyboard errors, browser history, storage, long input and stale responses"
   await page.getByRole("button", { name: "데모 데이터 초기화" }).click();
   await page.getByRole("button", { name: "초기화", exact: true }).click();
   await fillFlow(page);
-  await page.getByRole("checkbox").check();
+  await page.locator(".approval input").check();
   await page.getByRole("button", { name: /확인하고 전달/ }).click();
   await page
     .getByRole("button", { name: "관련 병력 수정", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "병력 선택과 설명 다시 편집" })
     .click();
   await page.getByRole("textbox").fill("최신 병력");
   await page.waitForTimeout(800);
@@ -206,7 +209,7 @@ test("keyboard errors, browser history, storage, long input and stale responses"
   );
   await page.getByRole("button", { name: /수정하고 요약으로/ }).click();
   await expect(page.locator(".summary")).toContainText("최신 병력");
-  await expect(page.getByRole("checkbox")).not.toBeChecked();
+  await expect(page.locator(".approval input")).not.toBeChecked();
 });
 
 async function keyboardTo(page, name, key = "Enter") {
@@ -269,14 +272,14 @@ test("keyboard-only journey, summary failure, and editing refresh", async ({
   for (let i = 0; i < 60; i++) {
     if (
       await page
-        .getByRole("checkbox")
+        .locator(".approval input")
         .evaluate((e) => e === document.activeElement)
     )
       break;
     await page.keyboard.press("Tab");
   }
   await page.keyboard.press("Space");
-  await expect(page.getByRole("checkbox")).toBeChecked();
+  await expect(page.locator(".approval input")).toBeChecked();
   await keyboardTo(page, "확인하고 전달 시뮬레이션");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "전달 시뮬레이션 완료",
