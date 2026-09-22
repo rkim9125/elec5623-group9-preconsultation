@@ -799,6 +799,9 @@ export default function Doctor() {
       </a>
       <header className="header doctor-header">
         <RouteLink className="brand" to="/doctor">
+          <span className="brand-symbol" aria-hidden="true">
+            ✳
+          </span>
           {tr("visit.notes")} <small>{t("title")}</small>
         </RouteLink>
         <div className="doctor-header-actions">
