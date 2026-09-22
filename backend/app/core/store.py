@@ -1,7 +1,7 @@
 """Session persistence seam.
 
-In-memory for now. C6 replaces `InMemorySessionStore` with a DB-backed
-implementation of the same interface; nothing else in C3 should need to change.
+The database implementation is request-scoped. InMemorySessionStore remains
+available for isolated unit tests and mocks.
 """
 
 from __future__ import annotations
@@ -54,8 +54,9 @@ class InMemorySessionStore:
         self._summaries.clear()
 
 
-_STORE = InMemorySessionStore()
+def get_store():
+    """FastAPI dependency: commit all writes together before returning success."""
+    from app.db.session import store_transaction
 
-
-def get_store() -> InMemorySessionStore:
-    return _STORE
+    with store_transaction() as store:
+        yield store

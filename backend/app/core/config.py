@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
-    # Database (unused until C6 wires persistence)
+    # Relative SQLite paths are resolved against the backend directory.
     database_url: str = "sqlite:///./preconsult.db"
 
     # LLM provider (unused until C4 wires the adapter)
