@@ -9,6 +9,8 @@
 Status: **draft v0.1** — shapes are provisional and may change without deprecation
 until v1.0.
 
+> **Patient UI integration:** the current React prototype uses browser mocks and does not call these session endpoints. Its current models and proposed account/appointment/intake REST contract are documented separately in [frontend-rest-api.md](frontend-rest-api.md). The proposed endpoints are not implemented.
+
 ## Conventions
 
 - Base URL: `/api`

@@ -7,6 +7,7 @@ import { accountService as api } from "./service.js";
 import { useRoute, go, RouteLink } from "./router.jsx";
 import {
   demoUsers,
+  DOCTOR,
   DEMO_PASSWORD,
   safeReturn,
   formatDate,
@@ -235,14 +236,14 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
           go(`/login?returnTo=${encodeURIComponent(returnTo)}&registered=1`);
         }
       } else {
-        await api.login(
+        const user = await api.login(
           values.email,
           values.password,
           controller.current.signal,
         );
         if (alive.current) {
           setValues((v) => ({ ...v, password: "" }));
-          onAuthenticated(returnTo);
+          onAuthenticated(safeReturn(returnTo, user.role));
         }
       }
     } catch (error) {
@@ -401,7 +402,7 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
           {tr("using.fictional.accounts")}
         </p>
         <div className="demo-accounts">
-          {demoUsers.map((u, i) => (
+          {[...demoUsers, DOCTOR].map((u, i) => (
             <button
               key={u.id}
               disabled={signup || busy}
@@ -415,19 +416,20 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
                 setErrors({});
                 setNotice(
                   message("demo.email.and.password.entered.for.value", {
-                    p0: u.name,
+                    p0: u.role === "doctor" ? tr("auth.demoDoctor") : u.name,
                   }),
                 );
               }}
             >
               <strong>
-                {u.name}
+                {u.role === "doctor" ? tr("auth.demoDoctor") : u.name}
                 <small>
                   {
                     [
                       tr("appointments.and.notes"),
                       tr("another.patient.s.records"),
                       tr("empty.account"),
+                      tr("doctor.title"),
                     ][i]
                   }
                 </small>
@@ -1164,18 +1166,7 @@ export default function Portal() {
   const route = useRoute(),
     auth = useSyncExternalStore(api.subscribe, api.getSnapshot);
   const [path, query = ""] = route.split("?");
-  const returnTo = safeReturn(new URLSearchParams(query).get("returnTo"));
-  useEffect(() => {
-    api.restore();
-  }, []);
-  useEffect(() => {
-    if (auth.status !== "authenticated") return;
-    const timer = setTimeout(
-      () => api.expire(),
-      Math.max(0, auth.expiresAt - Date.now()),
-    );
-    return () => clearTimeout(timer);
-  }, [auth.epoch, auth.status, auth.expiresAt]);
+  const returnTo = new URLSearchParams(query).get("returnTo") || "";
   if (!path.startsWith("/")) return <IntakeApp key="guest" />;
   if (auth.status === "checking")
     return (

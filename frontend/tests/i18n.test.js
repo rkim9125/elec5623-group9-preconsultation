@@ -41,6 +41,12 @@ test("static translation calls and question definitions have complete resources"
       /\b(?:tr|message)\(\s*["']([^"']+)["']/g,
     ))
       assert.ok(resources.en[match[1]], `${file}: ${match[1]}`);
+    if (file.startsWith("doctor/"))
+      for (const match of source.matchAll(/\bt\(\s*["']([^"']+)["']/g))
+        assert.ok(
+          resources.en[`doctor.${match[1]}`],
+          `${file}: doctor.${match[1]}`,
+        );
   }
   missingKeys.clear();
   for (const locale of ["en", "ko"]) {

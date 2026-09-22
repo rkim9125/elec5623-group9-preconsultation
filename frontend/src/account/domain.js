@@ -1,13 +1,38 @@
 import { getLocale } from "../i18n/core.js";
-import { initial, summary, activeSteps } from "../model.js";
+import { initial, summary, activeSteps, steps } from "../model.js";
 export const ACCOUNT_KEY = "jinryo-account-demo-v1";
-export const SESSION_KEY = "jinryo-session-demo-v1";
+export const SESSION_KEY = "visit-notes-auth-v2";
+export const LEGACY_SESSION_KEYS = [
+  "jinryo-session-demo-v1",
+  "visit-notes-doctor-session-v1",
+];
+export const DOCTOR = {
+  id: "doctor-demo",
+  name: "Dr. Demo",
+  email: "doctor@example.test",
+  role: "doctor",
+};
 export const TIME_ZONE = "Asia/Seoul";
 export const DEMO_PASSWORD = "Demo1234!";
 export const demoUsers = [
-  { id: "patient-a", name: "데모 가람", email: "garam@example.test" },
-  { id: "patient-b", name: "데모 나래", email: "narae@example.test" },
-  { id: "patient-empty", name: "데모 새봄", email: "empty@example.test" },
+  {
+    id: "patient-a",
+    name: "데모 가람",
+    role: "patient",
+    email: "garam@example.test",
+  },
+  {
+    id: "patient-b",
+    name: "데모 나래",
+    role: "patient",
+    email: "narae@example.test",
+  },
+  {
+    id: "patient-empty",
+    name: "데모 새봄",
+    role: "patient",
+    email: "empty@example.test",
+  },
 ];
 export const intakeLabels = {
   draft: "in.progress",
@@ -19,7 +44,18 @@ export const appointmentLabels = {
   completed: "status.visitCompleted",
   cancelled: "status.cancelled",
 };
-export function safeReturn(value) {
+export function safeReturn(value, role = "patient") {
+  if (role === "doctor")
+    return typeof value === "string" &&
+      /^\/doctor(?:\/appointments\/[a-zA-Z0-9_-]+)?$/.test(value)
+      ? value
+      : "/doctor";
+  if (
+    typeof value === "string" &&
+    value.includes("/edit/") &&
+    !steps.includes(value.split("/edit/")[1])
+  )
+    return "/my";
   return typeof value === "string" &&
     /^\/(?:my|account|appointments(?:\/[a-zA-Z0-9_-]+)?|intakes(?:\/[a-zA-Z0-9_-]+(?:\/edit\/[a-z]+)?)?)$/.test(
       value,

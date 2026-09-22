@@ -1,5 +1,7 @@
 import {
   ACCOUNT_KEY,
+  LEGACY_SESSION_KEYS,
+  DOCTOR,
   SESSION_KEY,
   DEMO_PASSWORD,
   demoUsers,
@@ -43,12 +45,16 @@ export function createAccountService({
       return false;
     }
   }
-  const boot = database();
-  boot.intakes = boot.intakes.filter((i) =>
-    demoUsers.some((u) => u.id === i.userId),
-  );
-  persist(boot);
-  const users = () => [...demoUsers, ...registered.values()];
+  // Invalidate both legacy identities; preserve all clinical demo data.
+  for (const key of LEGACY_SESSION_KEYS) {
+    try {
+      storage?.removeItem(key);
+    } catch {
+      /* memory fallback */
+    }
+  }
+  persist(database());
+  const users = () => [...demoUsers, DOCTOR, ...registered.values()];
   function clearSession(message = "") {
     state = {
       status: "anonymous",
@@ -65,13 +71,14 @@ export function createAccountService({
     slowNext = false;
     emit();
   }
-  function assertScope(scope) {
+  function assertScope(scope, role = "patient") {
     if (state.status === "authenticated" && state.expiresAt <= now())
       clearSession("your.session.has.expired.please.log.in.again");
     if (
       state.status !== "authenticated" ||
       scope?.epoch !== state.epoch ||
-      scope.userId !== state.user.id
+      scope.userId !== state.user.id ||
+      state.user.role !== role
     )
       throw fault(
         "SESSION_EXPIRED",
@@ -104,6 +111,7 @@ export function createAccountService({
     getSnapshot() {
       return state;
     },
+    assertScope,
     scope() {
       if (!state.user)
         throw fault("SESSION_EXPIRED", "please.log.in.to.continue");
@@ -119,7 +127,7 @@ export function createAccountService({
       } catch {
         /* invalid demo session */
       }
-      const user = demoUsers.find((u) => u.id === session?.userId);
+      const user = [...demoUsers, DOCTOR].find((u) => u.id === session?.userId);
       if (user && session.expiresAt > now()) {
         state = {
           status: "authenticated",
@@ -145,7 +153,7 @@ export function createAccountService({
         const credential = credentials.get(user.id);
         valid = credential
           ? (await verifier(password, credential.salt)) === credential.hash
-          : demoUsers.some((u) => u.id === user.id) &&
+          : [...demoUsers, DOCTOR].some((u) => u.id === user.id) &&
             password === DEMO_PASSWORD;
       }
       if (!valid) throw fault("LOGIN_FAILED", "check.your.email.and.password");
@@ -170,8 +178,10 @@ export function createAccountService({
       return clone(user);
     },
     async signup({ name, email, password }, signal) {
+      const epoch = state.epoch;
       await wait();
-      if (signal?.aborted) throw fault("STALE", "signup.request.cancelled");
+      if (signal?.aborted || epoch !== state.epoch)
+        throw fault("STALE", "signup.request.cancelled");
       email = email.trim().toLowerCase();
       if (users().some((u) => u.email === email))
         throw fault(
@@ -192,10 +202,11 @@ export function createAccountService({
       const hash = await verifier(password, salt);
       if (users().some((u) => u.email === email))
         throw fault("EMAIL_EXISTS", "this.demo.email.is.already.in.use");
-      if (signal?.aborted) throw fault("STALE", "signup.request.cancelled");
-      registered.set(id, { id, name: name.trim(), email });
+      if (signal?.aborted || epoch !== state.epoch)
+        throw fault("STALE", "signup.request.cancelled");
+      registered.set(id, { id, name: name.trim(), email, role: "patient" });
       credentials.set(id, { salt, hash });
-      return { id, name: name.trim(), email };
+      return { id, name: name.trim(), email, role: "patient" };
     },
     logout() {
       clearSession();
@@ -319,6 +330,21 @@ export function createAccountService({
       db.intakes.unshift(record);
       persist(db);
       return clone(record);
+    },
+    // Internal mock bridge: never returns draft answers or unsent records.
+    doctorDemoSource() {
+      const db = database();
+      return clone({
+        appointments: db.appointments.filter((a) =>
+          ["patient-a", "patient-b"].includes(a.userId),
+        ),
+        intakes: db.intakes.filter(
+          (i) =>
+            ["patient-a", "patient-b"].includes(i.userId) &&
+            i.status === "sent" &&
+            i.snapshot,
+        ),
+      });
     },
     resetCurrent(scope) {
       assertScope(scope);
