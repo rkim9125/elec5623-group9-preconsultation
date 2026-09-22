@@ -254,6 +254,18 @@ export function createDoctorService({
         db.appointments.push(target);
         changed = true;
       }
+      for (const field of [
+        "startsAt",
+        "department",
+        "hospital",
+        "clinician",
+        "status",
+      ]) {
+        if (target[field] !== apt[field]) {
+          target[field] = apt[field];
+          changed = true;
+        }
+      }
       const record = source.intakes.find(
         (i) =>
           i.appointmentId === apt.id &&
@@ -277,6 +289,17 @@ export function createDoctorService({
         );
         changed = true;
       }
+    }
+    const retained = db.appointments.filter(
+      (a) =>
+        !["patient-a", "patient-b"].includes(a.patient.id) ||
+        source.appointments.some(
+          (item) => item.id === a.id && item.userId === a.patient.id,
+        ),
+    );
+    if (retained.length !== db.appointments.length) {
+      db.appointments = retained;
+      changed = true;
     }
     if (changed) persist();
   }
@@ -307,14 +330,20 @@ export function createDoctorService({
     logout: () => authService.logout(),
     expire: () => authService.expire(),
     async list(scope, date) {
-      await wait(scope, "load");
+      return api.listRange(scope, date, date, "load");
+    },
+    async listRange(scope, start, end, operation = "calendar") {
+      await wait(scope, operation);
       ingest();
       return clone(
         db.appointments
           .filter(
-            (a) => a.doctorId === scope.userId && dayKey(a.startsAt) === date,
+            (a) =>
+              a.doctorId === scope.userId &&
+              dayKey(a.startsAt) >= start &&
+              dayKey(a.startsAt) <= end,
           )
-          .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+          .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
           .map(({ submissions, ...a }) => ({
             ...a,
             latest: submissions.length

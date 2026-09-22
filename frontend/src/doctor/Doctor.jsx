@@ -13,6 +13,7 @@ import {
 import { formatDate } from "../account/domain.js";
 import { doctorService as api, dayKey } from "./service.js";
 import "./doctor.css";
+import Calendar from "./Calendar.jsx";
 const t = (key) => tr(`doctor.${key}`);
 const errorKey = (e) =>
   [
@@ -760,7 +761,12 @@ export default function Doctor() {
     auth = api.auth();
   const [date, setDate] = useState(dayKey()),
     [search, setSearch] = useState(""),
-    [filter, setFilter] = useState("all");
+    [filter, setFilter] = useState("all"),
+    [calendarView, setCalendarView] = useState(() => ({
+      month: dayKey().slice(0, 7),
+      date: dayKey(),
+      selected: null,
+    }));
   const match = route.match(/^\/doctor\/appointments\/([^/?]+)$/),
     selected = match?.[1];
   const authenticated = auth.status === "authenticated";
@@ -834,17 +840,11 @@ export default function Doctor() {
                 revision={revision}
               />
             ) : (
-              <section className="doctor-welcome">
-                <h2>{t("title")}</h2>
-                <p>{t("select")}</p>
-                <p>{t("storage")}</p>
-                <details className="doctor-controls">
-                  <summary>{t("controls")}</summary>
-                  <button className="secondary" onClick={() => api.expire()}>
-                    {t("expire")}
-                  </button>
-                </details>
-              </section>
+              <Calendar
+                view={calendarView}
+                setView={setCalendarView}
+                revision={revision}
+              />
             )}
           </main>
         )}

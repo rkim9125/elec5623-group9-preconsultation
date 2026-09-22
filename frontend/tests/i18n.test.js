@@ -44,8 +44,10 @@ test("static translation calls and question definitions have complete resources"
     if (file.startsWith("doctor/"))
       for (const match of source.matchAll(/\bt\(\s*["']([^"']+)["']/g))
         assert.ok(
-          resources.en[`doctor.${match[1]}`],
-          `${file}: doctor.${match[1]}`,
+          resources.en[
+            `${file === "doctor/Calendar.jsx" ? "calendar" : "doctor"}.${match[1]}`
+          ],
+          `${file}: ${match[1]}`,
         );
   }
   missingKeys.clear();
