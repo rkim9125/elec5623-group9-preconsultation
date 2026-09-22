@@ -14,6 +14,7 @@ python3.11 -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env            # then fill in values
+python -m app.db.manage init
 uvicorn app.core.main:app --reload
 ```
 
@@ -60,3 +61,7 @@ LLM_MODEL=<deployment-name>
 adapter uses a 30-second timeout, at most two SDK retries, structured Pydantic
 outputs and deterministic fallbacks. API tests explicitly override the provider
 with `FakeLLM`, even when a developer's local `.env` selects Azure.
+
+For complete Windows commands, synthetic seed data, database configuration,
+isolated test/reset procedures and C3/C4/C5 DAO contracts, see [database.md](database.md).
+The local database must be migrated before using session endpoints.

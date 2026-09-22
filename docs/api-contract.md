@@ -236,6 +236,13 @@ validation, normalised into this envelope), `SUMMARY_NOT_READY` (409),
 `LLM_UNAVAILABLE` (503), `RATE_LIMITED` (429), `INTERNAL` (500, catch-all for
 anything unhandled — also normalised into this envelope).
 
+C6 adds `PERSISTENCE_CONFLICT` (409) for stale concurrent updates or SQLite lock
+contention. Reload the session before retrying. Requests commit database writes
+before reporting success; summary generation and session completion are atomic.
+The existing request/response shapes are unchanged. The explicit patient-summary
+approval gap described above remains open; database approval metadata does not
+add an approval endpoint. See [database.md](database.md) for transaction and DAO contracts.
+
 ---
 
 ## 5. LLM extraction candidate value

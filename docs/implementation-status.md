@@ -2,7 +2,7 @@
 
 Living record of what is actually built. Updated in the same change as the code.
 
-Last updated: 2026-09-21
+Last updated: 2026-09-23
 
 Backend requires **Python 3.11+** (models use 3.10+ union syntax). macOS system
 Python 3.9 fails at import.
@@ -238,14 +238,36 @@ Total: 95 tests passing.
 
 - Explicit "patient approves summary" gate (with C1/C2) before `completed` feeds
   the clinician view.
-- Swap `InMemorySessionStore` for C6's DB-backed store — `SessionState.history`
-  is exactly the correction-history/audit-log data C6's DAO needs to persist.
+- C6 database integration is implemented below; coordinate version-specific
+  patient approval and source/telemetry handoffs with C1/C2/C4/C5.
 - Safety patterns/wording need team + supervisor sign-off.
 
 ### Stubs / deferred
 
-- `database_url` in settings is unused until C6 wires persistence.
-- Sessions live in process memory only — lost on restart until C6.
+- `database_url` now configures C6 persistence; run migrations before session APIs.
+- Sessions now persist in the configured database across application restarts.
+
+## C6 — Database and data access (local feature branch)
+
+- SQLAlchemy data models and frozen Alembic initial migration: sessions,
+  transcript messages, slot state, correction history, archived candidates,
+  summary versions, audit events, explicit source references, attachment
+  metadata and model-call metadata.
+- Request-scoped DatabaseSessionStore implements all five existing store methods.
+  A request commits before its success response; summary and state writes are
+  atomic. Stale writes/SQLite contention produce 409 PERSISTENCE_CONFLICT.
+- Transcript/history are append-only and repeat saves do not duplicate entries.
+  Candidate evidence survives C3 clearing its current candidates after confirmation.
+- CLI initialization/check/seed commands, isolated temporary test databases,
+  synthetic demo data and setup/DAO documentation in [database.md](database.md).
+- Explicit approval storage and approved-version retrieval exist at DAO level.
+  C3's approval API/UI gate remains open; `completed` never creates an approval.
+- Source linking, file metadata and model-call telemetry have tested DAO methods;
+  real C4/C5 producers must still be connected by their owners.
+- Verification: 97 tests pass, including the original 82 and 15 persistence/API
+  checks. One existing third-party Starlette/AnyIO deprecation warning remains.
+  Agent verification used Python 3.12.14 with the project's installed .venv
+  packages; the developer's Python launcher is 3.12.10.
 
 ## How to run
 
@@ -253,6 +275,7 @@ Total: 95 tests passing.
 cd backend
 python3.11 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+python -m app.db.manage init
 uvicorn app.core.main:app --reload   # http://localhost:8000/api/health
 pytest
 ```

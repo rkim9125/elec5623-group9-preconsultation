@@ -55,14 +55,14 @@ def _prompt_out(prompt) -> PromptOut | None:
 
 
 @router.post("", status_code=201, response_model=SessionState)
-def create_session(body: CreateSessionRequest, store=Depends(get_store)) -> SessionState:
+def create_session(body: CreateSessionRequest, store=Depends(get_store, scope="function")) -> SessionState:
     state = flow.start_session(patient_ref=body.patient_ref, locale=body.locale)
     store.create(state)
     return state
 
 
 @router.get("/{session_id}", response_model=SessionState)
-def get_session(session_id: str, store=Depends(get_store)) -> SessionState:
+def get_session(session_id: str, store=Depends(get_store, scope="function")) -> SessionState:
     return store.get(session_id)
 
 
@@ -70,7 +70,7 @@ def get_session(session_id: str, store=Depends(get_store)) -> SessionState:
 def post_message(
     session_id: str,
     body: MessageRequest,
-    store=Depends(get_store),
+    store=Depends(get_store, scope="function"),
     llm=Depends(get_llm),
 ) -> MessageResponse:
     state = store.get(session_id)
@@ -101,7 +101,7 @@ def slot_action(
     session_id: str,
     slot_id: str,
     body: SlotActionRequest,
-    store=Depends(get_store),
+    store=Depends(get_store, scope="function"),
     llm=Depends(get_llm),
 ) -> SlotActionResponse:
     state = store.get(session_id)
@@ -142,7 +142,7 @@ def slot_action(
 @router.post("/{session_id}/complete", response_model=CompleteResponse)
 def complete_session(
     session_id: str,
-    store=Depends(get_store),
+    store=Depends(get_store, scope="function"),
     llm=Depends(get_llm),
 ) -> CompleteResponse:
     state = store.get(session_id)
@@ -160,7 +160,7 @@ def complete_session(
 
 
 @router.get("/{session_id}/summary", response_model=SummaryResponse)
-def get_summary(session_id: str, store=Depends(get_store)) -> SummaryResponse:
+def get_summary(session_id: str, store=Depends(get_store, scope="function")) -> SummaryResponse:
     state = store.get(session_id)
     if state.status != SessionStatus.COMPLETED:
         raise SummaryNotReady(f"Session {session_id!r} is not completed yet")

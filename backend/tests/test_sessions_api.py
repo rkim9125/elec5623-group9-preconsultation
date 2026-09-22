@@ -11,10 +11,16 @@ app.dependency_overrides[get_llm] = FakeLLM
 
 
 @pytest.fixture(autouse=True)
-def _clean_store():
-    get_store().reset()
+def _clean_store(database_factory):
+    from app.db.session import store_transaction
+
+    def dependency():
+        with store_transaction(database_factory) as store:
+            yield store
+
+    app.dependency_overrides[get_store] = dependency
     yield
-    get_store().reset()
+    app.dependency_overrides.pop(get_store, None)
 
 
 def _new_session() -> str:
