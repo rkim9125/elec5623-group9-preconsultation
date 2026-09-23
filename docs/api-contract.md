@@ -52,7 +52,7 @@ Example — `POST /api/sessions/{session_id}/messages`:
     "stopped": false,
     "stop_reason": null,
     "safety": { "triggered": false, "category": null, "message": null },
-    "completeness": { "coverage": 0.0, "resolution": 0.0, "unresolved_required": ["symptom_duration_days", "symptom_severity", "associated_symptoms", "current_medications", "allergies"] }
+    "completeness": { "coverage": 0.0, "resolution": 0.0, "unresolved_required": ["symptom_duration_days", "symptom_severity", "associated_symptoms", "current_medications", "allergies", "patient_worry", "appointment_goal", "clinician_questions"] }
   }
 }
 ```
@@ -110,7 +110,7 @@ Returned by `GET /api/sessions/{session_id}` and embedded (partially) in message
 responses.
 
 - `status`: `in_progress` | `awaiting_confirmation` | `completed` | `abandoned`
-- `schema_version`: consultation schema the session was created against (currently `"0.2"`)
+- `schema_version`: consultation schema the session was created against (currently `"0.3"`)
 - `slots`: map of `slot_id` → [slot object](#3-slot-schema)
 - `current_prompt`: the slot the intake flow is currently asking about, or `null`
 - `history`: append-only audit trail of slot state transitions (correction
@@ -125,7 +125,7 @@ responses.
   "updated_at": "2026-09-10T04:20:00Z",
   "patient_ref": "pat_9f8e7d",
   "locale": "en-AU",
-  "schema_version": "0.2",
+  "schema_version": "0.3",
   "current_prompt": { "slot_id": "symptom_duration_days", "text": "How many days have you had these symptoms?" },
   "slots": {
     "chief_complaint": {

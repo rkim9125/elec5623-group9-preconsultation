@@ -83,12 +83,23 @@ class FakeLLM:
             if slot.status == SlotStatus.CONFIRMED and slot.value not in (None, [], ""):
                 sections[slot.label] = str(slot.value)
             elif slot.status == SlotStatus.SKIPPED:
-                sections[slot.label] = "(patient chose to skip)"
+                sections[slot.label] = "(patient chose not to answer)"
+            elif slot.status == SlotStatus.UNKNOWN:
+                sections[slot.label] = "(patient did not know)"
         return GeneratedSummary(
             sections=sections,
-            patient_questions=[
-                "What are the most likely causes of my symptoms?",
-                "Is there anything I should do or avoid before the appointment?",
-            ],
+            patient_questions=self._patient_questions(state),
             model=MODEL_NAME,
         )
+
+    @staticmethod
+    def _patient_questions(state: SessionState) -> list[str]:
+        """The patient's own questions win. Generated suggestions are only a
+        fallback for when they haven't given any — never a replacement."""
+        slot = state.slots.get("clinician_questions")
+        if slot is not None and slot.status == SlotStatus.CONFIRMED and slot.value:
+            return [str(q) for q in slot.value]
+        return [
+            "What are the most likely causes of my symptoms?",
+            "Is there anything I should do or avoid before the appointment?",
+        ]

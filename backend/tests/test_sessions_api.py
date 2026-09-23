@@ -35,7 +35,7 @@ def test_create_and_fetch_session():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "in_progress"
-    assert body["schema_version"] == "0.2"
+    assert body["schema_version"] == "0.3"
     assert "chief_complaint" in body["slots"]
 
 

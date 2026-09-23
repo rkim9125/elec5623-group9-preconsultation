@@ -49,3 +49,24 @@ def test_generate_summary_shape():
     out = FakeLLM().generate_summary(_state())
     assert isinstance(out, GeneratedSummary)
     assert len(out.patient_questions) >= 1
+
+
+def test_summary_prefers_the_patients_own_questions():
+    from app.core.engine import confirm_slot
+
+    state = _state()
+    mine = ["Do I need a scan?", "Can I keep running?"]
+    confirm_slot(state, "clinician_questions", value=mine)
+    assert FakeLLM().generate_summary(state).patient_questions == mine
+
+
+def test_summary_distinguishes_skipped_from_unknown():
+    from app.core.engine import mark_unknown, skip_slot
+
+    state = _state()
+    skip_slot(state, "occupation")
+    mark_unknown(state, "allergies")
+    sections = FakeLLM().generate_summary(state).sections
+    assert sections["Occupation"] != sections["Known allergies"]
+    assert "not to answer" in sections["Occupation"]
+    assert "did not know" in sections["Known allergies"]
