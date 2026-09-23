@@ -10,7 +10,8 @@ from app.core.planner import (
 from app.llm.base import ExtractedCandidate
 
 REQUIRED = ["chief_complaint", "symptom_duration_days", "symptom_severity",
-            "associated_symptoms", "current_medications", "allergies"]
+            "associated_symptoms", "current_medications", "allergies",
+            "patient_worry", "appointment_goal", "clinician_questions"]
 
 
 def _cand(slot_id, value):
@@ -24,6 +25,9 @@ def _confirm_all_required(state):
     confirm_slot(state, "associated_symptoms", value=[])
     confirm_slot(state, "current_medications", value=[])
     confirm_slot(state, "allergies", value=[])
+    confirm_slot(state, "patient_worry", value="that it keeps coming back")
+    confirm_slot(state, "appointment_goal", value="a plan for the next few weeks")
+    confirm_slot(state, "clinician_questions", value=["Is this likely to recur?"])
 
 
 # --- completeness ------------------------------------------------------- #
@@ -33,8 +37,8 @@ def test_fresh_state_completeness_is_zero(state):
     assert c.coverage == 0.0
     assert c.resolution == 0.0
     assert set(c.unresolved_required) == set(REQUIRED)
-    # 24 slots in the schema, but fever_duration_days is inactive → 23 active
-    assert c.active_total == 23
+    # 28 slots in the schema, but fever_duration_days is inactive → 27 active
+    assert c.active_total == 27
 
 
 def test_skipped_counts_for_coverage_not_resolution(state):

@@ -228,6 +228,41 @@ Total: 82 tests passing.
 
 Total: 95 tests passing.
 
+- **Consultation schema v0.3 — patient agenda slots**
+  (`feat/c3-schema-v0.3-agenda-slots`)
+  - `docs/workflow-catalogue.md` (committed separately, PR #16) lists
+    `functional_impact`, `patient_worry`, `appointment_goal` and
+    `clinician_questions` as **every-session** targets in §3.2. None of them
+    existed in the schema, which meant the patient's own questions and goals —
+    the proposal's stated output — were never collected. `clinician_questions`
+    was the worst gap: the summary only ever carried model-generated
+    suggestions.
+  - `SCHEMA_VERSION` `"0.2"` → `"0.3"`; 24 → 28 slots.
+    `patient_worry` / `appointment_goal` / `clinician_questions` are
+    **required** (consistent with how the other every-session fields are
+    treated); `functional_impact` is optional because the catalogue makes it
+    conditional on a reported symptom concern.
+  - `app/llm/fake.py`: `generate_summary` now returns the patient's own
+    confirmed `clinician_questions` when present and only falls back to
+    generated suggestions otherwise, and it distinguishes "chose not to
+    answer" (skipped) from "did not know" (unknown) per catalogue §6.4.
+  - Tests: `test_patient_agenda_targets_exist_and_are_required`,
+    `test_summary_prefers_the_patients_own_questions`,
+    `test_summary_distinguishes_skipped_from_unknown`; existing planner/API
+    tests updated for the new required set and active-slot count.
+  - Verified live against `uvicorn` + the C6 SQLite database: the flow now asks
+    worry → goal → questions after the symptom fields, reaches
+    `resolution = 1.0`, and the completed summary carries the patient's
+    verbatim questions.
+
+**Not done — needs a team decision (from the workflow catalogue):**
+multi-concern namespacing (`concerns.c01.*`), workflow-level activation for
+WF-01…WF-30, and nested leaf fields (`previous_consultation.exists` / `.date`
+/ …). These change `SessionState.slots` and therefore C6's tables, so they are
+a scope decision, not a C3-only change.
+
+Total: 113 tests passing.
+
 ## Remaining project work
 
 ### In progress

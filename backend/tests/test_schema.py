@@ -8,7 +8,7 @@ from app.core.schema import (
 
 
 def test_schema_version_set():
-    assert SCHEMA_VERSION == "0.2"
+    assert SCHEMA_VERSION == "0.3"
 
 
 def test_initial_slots_cover_every_definition_and_start_empty():
@@ -52,6 +52,15 @@ def test_covers_the_six_history_taking_domains():
     assert "family_history" in ids  # family history
     assert {"smoking_status", "alcohol_use", "occupation"} <= ids  # social history
     assert {"travel_history", "additional_notes"} <= ids  # other context
+
+
+def test_patient_agenda_targets_exist_and_are_required():
+    # docs/workflow-catalogue.md §3.2 lists these as "every session" targets,
+    # and the patient's own questions/goals are the proposal's stated output.
+    for slot_id in ["patient_worry", "appointment_goal", "clinician_questions"]:
+        assert get_slot_def(slot_id).required is True
+    assert get_slot_def("clinician_questions").type == SlotType.LIST
+    assert get_slot_def("functional_impact").required is False
 
 
 def test_associated_symptoms_is_required_but_richness_fields_are_optional():

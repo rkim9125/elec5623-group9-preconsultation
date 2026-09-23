@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from app.core.models import Slot, SlotStatus, SlotType
 
-SCHEMA_VERSION = "0.2"
+SCHEMA_VERSION = "0.3"
 
 
 class SlotActivation(BaseModel):
@@ -117,6 +117,13 @@ CONSULTATION_SCHEMA: list[SlotDef] = [
         type=SlotType.LIST,
         required=False,
         prompt_hint="Have you tried anything already (medication, rest, etc.)?",
+    ),
+    SlotDef(
+        slot_id="functional_impact",
+        label="Effect on everyday activities",
+        type=SlotType.STRING,
+        required=False,
+        prompt_hint="How does it affect your usual activities?",
     ),
     # -- Associated symptoms --------------------------------------------- #
     SlotDef(
@@ -226,6 +233,34 @@ CONSULTATION_SCHEMA: list[SlotDef] = [
         type=SlotType.STRING,
         required=False,
         prompt_hint="Is there anything else you'd like the doctor to know?",
+    ),
+    # -- Patient agenda ---------------------------------------------------- #
+    # The catalogue (docs/workflow-catalogue.md §3.2) lists these as
+    # "every session" targets, and the proposal's stated output is the
+    # patient's own questions and goals for the consultation — so they are
+    # required, like the other every-session fields. The patient can still
+    # skip or answer "I don't know"; requiring them only means the planner
+    # will actually ask.
+    SlotDef(
+        slot_id="patient_worry",
+        label="What worries the patient most",
+        type=SlotType.STRING,
+        required=True,
+        prompt_hint="What concerns you most about this?",
+    ),
+    SlotDef(
+        slot_id="appointment_goal",
+        label="What the patient wants from the appointment",
+        type=SlotType.STRING,
+        required=True,
+        prompt_hint="What would you most like to get from the appointment?",
+    ),
+    SlotDef(
+        slot_id="clinician_questions",
+        label="Questions for the clinician",
+        type=SlotType.LIST,
+        required=True,
+        prompt_hint="What would you like to ask the clinician?",
     ),
 ]
 
