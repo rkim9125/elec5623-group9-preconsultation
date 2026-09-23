@@ -66,4 +66,5 @@ anything that doesn't fit.
 - [Implementation spec](docs/implementation-spec.md)
 - [Implementation status](docs/implementation-status.md) — what is actually built
 - [API contract](docs/api-contract.md)
+- [Workflow catalogue](docs/workflow-catalogue.md) — 30 non-emergency consultation workflows, shared dialogue/data rules
 - [Setup](docs/setup.md)
