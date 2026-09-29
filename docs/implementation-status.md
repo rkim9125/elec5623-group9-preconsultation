@@ -286,6 +286,32 @@ Total: 113 tests passing.
 
 Total: 121 tests passing.
 
+- **Whose questions reach the clinician** (`fix/c3-summary-question-authority`)
+  - Found while comparing the two LLM adapters. `app/llm/azure.py` builds
+    `patient_questions` from the model's own output (`parsed.patient_questions`)
+    and never reads `clinician_questions` — so with the Azure provider the
+    patient's own questions were being replaced by generated ones and presented
+    as theirs. That contradicts the workflow catalogue: §3.2 says
+    `clinician_questions` must "retain the patient's wording", §3.5 says a
+    generated draft "must not be silently attributed to the patient".
+  - Fixed **in C3, without touching C4's file**: `flow.finalise()` now replaces
+    `patient_questions` with the patient's confirmed `clinician_questions`
+    whenever they supplied any. Whose questions are authoritative is a business
+    rule, so it belongs here rather than in each adapter — this fixes every
+    provider at once, including future ones. Generated questions remain a
+    fallback for when the patient gave none.
+  - Also fixed a divergence **I introduced**: C4 merged first with
+    `"(patient chose to skip)"` / `"(patient does not know)"`, and schema v0.3
+    changed `FakeLLM` to different wording, so the same slot state read
+    differently depending on the provider. `FakeLLM` now matches `azure.py`.
+  - `FakeLLM` no longer decides question authority at all — that logic moved out
+    of the adapter.
+  - Tests: `tests/test_question_authority.py` uses an adapter that ignores the
+    patient entirely (the same shape of mistake a real provider can make) and
+    pins that their questions survive regardless.
+
+Total: 124 tests passing.
+
 - **Patient summary approval** (`feat/c3-summary-approval`)
   - "Patient review and approval" is C3's declared responsibility and was the
     longest-standing open gap in the contract.

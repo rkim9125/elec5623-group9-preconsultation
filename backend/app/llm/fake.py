@@ -83,23 +83,19 @@ class FakeLLM:
             if slot.status == SlotStatus.CONFIRMED and slot.value not in (None, [], ""):
                 sections[slot.label] = str(slot.value)
             elif slot.status == SlotStatus.SKIPPED:
-                sections[slot.label] = "(patient chose not to answer)"
+                # Wording matches app/llm/azure.py so the same slot state does
+                # not read differently depending on which provider is active.
+                sections[slot.label] = "(patient chose to skip)"
             elif slot.status == SlotStatus.UNKNOWN:
-                sections[slot.label] = "(patient did not know)"
+                sections[slot.label] = "(patient does not know)"
         return GeneratedSummary(
             sections=sections,
-            patient_questions=self._patient_questions(state),
+            # Suggestions only. If the patient supplied their own questions,
+            # app/core/flow.py replaces these — an adapter must never decide
+            # whose questions reach the clinician.
+            patient_questions=[
+                "What are the most likely causes of my symptoms?",
+                "Is there anything I should do or avoid before the appointment?",
+            ],
             model=MODEL_NAME,
         )
-
-    @staticmethod
-    def _patient_questions(state: SessionState) -> list[str]:
-        """The patient's own questions win. Generated suggestions are only a
-        fallback for when they haven't given any — never a replacement."""
-        slot = state.slots.get("clinician_questions")
-        if slot is not None and slot.status == SlotStatus.CONFIRMED and slot.value:
-            return [str(q) for q in slot.value]
-        return [
-            "What are the most likely causes of my symptoms?",
-            "Is there anything I should do or avoid before the appointment?",
-        ]
