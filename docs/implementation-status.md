@@ -263,6 +263,29 @@ a scope decision, not a C3-only change.
 
 Total: 113 tests passing.
 
+- **Frontend integration readiness** (`feat/c3-frontend-integration-ready`)
+  - Prep work so C1/C2 can connect without any backend change and without
+    anyone editing the frontend on their behalf. No frontend files touched.
+  - **CORS fix (real blocker).** The default only allowed
+    `http://localhost:5173`, so `http://127.0.0.1:5173` (a different origin to
+    a browser) and Vite's 5174+ fallback were both blocked — and
+    `.env.example` shipped `FRONTEND_ORIGIN=` empty, which meant *every*
+    cross-origin request was blocked. Now an empty value falls back to an
+    origin regex covering any local port; setting `FRONTEND_ORIGIN`
+    explicitly still restricts, so deployments are unchanged.
+  - `docs/frontend-integration.md` — runnable quickstart (including the
+    easily-missed `python -m app.db.manage init`, whose failure mode is an
+    opaque `500`), the six-call sequence, a reference `fetch` client,
+    patient-control → action mapping, the UI-field → slot mapping table, and
+    the gotchas (`complete` is one-way, safety short-circuit, error codes).
+  - Tests: `tests/test_cors.py` pins the origins the frontend depends on.
+  - Verified against a live server: all seven documented behaviours, DB
+    persistence across a restart, and the reference client driven end to end
+    with Node (create → message → confirm → edit → unknown → complete →
+    summary, including the error path).
+
+Total: 121 tests passing.
+
 ## Remaining project work
 
 ### In progress
