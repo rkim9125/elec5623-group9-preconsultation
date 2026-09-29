@@ -50,6 +50,11 @@ class SummaryNotReady(AppError):
     code = "SUMMARY_NOT_READY"
 
 
+class SummaryVersionConflict(AppError):
+    status_code = 409
+    code = "SUMMARY_VERSION_CONFLICT"
+
+
 class PersistenceConflict(AppError):
     status_code = 409
     code = "PERSISTENCE_CONFLICT"

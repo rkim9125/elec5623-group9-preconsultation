@@ -68,9 +68,19 @@ class CompleteResponse(BaseModel):
     summary_ref: str | None
 
 
+class SummaryApprovalRequest(BaseModel):
+    # The version the patient actually reviewed. Approving a stale version is
+    # a conflict, not a silent no-op.
+    version: int = Field(ge=1)
+    approved_by: str = Field(min_length=1)
+
+
 class SummaryResponse(BaseModel):
     session_id: str
     summary_ref: str | None
+    version: int
+    approved: bool
+    approved_at: str | None
     sections: dict[str, str]
     patient_questions: list[str]
     model: str

@@ -312,6 +312,35 @@ Total: 121 tests passing.
 
 Total: 124 tests passing.
 
+- **Patient summary approval** (`feat/c3-summary-approval`)
+  - "Patient review and approval" is C3's declared responsibility and was the
+    longest-standing open gap in the contract.
+  - It was **already half-built in two places**: Tom's PR #14 added an approval
+    endpoint using a SHA-256 digest of the summary, and C6 had already shipped
+    `summary_versions.approved_at` / `approved_by` columns, a
+    `record_summary_approval()` store method and a `get_approved_summary()`
+    reader — with the docstring *"approval must be explicitly supplied by C3"*.
+    Neither was reachable: Tom's PR has been conflicted for over a week, and
+    his version stored approval on `SessionState`, whose fields C6's
+    `STATE_COLUMNS` does not persist — so that approval would have been lost on
+    the next read.
+  - Implemented against C6's existing seam instead: approval binds to a
+    **summary version**, which is the correct identity for immutable versioned
+    summaries and needs no new columns or migration.
+  - `POST /api/sessions/{id}/summary/approve` takes the `version` the patient
+    reviewed plus `approved_by`. A stale version returns `409
+    SUMMARY_VERSION_CONFLICT` rather than carrying consent onto text they never
+    read; re-approving the same version with the same actor is idempotent.
+  - `GET /summary` now returns `version`, `approved`, `approved_at`. **The
+    clinician view must check `approved`** — `completed` only means the intake
+    finished.
+  - `InMemorySessionStore` brought to parity so it remains a valid
+    implementation of the store Protocol.
+  - Tests: `tests/test_summary_approval.py` (6 cases, run against the real
+    SQLite store, including that approval survives a re-read).
+
+Total: 127 tests passing.
+
 ## Remaining project work
 
 ### In progress

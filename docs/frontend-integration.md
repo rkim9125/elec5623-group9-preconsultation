@@ -43,8 +43,10 @@ Six calls, in this order. Full request/response shapes are in
 | 2 | `POST /api/sessions/{id}/messages` | Patient types free text. |
 | 3 | `POST /api/sessions/{id}/slots/{slot_id}` | Patient answers/confirms/edits/skips one field. |
 | 4 | `GET /api/sessions/{id}` | Re-read full state (e.g. rendering the review screen). |
-| 5 | `POST /api/sessions/{id}/complete` | Patient finishes. |
-| 6 | `GET /api/sessions/{id}/summary` | Clinician view reads the finished summary. |
+| 5 | `POST /api/sessions/{id}/complete` | Patient finishes the intake. |
+| 6 | `GET /api/sessions/{id}/summary` | Show the draft summary for review. |
+| 7 | `POST /api/sessions/{id}/summary/approve` | Patient approves what they just read. |
+| 8 | `GET /api/sessions/{id}/summary` | Clinician view — **only render it if `approved` is true**. |
 
 ### The one structural thing to know
 
@@ -96,6 +98,11 @@ export const api = {
     }),
   complete: (id) => call(`/sessions/${id}/complete`, { method: "POST" }),
   getSummary: (id) => call(`/sessions/${id}/summary`),
+  approveSummary: (id, version, approvedBy = "patient") =>
+    call(`/sessions/${id}/summary/approve`, {
+      method: "POST",
+      body: JSON.stringify({ version, approved_by: approvedBy }),
+    }),
 };
 ```
 
@@ -104,6 +111,19 @@ A Vite proxy avoids CORS entirely if you prefer — in `vite.config.js`:
 ```js
 server: { proxy: { "/api": "http://localhost:8000" } }
 ```
+
+### Approval: the summary is a draft until the patient says otherwise
+
+`complete` finishes the *intake*; it does not mean the patient has agreed to the
+summary. `GET /summary` returns `version`, `approved` and `approved_at`.
+
+- Patient review screen: show the summary, then on "this matches what I entered"
+  call `approveSummary(id, summary.version)`.
+- Clinician view: **check `approved` before presenting anything as the final
+  handoff.** An unapproved summary is a draft the patient has not signed off.
+- Pass back the `version` you displayed. If the summary was regenerated in the
+  meantime you get `409 SUMMARY_VERSION_CONFLICT` — re-fetch and ask the patient
+  to review again rather than approving text they never saw.
 
 ## 3. Patient controls → API actions
 
@@ -117,6 +137,7 @@ deliberately different** — the clinician summary shows them differently.
 | "Prefer not to answer" | `slotAction(id, slotId, "skip")` |
 | "I don't know" | `slotAction(id, slotId, "unknown")` |
 | Finish | `complete(id)` |
+| "I have read the summary and it matches" | `approveSummary(id, version)` |
 
 ## 4. Field mapping
 
