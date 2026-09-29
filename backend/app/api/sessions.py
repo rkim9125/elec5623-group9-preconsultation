@@ -19,6 +19,7 @@ from app.api.schemas import (
     SafetyOut,
     SlotActionRequest,
     SlotActionResponse,
+    SummaryApprovalRequest,
     SummaryResponse,
 )
 from app.core import flow
@@ -35,6 +36,7 @@ from app.core.errors import (
     SlotNotFound,
     SlotValidationFailed,
     SummaryNotReady,
+    SummaryVersionConflict,
 )
 from app.core.models import SessionState, SessionStatus
 from app.core.planner import Completeness, compute_completeness
@@ -159,17 +161,58 @@ def complete_session(
     )
 
 
-@router.get("/{session_id}/summary", response_model=SummaryResponse)
-def get_summary(session_id: str, store=Depends(get_store, scope="function")) -> SummaryResponse:
+def _summary_response(session_id: str, store) -> SummaryResponse:
     state = store.get(session_id)
     if state.status != SessionStatus.COMPLETED:
         raise SummaryNotReady(f"Session {session_id!r} is not completed yet")
 
     summary = store.get_summary(session_id)
+    latest = store.list_summary_versions(session_id)[-1]
     return SummaryResponse(
         session_id=session_id,
         summary_ref=state.summary_ref,
+        version=latest["version"],
+        approved=latest["approved_at"] is not None,
+        approved_at=latest["approved_at"],
         sections=summary.sections,
         patient_questions=summary.patient_questions,
         model=summary.model,
     )
+
+
+@router.get("/{session_id}/summary", response_model=SummaryResponse)
+def get_summary(session_id: str, store=Depends(get_store, scope="function")) -> SummaryResponse:
+    """The latest summary, whether or not the patient has approved it.
+
+    `approved` is what decides whether it may be presented as the final
+    handoff — the clinician view must not treat an unapproved draft as one.
+    """
+    return _summary_response(session_id, store)
+
+
+@router.post("/{session_id}/summary/approve", response_model=SummaryResponse)
+def approve_summary(
+    session_id: str,
+    body: SummaryApprovalRequest,
+    store=Depends(get_store, scope="function"),
+) -> SummaryResponse:
+    """Record the patient's explicit approval of one summary version.
+
+    Approval is bound to the version the patient actually read. If the summary
+    has been regenerated since they reviewed it, approving the version they saw
+    is a conflict rather than consent carried forward onto text they never read.
+    """
+    state = store.get(session_id)
+    if state.status != SessionStatus.COMPLETED:
+        raise SummaryNotReady(f"Session {session_id!r} is not completed yet")
+
+    latest = store.list_summary_versions(session_id)[-1]
+    if body.version != latest["version"]:
+        raise SummaryVersionConflict(
+            "The summary has changed since you reviewed it; review it again "
+            "before approving.",
+            details=[{"reviewed_version": body.version, "current_version": latest["version"]}],
+        )
+
+    store.record_summary_approval(session_id, body.version, body.approved_by)
+    return _summary_response(session_id, store)

@@ -28,6 +28,7 @@ until v1.0.
 | `POST` | `/api/sessions/{session_id}/messages` | Submit a patient message; returns updated state + next prompt |
 | `POST` | `/api/sessions/{session_id}/slots/{slot_id}` | Confirm, edit, or skip a slot value |
 | `POST` | `/api/sessions/{session_id}/complete` | Finalise intake and generate clinician summary |
+| `POST` | `/api/sessions/{session_id}/summary/approve` | Patient approves a specific summary version |
 | `GET`  | `/api/sessions/{session_id}/summary` | Clinician-facing structured summary |
 
 All bodies are JSON. `POST /api/sessions` takes `{"patient_ref": null, "locale": "en-AU"}`
@@ -92,15 +93,34 @@ Example — `GET /api/sessions/{session_id}/summary` (only after `complete`, els
 {
   "session_id": "sess_a1b2c3",
   "summary_ref": "sum_sess_a1b2c3",
+  "version": 1,
+  "approved": false,
+  "approved_at": null,
   "sections": { "Main reason for the visit": "sore throat", "Current severity": "moderate" },
   "patient_questions": ["What are the most likely causes of my symptoms?"],
   "model": "fake-llm-0"
 }
 ```
 
-> **v0.1 gap:** there is no explicit "patient approves the summary" step yet.
-> `completed` currently means the patient confirmed slots individually and hit
-> finish. To be settled with C1/C2 before the clinician view is trusted.
+Example — `POST /api/sessions/{session_id}/summary/approve`:
+
+```json
+{
+  "request": { "version": 1, "approved_by": "patient" },
+  "response": { "...": "the same SummaryResponse, with approved: true and approved_at set" }
+}
+```
+
+**Approval is bound to a summary version, not to the session.** `version` is the
+version the patient actually reviewed. If the summary has been regenerated since
+then, approving the stale version returns `409 SUMMARY_VERSION_CONFLICT` rather
+than carrying consent forward onto text they never read. Approving the same
+version twice with the same actor is idempotent.
+
+> **Until a summary is approved it is a draft.** `completed` only means the
+> intake finished. The clinician view must check `approved` before presenting
+> anything as the final handoff — `GET /summary` returns the latest version
+> whether approved or not.
 
 ---
 
@@ -232,16 +252,17 @@ is the stable machine string.
 Common codes: `SESSION_NOT_FOUND` (404), `SESSION_ALREADY_COMPLETED` (409),
 `SLOT_NOT_FOUND` (404), `SLOT_VALIDATION_FAILED` (422),
 `REQUEST_VALIDATION_FAILED` (422, malformed/mistyped body — FastAPI's own
-validation, normalised into this envelope), `SUMMARY_NOT_READY` (409),
+validation, normalised into this envelope), `SUMMARY_NOT_READY` (409), `SUMMARY_VERSION_CONFLICT` (409, approving a
+summary version that is no longer the current one),
 `LLM_UNAVAILABLE` (503), `RATE_LIMITED` (429), `INTERNAL` (500, catch-all for
 anything unhandled — also normalised into this envelope).
 
 C6 adds `PERSISTENCE_CONFLICT` (409) for stale concurrent updates or SQLite lock
 contention. Reload the session before retrying. Requests commit database writes
 before reporting success; summary generation and session completion are atomic.
-The existing request/response shapes are unchanged. The explicit patient-summary
-approval gap described above remains open; database approval metadata does not
-add an approval endpoint. See [database.md](database.md) for transaction and DAO contracts.
+The existing request/response shapes are unchanged. C6's `summary_versions`
+approval columns are now driven by the approval endpoint above. See
+[database.md](database.md) for transaction and DAO contracts.
 
 ---
 
