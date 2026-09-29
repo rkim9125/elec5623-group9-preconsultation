@@ -1,17 +1,26 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.deps import get_llm
 from app.core.main import app
 from app.core.store import get_store
+from app.llm.fake import FakeLLM
 
 client = TestClient(app)
+app.dependency_overrides[get_llm] = FakeLLM
 
 
 @pytest.fixture(autouse=True)
-def _clean_store():
-    get_store().reset()
+def _clean_store(database_factory):
+    from app.db.session import store_transaction
+
+    def dependency():
+        with store_transaction(database_factory) as store:
+            yield store
+
+    app.dependency_overrides[get_store] = dependency
     yield
-    get_store().reset()
+    app.dependency_overrides.pop(get_store, None)
 
 
 def _new_session() -> str:
@@ -26,7 +35,7 @@ def test_create_and_fetch_session():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "in_progress"
-    assert body["schema_version"] == "0.1"
+    assert body["schema_version"] == "0.3"
     assert "chief_complaint" in body["slots"]
 
 
@@ -121,7 +130,25 @@ def test_confirm_edit_skip_slot_flow():
     )
     assert r.json()["outcome"] == "accepted"
 
-    # unknown slot
+    # "I don't know" is a distinct action/status from skip
+    r = client.post(
+        f"/api/sessions/{sid}/slots/current_medications", json={"action": "unknown"}
+    )
+    assert r.status_code == 200
+    assert r.json()["outcome"] == "accepted"
+    state = client.get(f"/api/sessions/{sid}").json()
+    assert state["slots"]["current_medications"]["status"] == "unknown"
+    assert state["slots"]["past_conditions"]["status"] == "skipped"
+
+    # the audit trail is exposed on the session and skips rejected attempts
+    events = {(e["slot_id"], e["event"]) for e in state["history"]}
+    assert ("chief_complaint", "confirmed") in events
+    assert ("symptom_severity", "confirmed") in events
+    assert ("past_conditions", "skipped") in events
+    assert ("current_medications", "marked_unknown") in events
+    assert len(state["history"]) == 4  # the rejected "extreme" edit left no trace
+
+    # nonexistent slot
     r = client.post(f"/api/sessions/{sid}/slots/not_real", json={"action": "skip"})
     assert r.status_code == 404
     assert r.json()["error"]["code"] == "SLOT_NOT_FOUND"

@@ -15,6 +15,7 @@ from app.core.models import (
     Prompt,
     SessionState,
     SessionStatus,
+    SlotStatus,
     TranscriptEntry,
     TranscriptRole,
 )
@@ -119,14 +120,30 @@ def advance_after_action(state: SessionState, llm: LLMClient) -> Prompt | None:
     return prompt
 
 
-def finalise(state: SessionState, llm: LLMClient):
-    """Generate the summary from confirmed state and mark the session completed.
+def patient_supplied_questions(state: SessionState) -> list[str] | None:
+    """The questions the patient actually wrote, if they gave any."""
+    slot = state.slots.get("clinician_questions")
+    if slot is None or slot.status != SlotStatus.CONFIRMED or not slot.value:
+        return None
+    return [str(question) for question in slot.value]
 
-    NOTE: there is no explicit 'patient approves the summary' gate yet. For now
-    'completed' means the patient confirmed slots individually and hit finish.
-    Add the approval step with C1 before this feeds the clinician view for real.
+
+def finalise(state: SessionState, llm: LLMClient):
+    """Generate the summary from confirmed state and mark the intake finished.
+
+    `completed` means the intake is over, not that the patient has agreed to the
+    summary — that is a separate approval step.
+
+    Whose questions reach the clinician is a business rule, so it is enforced
+    here rather than left to each LLM adapter to remember: if the patient
+    supplied their own `clinician_questions`, those are what the clinician sees.
+    Generated questions are suggestions and must never be silently attributed to
+    the patient (docs/workflow-catalogue.md §3.2 and §3.5).
     """
     summary = llm.generate_summary(state)
+    own_questions = patient_supplied_questions(state)
+    if own_questions is not None:
+        summary = summary.model_copy(update={"patient_questions": own_questions})
     state.summary_ref = f"sum_{state.session_id}"
     state.status = SessionStatus.COMPLETED
     state.current_prompt = None

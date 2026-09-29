@@ -28,6 +28,7 @@ until v1.0.
 | `POST` | `/api/sessions/{session_id}/messages` | Submit a patient message; returns updated state + next prompt |
 | `POST` | `/api/sessions/{session_id}/slots/{slot_id}` | Confirm, edit, or skip a slot value |
 | `POST` | `/api/sessions/{session_id}/complete` | Finalise intake and generate clinician summary |
+| `POST` | `/api/sessions/{session_id}/summary/approve` | Patient approves a specific summary version |
 | `GET`  | `/api/sessions/{session_id}/summary` | Clinician-facing structured summary |
 
 All bodies are JSON. `POST /api/sessions` takes `{"patient_ref": null, "locale": "en-AU"}`
@@ -52,7 +53,7 @@ Example — `POST /api/sessions/{session_id}/messages`:
     "stopped": false,
     "stop_reason": null,
     "safety": { "triggered": false, "category": null, "message": null },
-    "completeness": { "coverage": 0.0, "resolution": 0.0, "unresolved_required": ["symptom_duration_days", "symptom_severity", "current_medications", "allergies"] }
+    "completeness": { "coverage": 0.0, "resolution": 0.0, "unresolved_required": ["symptom_duration_days", "symptom_severity", "associated_symptoms", "current_medications", "allergies", "patient_worry", "appointment_goal", "clinician_questions"] }
   }
 }
 ```
@@ -73,13 +74,15 @@ Example — `POST /api/sessions/{session_id}/slots/{slot_id}`:
     "outcome": "accepted",
     "detail": null,
     "next_prompt": { "slot_id": "current_medications", "text": "..." },
-    "completeness": { "coverage": 0.4, "resolution": 0.25, "unresolved_required": ["current_medications", "allergies"] }
+    "completeness": { "coverage": 0.09, "resolution": 0.33, "unresolved_required": ["associated_symptoms", "current_medications", "allergies"] }
   }
 }
 ```
 
 `action` is `confirm` (promotes the top candidate, or uses `value` if given),
-`edit` (requires `value`), or `skip`. `outcome` is `accepted` / `rejected` /
+`edit` (requires `value`), `skip` (patient declined to answer), or `unknown`
+(patient answered "I don't know" — distinct from `skip`, see
+[slot schema](#3-slot-schema)). `outcome` is `accepted` / `rejected` /
 `contradiction` / `inactive` / `unknown_slot`; a `rejected` value returns `422`.
 
 Example — `POST /api/sessions/{session_id}/complete` → `{"session_id", "status": "completed", "summary_ref": "sum_sess_a1b2c3"}`.
@@ -90,15 +93,34 @@ Example — `GET /api/sessions/{session_id}/summary` (only after `complete`, els
 {
   "session_id": "sess_a1b2c3",
   "summary_ref": "sum_sess_a1b2c3",
+  "version": 1,
+  "approved": false,
+  "approved_at": null,
   "sections": { "Main reason for the visit": "sore throat", "Current severity": "moderate" },
   "patient_questions": ["What are the most likely causes of my symptoms?"],
   "model": "fake-llm-0"
 }
 ```
 
-> **v0.1 gap:** there is no explicit "patient approves the summary" step yet.
-> `completed` currently means the patient confirmed slots individually and hit
-> finish. To be settled with C1/C2 before the clinician view is trusted.
+Example — `POST /api/sessions/{session_id}/summary/approve`:
+
+```json
+{
+  "request": { "version": 1, "approved_by": "patient" },
+  "response": { "...": "the same SummaryResponse, with approved: true and approved_at set" }
+}
+```
+
+**Approval is bound to a summary version, not to the session.** `version` is the
+version the patient actually reviewed. If the summary has been regenerated since
+then, approving the stale version returns `409 SUMMARY_VERSION_CONFLICT` rather
+than carrying consent forward onto text they never read. Approving the same
+version twice with the same actor is idempotent.
+
+> **Until a summary is approved it is a draft.** `completed` only means the
+> intake finished. The clinician view must check `approved` before presenting
+> anything as the final handoff — `GET /summary` returns the latest version
+> whether approved or not.
 
 ---
 
@@ -108,9 +130,11 @@ Returned by `GET /api/sessions/{session_id}` and embedded (partially) in message
 responses.
 
 - `status`: `in_progress` | `awaiting_confirmation` | `completed` | `abandoned`
-- `schema_version`: consultation schema the session was created against (`"0.1"`)
+- `schema_version`: consultation schema the session was created against (currently `"0.3"`)
 - `slots`: map of `slot_id` → [slot object](#3-slot-schema)
 - `current_prompt`: the slot the intake flow is currently asking about, or `null`
+- `history`: append-only audit trail of slot state transitions (correction
+  history) — see below
 - `summary_ref`: id of the generated summary once `status` is `completed`
 
 ```json
@@ -121,7 +145,7 @@ responses.
   "updated_at": "2026-09-10T04:20:00Z",
   "patient_ref": "pat_9f8e7d",
   "locale": "en-AU",
-  "schema_version": "0.1",
+  "schema_version": "0.3",
   "current_prompt": { "slot_id": "symptom_duration_days", "text": "How many days have you had these symptoms?" },
   "slots": {
     "chief_complaint": {
@@ -138,9 +162,29 @@ responses.
     { "role": "patient", "text": "I've had a sore throat and a fever since Monday", "at": "2026-09-10T04:19:50Z" },
     { "role": "assistant", "text": "How many days have you had these symptoms?", "at": "2026-09-10T04:20:00Z" }
   ],
+  "history": [
+    {
+      "slot_id": "symptom_severity",
+      "event": "corrected",
+      "previous_value": "mild",
+      "previous_status": "confirmed",
+      "new_value": "moderate",
+      "new_status": "confirmed",
+      "source": "patient",
+      "at": "2026-09-10T04:21:00Z"
+    }
+  ],
   "summary_ref": null
 }
 ```
+
+`history` entries are append-only — nothing in the backend ever edits or removes
+one. `event` is `confirmed` (first value set), `corrected` (a confirmed value
+changed), `skipped`, `marked_unknown`, or `reopened` (a skipped/unknown slot
+got new candidate evidence). Re-confirming an already-confirmed slot with the
+same value does not add an entry, and a rejected edit (`422`) never reaches
+history. C6 persists this list verbatim — it's the provenance/correction-history
+trail the proposal requires.
 
 ---
 
@@ -149,7 +193,10 @@ responses.
 One structured field the intake flow tries to fill.
 
 - `type`: `string` | `number` | `boolean` | `enum` | `date` | `list`
-- `status`: `empty` | `candidate` (LLM-proposed, unconfirmed) | `confirmed` | `skipped`
+- `status`: `empty` | `candidate` (LLM-proposed, unconfirmed) | `confirmed` |
+  `skipped` (patient declined to answer) | `unknown` (patient answered "I don't
+  know" — an affirmative answer, not a decline; present it differently in the
+  clinician summary)
 - `source`: `patient` (typed directly) | `llm` (extracted) | `clinician` (overridden)
 - `options`: present only when `type` is `enum`
 - `candidates`: [LLM candidate values](#5-llm-extraction-candidate-value) not yet confirmed
@@ -205,9 +252,17 @@ is the stable machine string.
 Common codes: `SESSION_NOT_FOUND` (404), `SESSION_ALREADY_COMPLETED` (409),
 `SLOT_NOT_FOUND` (404), `SLOT_VALIDATION_FAILED` (422),
 `REQUEST_VALIDATION_FAILED` (422, malformed/mistyped body — FastAPI's own
-validation, normalised into this envelope), `SUMMARY_NOT_READY` (409),
+validation, normalised into this envelope), `SUMMARY_NOT_READY` (409), `SUMMARY_VERSION_CONFLICT` (409, approving a
+summary version that is no longer the current one),
 `LLM_UNAVAILABLE` (503), `RATE_LIMITED` (429), `INTERNAL` (500, catch-all for
 anything unhandled — also normalised into this envelope).
+
+C6 adds `PERSISTENCE_CONFLICT` (409) for stale concurrent updates or SQLite lock
+contention. Reload the session before retrying. Requests commit database writes
+before reporting success; summary generation and session completion are atomic.
+The existing request/response shapes are unchanged. C6's `summary_versions`
+approval columns are now driven by the approval endpoint above. See
+[database.md](database.md) for transaction and DAO contracts.
 
 ---
 

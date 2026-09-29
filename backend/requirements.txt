@@ -1,10 +1,11 @@
-fastapi
+fastapi>=0.121,<1
 uvicorn[standard]
 pydantic
 pydantic-settings
 python-dotenv
 httpx
-sqlalchemy
+sqlalchemy>=2.0,<2.1
+alembic>=1.16,<2
 
 # LLM
 openai

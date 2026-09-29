@@ -31,7 +31,9 @@
 
 ### Data model
 
-- (TBD)
+- SQLAlchemy models in `backend/app/db/models.py`; migrations under
+  `backend/alembic/versions`. See [database.md](database.md) for table relations,
+  transaction boundaries, DAO contracts, provenance and remaining integrations.
 
 ## 5. Frontend design
 

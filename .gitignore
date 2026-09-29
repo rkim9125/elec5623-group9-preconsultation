@@ -18,6 +18,9 @@ dist/
 # Databases
 *.db
 *.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Editor / OS
 .DS_Store

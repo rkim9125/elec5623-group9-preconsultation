@@ -2,8 +2,9 @@
 stopping rules. No LLM calls.
 
 Definitions (see the proposal's coverage/resolution distinction):
-- **coverage**  - active slots that have been *addressed* (confirmed or skipped)
-                  over all active slots. "Have we been through it?"
+- **coverage**  - active slots that have been *addressed* (confirmed, skipped,
+                  or answered "I don't know") over all active slots. "Have we
+                  been through it?"
 - **resolution** - active *required* slots that are *confirmed* over all active
                   required slots. "Did we actually get the answer?"
 """
@@ -20,7 +21,7 @@ from app.core.schema import all_slot_ids
 
 _SCHEMA_ORDER = {slot_id: i for i, slot_id in enumerate(all_slot_ids())}
 
-_ADDRESSED = {SlotStatus.CONFIRMED, SlotStatus.SKIPPED}
+_ADDRESSED = {SlotStatus.CONFIRMED, SlotStatus.SKIPPED, SlotStatus.UNKNOWN}
 _PENDING = {SlotStatus.EMPTY, SlotStatus.CANDIDATE}
 
 DEFAULT_MAX_QUESTIONS = 12
@@ -83,6 +84,12 @@ def select_next_slot(state: SessionState) -> str | None:
 
 
 def should_stop(state: SessionState, asked_count: int = 0) -> StopDecision:
+    """Stops once every active *required* slot is addressed — deliberately,
+    even if optional slots (family/social history, symptom detail, etc.) are
+    still empty. Per the project boundary, coverage means coverage of the
+    fields we chose to ask, not an exhaustive medical history; optional slots
+    exist to be filled opportunistically (LLM extraction from free text, or
+    direct confirm/edit calls) rather than to force a longer interview."""
     from app.core.models import SessionStatus
 
     if state.status == SessionStatus.ABANDONED:

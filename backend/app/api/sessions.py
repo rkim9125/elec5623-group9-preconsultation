@@ -19,6 +19,7 @@ from app.api.schemas import (
     SafetyOut,
     SlotActionRequest,
     SlotActionResponse,
+    SummaryApprovalRequest,
     SummaryResponse,
 )
 from app.core import flow
@@ -27,6 +28,7 @@ from app.core.engine import (
     SlotNotFound as EngineSlotNotFound,
     confirm_slot,
     edit_slot,
+    mark_unknown,
     skip_slot,
 )
 from app.core.errors import (
@@ -34,6 +36,7 @@ from app.core.errors import (
     SlotNotFound,
     SlotValidationFailed,
     SummaryNotReady,
+    SummaryVersionConflict,
 )
 from app.core.models import SessionState, SessionStatus
 from app.core.planner import Completeness, compute_completeness
@@ -54,14 +57,14 @@ def _prompt_out(prompt) -> PromptOut | None:
 
 
 @router.post("", status_code=201, response_model=SessionState)
-def create_session(body: CreateSessionRequest, store=Depends(get_store)) -> SessionState:
+def create_session(body: CreateSessionRequest, store=Depends(get_store, scope="function")) -> SessionState:
     state = flow.start_session(patient_ref=body.patient_ref, locale=body.locale)
     store.create(state)
     return state
 
 
 @router.get("/{session_id}", response_model=SessionState)
-def get_session(session_id: str, store=Depends(get_store)) -> SessionState:
+def get_session(session_id: str, store=Depends(get_store, scope="function")) -> SessionState:
     return store.get(session_id)
 
 
@@ -69,7 +72,7 @@ def get_session(session_id: str, store=Depends(get_store)) -> SessionState:
 def post_message(
     session_id: str,
     body: MessageRequest,
-    store=Depends(get_store),
+    store=Depends(get_store, scope="function"),
     llm=Depends(get_llm),
 ) -> MessageResponse:
     state = store.get(session_id)
@@ -100,7 +103,7 @@ def slot_action(
     session_id: str,
     slot_id: str,
     body: SlotActionRequest,
-    store=Depends(get_store),
+    store=Depends(get_store, scope="function"),
     llm=Depends(get_llm),
 ) -> SlotActionResponse:
     state = store.get(session_id)
@@ -114,6 +117,8 @@ def slot_action(
             if body.value is None:
                 raise SlotValidationFailed("'edit' requires a value")
             result = edit_slot(state, slot_id, body.value)
+        elif body.action == "unknown":
+            result = mark_unknown(state, slot_id)
         else:  # skip
             result = skip_slot(state, slot_id)
     except EngineSlotNotFound:
@@ -139,7 +144,7 @@ def slot_action(
 @router.post("/{session_id}/complete", response_model=CompleteResponse)
 def complete_session(
     session_id: str,
-    store=Depends(get_store),
+    store=Depends(get_store, scope="function"),
     llm=Depends(get_llm),
 ) -> CompleteResponse:
     state = store.get(session_id)
@@ -156,17 +161,58 @@ def complete_session(
     )
 
 
-@router.get("/{session_id}/summary", response_model=SummaryResponse)
-def get_summary(session_id: str, store=Depends(get_store)) -> SummaryResponse:
+def _summary_response(session_id: str, store) -> SummaryResponse:
     state = store.get(session_id)
     if state.status != SessionStatus.COMPLETED:
         raise SummaryNotReady(f"Session {session_id!r} is not completed yet")
 
     summary = store.get_summary(session_id)
+    latest = store.list_summary_versions(session_id)[-1]
     return SummaryResponse(
         session_id=session_id,
         summary_ref=state.summary_ref,
+        version=latest["version"],
+        approved=latest["approved_at"] is not None,
+        approved_at=latest["approved_at"],
         sections=summary.sections,
         patient_questions=summary.patient_questions,
         model=summary.model,
     )
+
+
+@router.get("/{session_id}/summary", response_model=SummaryResponse)
+def get_summary(session_id: str, store=Depends(get_store, scope="function")) -> SummaryResponse:
+    """The latest summary, whether or not the patient has approved it.
+
+    `approved` is what decides whether it may be presented as the final
+    handoff — the clinician view must not treat an unapproved draft as one.
+    """
+    return _summary_response(session_id, store)
+
+
+@router.post("/{session_id}/summary/approve", response_model=SummaryResponse)
+def approve_summary(
+    session_id: str,
+    body: SummaryApprovalRequest,
+    store=Depends(get_store, scope="function"),
+) -> SummaryResponse:
+    """Record the patient's explicit approval of one summary version.
+
+    Approval is bound to the version the patient actually read. If the summary
+    has been regenerated since they reviewed it, approving the version they saw
+    is a conflict rather than consent carried forward onto text they never read.
+    """
+    state = store.get(session_id)
+    if state.status != SessionStatus.COMPLETED:
+        raise SummaryNotReady(f"Session {session_id!r} is not completed yet")
+
+    latest = store.list_summary_versions(session_id)[-1]
+    if body.version != latest["version"]:
+        raise SummaryVersionConflict(
+            "The summary has changed since you reviewed it; review it again "
+            "before approving.",
+            details=[{"reviewed_version": body.version, "current_version": latest["version"]}],
+        )
+
+    store.record_summary_approval(session_id, body.version, body.approved_by)
+    return _summary_response(session_id, store)

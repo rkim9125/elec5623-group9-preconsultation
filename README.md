@@ -63,8 +63,10 @@ anything that doesn't fit.
 
 ## Docs
 
+- [Component breakdown & team collaboration](docs/component-breakdown.md)
 - [Implementation spec](docs/implementation-spec.md)
 - [Implementation status](docs/implementation-status.md) — what is actually built
 - [API contract](docs/api-contract.md)
+- [Frontend integration guide](docs/frontend-integration.md) — how to wire the UI to the backend
 - [Workflow catalogue](docs/workflow-catalogue.md) — 30 non-emergency consultation workflows, shared dialogue/data rules
 - [Setup](docs/setup.md)
