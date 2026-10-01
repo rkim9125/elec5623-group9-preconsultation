@@ -1,3 +1,4 @@
+import { demoName, demoLabel, demoReason } from "../i18n/demo.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "../i18n/react.jsx";
 import { tr } from "../i18n/core.js";
@@ -59,9 +60,9 @@ function Inspector({ id, revision, onUnavailable }) {
   return (
     <>
       <span className="sr-only" role="status">
-        {t("detailUpdated")}: {a.patient.name}
+        {t("detailUpdated")}: {demoName(a.patient)}
       </span>
-      <h3>{a.patient.name}</h3>
+      <h3>{demoName(a.patient)}</h3>
       <p className="calendar-identifier">{a.patient.identifier}</p>
       <dl>
         <dt>{t("when")}</dt>
@@ -70,7 +71,7 @@ function Inspector({ id, revision, onUnavailable }) {
           a[field] ? (
             <div key={field}>
               <dt>{t(field)}</dt>
-              <dd>{a[field]}</dd>
+              <dd>{demoLabel(a[field])}</dd>
             </div>
           ) : null,
         )}
@@ -86,8 +87,10 @@ function Inspector({ id, revision, onUnavailable }) {
           <>
             <dt>{t("purpose")}</dt>
             <dd className="patient-text">
-              {latest.data.reasons.filter(Boolean).join("; ") ||
-                t("unconfirmed")}
+              {latest.data.reasons
+                .filter(Boolean)
+                .map((value) => demoReason(latest.data, value))
+                .join("; ") || t("unconfirmed")}
             </dd>
             <dt>{t("submittedAt")}</dt>
             <dd>{formatDate(latest.submittedAt)}</dd>
@@ -222,12 +225,12 @@ export default function Calendar({ view, setView, revision }) {
       type="button"
       className={`calendar-event ${selected === row.id ? "is-selected" : ""}`}
       aria-pressed={selected === row.id}
-      aria-label={`${formatDate(row.startsAt)}, ${row.patient.name}, ${t(appointmentState(row))}`}
+      aria-label={`${formatDate(row.startsAt)}, ${demoName(row.patient)}, ${t(appointmentState(row))}`}
       onClick={() => select(row)}
     >
       <span>
         <time dateTime={row.startsAt}>{time(row.startsAt)}</time>{" "}
-        <strong>{row.patient.name}</strong>
+        <strong>{demoName(row.patient)}</strong>
       </span>
       <small>{t(appointmentState(row))}</small>
     </button>

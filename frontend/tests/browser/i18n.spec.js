@@ -44,10 +44,10 @@ async function noMissing(page) {
 }
 async function login(page) {
   await page.goto("/#/login");
-  await page.getByRole("button", { name: /데모 가람/ }).click();
+  await page.getByRole("button", { name: /Demo Garam/ }).click();
   await page.getByRole("button", { name: "Log in", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Hello, 데모 가람.",
+    "Hello, Demo Garam.",
   );
 }
 
@@ -379,4 +379,44 @@ test("unavailable localStorage keeps a usable in-memory language choice", async 
   await page.getByRole("link", { name: "회원가입", exact: true }).click();
   await expect(language(page)).toHaveValue("ko");
   await noMissing(page);
+});
+
+test("Korean demo content switches to English across account and sample views", async ({
+  page,
+}) => {
+  await page.goto("/#/login");
+  await switchTo(page, "ko");
+  await page.getByRole("button", { name: /데모 가람/ }).click();
+  await page.getByRole("button", { name: "로그인", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "데모 가람님, 안녕하세요.",
+  );
+  const before = await snapshot(page);
+  await switchTo(page, "en");
+  expect(await snapshot(page)).toEqual(before);
+  await expect(page.locator("body")).not.toContainText(/[가-힣]/);
+  await page.goto("/#/appointments/apt-a-next");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Onyu Demo Clinic",
+  );
+  await expect(page.locator("body")).not.toContainText(/[가-힣]/);
+  await page.goto("/#/intakes/intake-a-sent");
+  await expect(page.locator(".summary")).toContainText("throat discomfort");
+  await expect(page.locator("body")).not.toContainText(/[가-힣]/);
+  await switchTo(page, "ko");
+  await expect(page.locator(".summary")).toContainText("지난번 목의 불편함");
+  await page.goto("/#/intakes/intake-a-draft/edit/reason");
+  await expect(page.getByLabel("가장 먼저 이야기할 문제")).toHaveValue(
+    "오후에 머리가 불편해요.",
+  );
+  await switchTo(page, "en");
+  await expect(page.getByLabel("Main reason for your visit")).toHaveValue(
+    "My head feels uncomfortable in the afternoon.",
+  );
+  await page.getByLabel("Main reason for your visit").fill("직접 입력한 내용");
+  await switchTo(page, "ko");
+  await switchTo(page, "en");
+  await expect(page.getByLabel("Main reason for your visit")).toHaveValue(
+    "직접 입력한 내용",
+  );
 });

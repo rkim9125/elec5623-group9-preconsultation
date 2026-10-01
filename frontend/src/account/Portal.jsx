@@ -1,3 +1,4 @@
+import { demoName, demoLabel, demoReason } from "../i18n/demo.js";
 import { tr, message, messageText, getLocale } from "../i18n/core.js";
 import { useI18n, LanguageSelect } from "../i18n/react.jsx";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -25,7 +26,10 @@ const nav = () => [
   ["/account", tr("account")],
 ];
 const titleOf = (r) =>
-  r.data.reasons.find((x) => x.trim()) || tr("reason.for.visit.not.entered");
+  demoReason(
+    r.data,
+    r.data.reasons.find((x) => x.trim()),
+  ) || tr("reason.for.visit.not.entered");
 const editPath = (r) =>
   r.snapshot
     ? `/intakes/${r.id}`
@@ -153,7 +157,7 @@ function Shell({ user, path, children }) {
               ))}
             </nav>
             <div className="portal-nav-bottom">
-              <strong>{user.name}</strong>
+              <strong>{demoName(user)}</strong>
               <small>{tr("demo.patient.account")}</small>
               <RouteLink to="start">
                 {tr("try.the.guest.questionnaire")}
@@ -379,7 +383,21 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
             </RouteLink>
           </p>
           <div className="sr-only" role="status">
-            {busy ? tr("processing.your.request") : messageText(notice)}
+            {busy
+              ? tr("processing.your.request")
+              : messageText(
+                  notice?.demoUser
+                    ? {
+                        ...notice,
+                        params: {
+                          p0:
+                            notice.demoUser.role === "doctor"
+                              ? tr("auth.demoDoctor")
+                              : demoName(notice.demoUser),
+                        },
+                      }
+                    : notice,
+                )}
           </div>
         </form>
         <RouteLink className="guest-link" to="start">
@@ -414,15 +432,14 @@ function Auth({ signup, returnTo, onAuthenticated, authMessage }) {
                   confirm: "",
                 });
                 setErrors({});
-                setNotice(
-                  message("demo.email.and.password.entered.for.value", {
-                    p0: u.role === "doctor" ? tr("auth.demoDoctor") : u.name,
-                  }),
-                );
+                setNotice({
+                  ...message("demo.email.and.password.entered.for.value"),
+                  demoUser: u,
+                });
               }}
             >
               <strong>
-                {u.role === "doctor" ? tr("auth.demoDoctor") : u.name}
+                {u.role === "doctor" ? tr("auth.demoDoctor") : demoName(u)}
                 <small>
                   {
                     [
@@ -500,10 +517,12 @@ function AppointmentRows({ items, intakes }) {
             </div>
             <div className="record-main">
               <h3>
-                {a.hospital} <span>· {a.department}</span>
+                {demoLabel(a.hospital)} <span>· {demoLabel(a.department)}</span>
               </h3>
               <p>{formatDate(a.startsAt)}</p>
-              <small>{a.clinician || tr("clinician.not.assigned")}</small>
+              <small>
+                {demoLabel(a.clinician) || tr("clinician.not.assigned")}
+              </small>
             </div>
             <div className="record-state">
               <Status kind={a.status}>{tr(appointmentLabels[a.status])}</Status>
@@ -533,7 +552,7 @@ function IntakeRows({ items, appointments }) {
               </RouteLink>
               <p>
                 {a
-                  ? `${a.hospital} · ${a.department}`
+                  ? `${demoLabel(a.hospital)} · ${demoLabel(a.department)}`
                   : tr("no.linked.appointment")}
               </p>
               <small>
@@ -634,7 +653,7 @@ function RecordsPage({ path, scope, bundle, refresh }) {
       <>
         <Intro
           eyebrow={tr("eyebrow.home")}
-          title={tr("hello.value", { p0: api.getSnapshot().user.name })}
+          title={tr("hello.value", { p0: demoName(api.getSnapshot().user) })}
         >
           {tr("see.your.next.appointment.and.the.notes.you.have.prepared")}
         </Intro>
@@ -651,14 +670,16 @@ function RecordsPage({ path, scope, bundle, refresh }) {
                 <div>
                   <Status kind="scheduled">{tr("confirmed")}</Status>
                   <h2>
-                    {next.hospital}
-                    <span>{next.department}</span>
+                    {demoLabel(next.hospital)}
+                    <span>{demoLabel(next.department)}</span>
                   </h2>
                   <p>
                     {formatDate(next.startsAt)}{" "}
                     <small>{tr("korea.time")}</small>
                   </p>
-                  <p>{next.clinician || tr("clinician.not.assigned")}</p>
+                  <p>
+                    {demoLabel(next.clinician) || tr("clinician.not.assigned")}
+                  </p>
                 </div>
                 <div className="next-date" aria-hidden="true">
                   {new Intl.DateTimeFormat(
@@ -856,7 +877,7 @@ function RecordsPage({ path, scope, bundle, refresh }) {
         <dl className="detail-facts">
           <div>
             <dt>{tr("name")}</dt>
-            <dd>{user.name}</dd>
+            <dd>{demoName(user)}</dd>
           </div>
           <div>
             <dt>{tr("email")}</dt>
@@ -928,8 +949,11 @@ function RecordsPage({ path, scope, bundle, refresh }) {
         <RouteLink className="back-link" to="/appointments">
           {tr("appointments.3")}
         </RouteLink>
-        <Intro eyebrow={tr("eyebrow.appointmentDetails")} title={a.hospital}>
-          {a.department}
+        <Intro
+          eyebrow={tr("eyebrow.appointmentDetails")}
+          title={demoLabel(a.hospital)}
+        >
+          {demoLabel(a.department)}
           {tr("appointment.details")}
         </Intro>
         <Status kind={a.status}>{tr(appointmentLabels[a.status])}</Status>
@@ -943,11 +967,11 @@ function RecordsPage({ path, scope, bundle, refresh }) {
           </div>
           <div>
             <dt>{tr("department")}</dt>
-            <dd>{a.department}</dd>
+            <dd>{demoLabel(a.department)}</dd>
           </div>
           <div>
             <dt>{tr("clinician")}</dt>
-            <dd>{a.clinician || tr("not.yet.assigned")}</dd>
+            <dd>{demoLabel(a.clinician) || tr("not.yet.assigned")}</dd>
           </div>
         </dl>
         {appointmentGroup(a) === "past" && a.status === "scheduled" && (
@@ -1013,7 +1037,7 @@ function RecordsPage({ path, scope, bundle, refresh }) {
         <p className="record-appointment">
           {a ? (
             <RouteLink to={`/appointments/${a.id}`}>
-              {a.hospital} · {a.department}
+              {demoLabel(a.hospital)} · {demoLabel(a.department)}
               {tr("view.linked.appointment")}
             </RouteLink>
           ) : (

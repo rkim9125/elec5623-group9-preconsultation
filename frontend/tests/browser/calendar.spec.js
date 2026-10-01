@@ -196,7 +196,7 @@ test("stored past/completed status, draft privacy and denied detail selection", 
         await import("/src/doctor/service.js");
       const a = await api.detail(api.scope(), id);
       return {
-        name: a.patient.name,
+        name: (await import("/src/i18n/demo.js")).demoName(a.patient),
         day: dayKey(a.startsAt),
         dateLabel: new Intl.DateTimeFormat("en-GB", {
           dateStyle: "full",
@@ -204,6 +204,18 @@ test("stored past/completed status, draft privacy and denied detail selection", 
         }).format(new Date(a.startsAt)),
       };
     }, id);
+    await page.getByRole("button", { name: "Today", exact: true }).click();
+    const currentMonth = await page.evaluate(async () =>
+      (await import("/src/doctor/service.js")).dayKey().slice(0, 7),
+    );
+    const targetMonth = row.day.slice(0, 7);
+    if (targetMonth !== currentMonth)
+      await page
+        .getByRole("button", {
+          name: targetMonth < currentMonth ? "Previous month" : "Next month",
+          exact: true,
+        })
+        .click();
     // Use the complete localized accessible date to avoid adjacent-month ambiguity.
     await page
       .getByRole("button", { name: new RegExp(`^${row.dateLabel},`) })

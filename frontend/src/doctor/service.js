@@ -1,3 +1,4 @@
+import { markSeededDemo } from "../i18n/demo.js";
 import { medicineDetailsMissing } from "../medicines.js";
 import { initial, activeSteps } from "../model.js";
 import { accountService, createAccountService } from "../account/service.js";
@@ -38,6 +39,7 @@ export function freezeSubmission(
       field: "reasons",
       status: data.reasons.some((s) => s.trim()) ? "answered" : "unanswered",
       value: clone(data.reasons),
+      demoReason: clone(data.demoReason),
     },
     ...fields
       .filter((f) => activeSteps(data).includes(f))
@@ -198,6 +200,16 @@ export function createDoctorService({
     /* memory fallback */
   }
   db ||= seed(now());
+  for (const appointment of db.appointments)
+    for (const submission of appointment.submissions) {
+      markSeededDemo({
+        id: submission.id.split(":")[0],
+        data: submission.data,
+      });
+      const reason = submission.answers.find((a) => a.field === "reasons");
+      if (reason && submission.data.demoReason)
+        reason.demoReason = clone(submission.data.demoReason);
+    }
   const emit = () => {
     revision++;
     listeners.forEach((fn) => fn());
@@ -352,6 +364,7 @@ export function createDoctorService({
                   version: submissions.at(-1).version,
                   submittedAt: submissions.at(-1).submittedAt,
                   reason: submissions.at(-1).data.reasons.join("; "),
+                  demoReason: clone(submissions.at(-1).data.demoReason),
                   reviewed: submissions.at(-1).reviews.length > 0,
                 }
               : null,

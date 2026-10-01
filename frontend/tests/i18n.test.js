@@ -134,3 +134,34 @@ test("legacy handoff views translate only verified structure without changing th
   record.data.reasons = ["Different words"];
   assert.equal(recordSummary(record, "en")[0].text, "1. Original words");
 });
+
+test("demo identities, appointments, samples and frozen records follow the locale", async () => {
+  const { demoName, demoLabel, demoReason } =
+    await import("../src/i18n/demo.js");
+  const { demoUsers, seedDatabase } = await import("../src/account/domain.js");
+  const { change } = await import("../src/model.js");
+  const { freezeSubmission } = await import("../src/doctor/service.js");
+  const db = seedDatabase();
+  const before = structuredClone(db);
+  for (const user of demoUsers) {
+    assert.doesNotMatch(demoName(user, "en"), /[가-힣]/);
+    assert.equal(demoName(user, "ko"), user.name);
+  }
+  assert.equal(demoName(demoUsers[2], "en"), "Demo Sea Boom");
+  assert.equal(demoName({ id: "custom", name: "새봄" }, "en"), "새봄");
+  for (const a of db.appointments)
+    for (const field of ["hospital", "department", "clinician"])
+      if (a[field]) assert.doesNotMatch(demoLabel(a[field], "en"), /[가-힣]/);
+  for (const record of db.intakes) {
+    assert.doesNotMatch(JSON.stringify(recordSummary(record, "en")), /[가-힣]/);
+    assert.match(JSON.stringify(recordSummary(record, "ko")), /[가-힣]/);
+    const frozen = freezeSubmission(record.data, "demo", 1, "2026-01-01");
+    const reason = frozen.answers.find((a) => a.field === "reasons");
+    assert.doesNotMatch(demoReason(reason, reason.value[0], "en"), /[가-힣]/);
+  }
+  assert.deepEqual(db, before);
+  const sample = example("ko");
+  assert.doesNotMatch(summary(sample, "en")[0].text, /[가-힣]/);
+  const edited = change(sample, "reasons", ["직접 입력한 내용"]);
+  assert.equal(summary(edited, "en")[0].text, "1. 직접 입력한 내용");
+});

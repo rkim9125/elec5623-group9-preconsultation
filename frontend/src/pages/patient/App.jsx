@@ -1,3 +1,4 @@
+import { demoName, demoReason } from "../../i18n/demo.js";
 import { tr, message, messageText } from "../../i18n/core.js";
 import { useI18n, LanguageSelect } from "../../i18n/react.jsx";
 import { useEffect, useRef, useState } from "react";
@@ -496,7 +497,7 @@ export default function App({ account = null, onAccountSave }) {
         {account ? (
           <>
             <span>
-              {account.user.name}
+              {demoName(account.user)}
               {tr("writing.an.account.note")}
             </span>
             <button
@@ -710,7 +711,7 @@ export default function App({ account = null, onAccountSave }) {
                         placeholder={tr(
                           "for.example.i.have.had.a.headache.for.a.few.days.it.feels.worse.i",
                         )}
-                        value={value}
+                        value={demoReason(data, value, locale)}
                         aria-invalid={!!error && !value.trim()}
                         aria-describedby={error ? "form-error" : undefined}
                         onChange={(e) =>
@@ -1082,7 +1083,7 @@ export default function App({ account = null, onAccountSave }) {
             <>
               <h2>{tr("what.i.want.to.discuss.first")}</h2>
               <p className="preview-text">
-                {data.reasons[0] ||
+                {demoReason(data, data.reasons[0], locale) ||
                   tr("your.reason.for.visiting.will.appear.here")}
               </p>
               <div className="context-divider" />

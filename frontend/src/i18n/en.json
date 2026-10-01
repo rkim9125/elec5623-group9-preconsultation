@@ -552,5 +552,19 @@
   "calendar.unavailable": "This appointment is no longer available or accessible.",
   "calendar.focusDetails": "Move to appointment details",
   "calendar.failMonth": "Fail next calendar reload",
-  "calendar.submitted": "Submitted"
+  "calendar.submitted": "Submitted",
+  "demo.patient.garam": "Demo Garam",
+  "demo.patient.narae": "Demo Narae",
+  "demo.patient.saebom": "Demo Sea Boom",
+  "demo.hospital.onyu": "Onyu Demo Clinic",
+  "demo.hospital.daon": "Daon Demo Clinic",
+  "demo.department.family": "Family medicine",
+  "demo.department.internal": "Internal medicine",
+  "demo.department.ent": "Ear, nose and throat",
+  "demo.clinician.a": "Demo Clinician A",
+  "demo.clinician.b": "Demo Clinician B",
+  "demo.reason.headache": "My head feels uncomfortable in the afternoon.",
+  "demo.reason.sleep": "I would like advice because I have trouble sleeping.",
+  "demo.reason.throat": "I have written notes about the throat discomfort I had last time.",
+  "demo.reason.nose": "I would like advice about my blocked nose."
 }

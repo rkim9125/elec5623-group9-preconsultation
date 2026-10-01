@@ -8,6 +8,7 @@ import {
   seedDatabase,
   intakeStatus,
 } from "./domain.js";
+import { markSeededDemo } from "../i18n/demo.js";
 import { initial, summary } from "../model.js";
 const fault = (code, message) => Object.assign(new Error(message), { code });
 const clone = (value) => structuredClone(value);
@@ -28,7 +29,10 @@ export function createAccountService({
     if (memoryDb) return memoryDb;
     try {
       const db = JSON.parse(storage?.getItem(ACCOUNT_KEY));
-      if (db?.version === 1) return db;
+      if (db?.version === 1) {
+        db.intakes.forEach(markSeededDemo);
+        return db;
+      }
     } catch {
       /* unavailable storage uses memory */
     }

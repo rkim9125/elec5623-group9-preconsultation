@@ -1,3 +1,4 @@
+import { demoReason } from "./i18n/demo.js";
 import { translate } from "./i18n/core.js";
 import { medicineText, medicineDetailsMissing } from "./medicines.js";
 import { historyText } from "./history.js";
@@ -59,6 +60,10 @@ export function change(d, key, value) {
     approved: false,
     sent: false,
   };
+  if (key === "reasons") {
+    delete next.demoReason;
+    next.demoReasonEdited = true;
+  }
   if (key === "course" && value.value !== d.course.value)
     next.frequency = blank();
   if (key === "reasons" && value[0] !== d.reasons[0]) {
@@ -137,7 +142,7 @@ export function summary(d, locale = "ko") {
       text:
         d.reasons
           .filter((x) => x.trim())
-          .map((x, i) => `${i + 1}. ${x}`)
+          .map((x, i) => `${i + 1}. ${demoReason(d, x, locale)}`)
           .join("\n") || tr("unanswered"),
     },
     {
@@ -176,6 +181,7 @@ export function summary(d, locale = "ko") {
 export function example(locale = "ko") {
   const d = initial();
   d.reasons = [translate(locale, "example.reason")];
+  d.demoReason = { key: "example.reason", value: d.reasons[0] };
   return d;
 }
 

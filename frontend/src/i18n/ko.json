@@ -552,5 +552,19 @@
   "calendar.unavailable": "예약이 없거나 접근할 수 없습니다.",
   "calendar.focusDetails": "예약 상세 정보로 이동",
   "calendar.failMonth": "다음 캘린더 조회 실패",
-  "calendar.submitted": "제출 완료"
+  "calendar.submitted": "제출 완료",
+  "demo.patient.garam": "데모 가람",
+  "demo.patient.narae": "데모 나래",
+  "demo.patient.saebom": "데모 새봄",
+  "demo.hospital.onyu": "가상 온유의원",
+  "demo.hospital.daon": "가상 다온의원",
+  "demo.department.family": "가정의학과",
+  "demo.department.internal": "내과",
+  "demo.department.ent": "이비인후과",
+  "demo.clinician.a": "데모 의료진 가",
+  "demo.clinician.b": "데모 의료진 나",
+  "demo.reason.headache": "오후에 머리가 불편해요.",
+  "demo.reason.sleep": "잠을 잘 못 자서 상담하고 싶어요.",
+  "demo.reason.throat": "지난번 목의 불편함에 대해 정리했어요.",
+  "demo.reason.nose": "코가 답답해서 상담하고 싶어요."
 }

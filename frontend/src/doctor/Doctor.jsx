@@ -1,7 +1,9 @@
+import { demoName, demoLabel, demoReason } from "../i18n/demo.js";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LanguageSelect, useI18n } from "../i18n/react.jsx";
 import { medicineText } from "../medicines.js";
 import { historyText } from "../history.js";
+import { optionLabel } from "../copy.js";
 import { getLocale } from "../i18n/core.js";
 import { tr } from "../i18n/core.js";
 import {
@@ -78,7 +80,7 @@ function Queue({
   const visible = rows?.filter(
     (r) =>
       (filter === "all" || stateOf(r) === filter) &&
-      `${r.patient.name} ${r.patient.identifier}`
+      `${demoName(r.patient)} ${r.patient.identifier}`
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
@@ -154,7 +156,7 @@ function Queue({
               aria-current={selected === r.id ? "page" : undefined}
             >
               <div className="patient-row-top">
-                <strong>{r.patient.name}</strong>
+                <strong>{demoName(r.patient)}</strong>
                 <time dateTime={r.startsAt}>
                   {new Intl.DateTimeFormat(
                     document.documentElement.lang === "ko" ? "ko-KR" : "en-GB",
@@ -169,7 +171,11 @@ function Queue({
               <small>
                 {r.patient.identifier} · {t(r.status)}
               </small>
-              <p>{r.latest?.reason || t("unsubmitted")}</p>
+              <p>
+                {r.latest
+                  ? demoReason(r.latest, r.latest.reason)
+                  : t("unsubmitted")}
+              </p>
               <Badge state={stateOf(r)} />
               {r.latest && (
                 <small className="submission-time">
@@ -189,7 +195,7 @@ function Answer({ answer }) {
     return (
       <ol>
         {answer.value.map((value, i) => (
-          <li key={i}>{value}</li>
+          <li key={i}>{demoReason(answer, value)}</li>
         ))}
       </ol>
     );
@@ -215,7 +221,11 @@ function Answer({ answer }) {
       </ul>
     );
   return (
-    <span className="patient-text">{answer.value || t("unanswered")}</span>
+    <span className="patient-text">
+      {(answer.option === answer.value
+        ? optionLabel(answer.value, getLocale())
+        : answer.value) || t("unanswered")}
+    </span>
   );
 }
 function Detail({ id, revision }) {
@@ -389,9 +399,10 @@ function Detail({ id, revision }) {
           <header className="doctor-patient-header">
             <div>
               <p className="eyebrow">{appointment.patient.identifier}</p>
-              <h2>{appointment.patient.name}</h2>
+              <h2>{demoName(appointment.patient)}</h2>
               <p>
-                {formatDate(appointment.startsAt)} · {appointment.department}
+                {formatDate(appointment.startsAt)} ·{" "}
+                {demoLabel(appointment.department)}
               </p>
               <span>
                 {t("appointment")}: {t(appointment.status)}

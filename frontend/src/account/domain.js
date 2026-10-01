@@ -1,3 +1,4 @@
+import { markSeededDemo } from "../i18n/demo.js";
 import { getLocale } from "../i18n/core.js";
 import { initial, summary, activeSteps, steps } from "../model.js";
 export const ACCOUNT_KEY = "jinryo-account-demo-v1";
@@ -227,6 +228,7 @@ export function seedDatabase(now = Date.now()) {
       updatedAt: at(-2),
     },
   ];
+  intakes.forEach(markSeededDemo);
   return { version: 1, appointments, intakes };
 }
 
