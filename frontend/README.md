@@ -1,0 +1,101 @@
+# 진료노트 — 환자 문진 및 Doctor Dashboard 프로토타입
+
+React 18 + Vite + JSX. 기존 백엔드를 변경하거나 호출하지 않는 영어·한국어 환자·의사 데모입니다. 최초 방문 기본 언어는 English입니다.
+
+## 실행
+
+Node.js 22 권장.
+
+```bash
+cd frontend
+npm ci
+npm run dev -- --host 127.0.0.1
+```
+
+http://127.0.0.1:5173 에서 실행합니다. 서버·API 키·로그인이 필요하지 않습니다.
+
+```bash
+npm run build
+npm run preview
+npm run lint
+npm test
+npm run test:e2e
+```
+
+브라우저 테스트는 macOS의 설치된 Google Chrome을 기본으로 사용합니다. 다른 환경에서는 `CHROME_PATH=/absolute/path/to/chrome npm run test:e2e`로 Chromium 실행 파일을 지정하세요. 테스트가 로컬 서버를 자동 실행하거나 기존 5173 서버를 재사용합니다. 테스트 화면 캡처는 `test-results/screenshots/`에 생성됩니다. 선별한 결과는 `../docs/screenshots/`에 보관합니다.
+
+## 구현 범위
+
+- 시작 안내 → 우선순위가 있는 방문 이유 → 증상별 질문 → 병력·복용약·알레르기·질문 → 요약 검토·수정 → 전달 시뮬레이션 → 텍스트 다운로드.
+- 경과에서 ‘반복돼요’를 선택하면 빈도를 추가로 질문합니다. 경과 변경 시 기존 빈도를 폐기하고, 다시 활성화하면 새로 확인합니다.
+- 방문 이유 첫머리의 명시적인 시작 표현(예: ‘며칠 전부터 ’)만 그대로 가져와 중복 질문을 건너뜁니다. 일반적인 자연어 해석이나 임상 판단은 하지 않습니다.
+- 약·알레르기 다중 항목과 정보 모름, 없음·모름·답변 거부·미응답·아직 질문하지 않음을 구분합니다.
+- sessionStorage로 같은 탭에서 복원합니다. URL hash로 위치, history state로 수정 맥락을 보존합니다. 하단에서 데모 데이터를 초기화할 수 있습니다.
+- 요약 수정은 즉시 공유 상태에 반영됩니다. 변경 시 검토 확인과 전달 완료가 해제됩니다. 새로 필요한 질문은 전달 전에 확인해야 합니다.
+
+## Mock과 교체 지점
+
+`src/api/mock.js`의 `request(kind, data)`는 650ms 지연 뒤 입력 스냅샷으로 결과를 반환합니다. 외부 전송은 없습니다. 하단 **데모 테스트 → 다음 응답 실패시키기**로 다음 요약 또는 전달 요청을 한 번 실패시킬 수 있습니다. 같은 버튼으로 재시도하며 답변과 위치는 유지됩니다.
+
+요청 토큰과 답변 revision이 오래된 결과의 화면 전환을 막습니다. 동기 잠금으로 중복 요청을 방지합니다. 요약은 현재 답변에서 결정적으로 생성하므로 지연 응답이 최신 입력을 덮어쓰지 않습니다. 실제 API로 바꿀 때는 이 어댑터의 인터페이스와 취소·revision 처리 계약을 유지하고 별도의 API 응답 검증을 추가해야 합니다. 기존 backend API 계약과는 연결하지 않았습니다.
+
+- `src/model.js`: 상태, 분기, 변경 무효화, 요약 변환
+- `src/copy.js`: 질문 정의와 저장용 선택지 값, 공통 번역 키 연결
+- `src/i18n/`: 영어·한국어 리소스, 전역 언어 상태, 공통 언어 선택 UI
+- `src/pages/patient/App.jsx`: 흐름·화면·포커스·저장
+- `src/styles.css`: 반응형 스타일, reduced-motion
+- `tests/model.test.js`: 핵심 상태 전환
+- `tests/browser/intake.spec.js`: 실제 Chrome 흐름·axe 접근성·화면 캡처
+
+## 제한
+
+가상 정보만 입력하세요. sessionStorage는 실제 환자 정보를 위한 보안 저장소가 아닙니다. 실제 서버 인증·진단·처방·응급도 판별·병원 연결·신규 예약 생성·배포는 구현하지 않았습니다. 추가 방문 문제는 요약에 기록하며 상세 질문은 첫 번째 문제에만 적용됩니다. 첫 번째 문제가 바뀌면 해당 증상 답변만 다시 확인하고 병력·복용약·알레르기는 보존합니다.
+
+Noto Sans KR은 Google Fonts에서 불러오며, 오프라인에서는 시스템 sans-serif로 대체됩니다. 실제 사용자를 통한 사용성 검증, 스크린리더 음성 확인, iOS/Android 실기기와 가상 키보드 검증은 별도로 필요합니다.
+
+설계 근거와 검증 기록: [UX 문서](../docs/patient-prototype.md).
+
+## 환자 계정 영역
+
+로그인: `http://127.0.0.1:5173/#/login`. 화면의 가상 계정 버튼으로 이메일·비밀번호를 채운 뒤 로그인합니다.
+
+- `garam@example.test`: 예약과 여러 상태의 문진
+- `narae@example.test`: 다른 환자의 예약·문진
+- `empty@example.test`: 빈 상태
+- 공통 가상 비밀번호: `Demo1234!`
+
+회원가입의 데모 비밀번호 조건은 영문+숫자를 포함한 8자 이상입니다. 비밀번호 원문과 검증 값은 localStorage/sessionStorage에 저장하지 않습니다. 새로 가입한 계정의 자격 정보는 현재 페이지 메모리에만 있으며 새로고침하면 만료됩니다. 기본 가상 계정의 기록과 1시간짜리 데모 로그인은 같은 탭에서 복원됩니다. 로그아웃은 화면·인증·조회 캐시를 정리하고 저장된 가상 기록은 유지합니다. 계정 정보 화면에서 현재 계정 기록만 초기화할 수 있습니다.
+
+비로그인 문진은 자동 귀속되지 않습니다. 마이페이지에서 명시적으로 가져올 때만 계정에 연결합니다. 전달 완료 문진은 당시 요약을 읽기 전용으로 보관합니다. 브라우저 route 보호와 mock 소유권 검사는 실제 서버 보안이 아닙니다.
+
+[페이지·데모·저장 규칙·API 교체와 검증 안내](../docs/patient-account.md)
+
+## English / korean 전환
+
+공통 헤더의 드롭다운은 **English → korean** 순서입니다. 로그인 여부와 관계없이 변경하며, 유효한 저장값이 없으면 영어로 시작합니다. `localStorage["visit-notes-language"]`에 `en` 또는 `ko`만 저장합니다. 로그아웃·데모 기록 초기화와 별도로 유지되고, 새로고침·재방문·같은 출처의 다른 탭에도 적용됩니다. 저장소가 차단되면 현재 페이지 메모리에서 동작하며 안내를 표시합니다.
+
+로그인·가입, 홈·계정, 예약·문진 목록과 상세, 작성·검토·완료, 오류·알림·도움말·접근성 이름·페이지 제목을 번역합니다. `html.lang`도 동기화합니다. 현재 폼, 로그인, 경로, 문진 단계, 필터는 유지하며 언어 전환으로 저장·제출·조회 요청을 실행하지 않습니다. 날짜는 영어 `en-GB`, 한국어 `ko-KR`로 표시하고 시간대는 `Asia/Seoul`을 유지합니다.
+
+환자 이름, 병원·의료진 등 기록 데이터와 자유 입력은 원문을 보존합니다. 기존 가상 데이터가 한국어여도 영어 UI에서 그대로 표시될 수 있습니다. 새 선택형 답변은 저장값과 표시 레이블을 분리하며, 직접 입력한 답변은 선택지와 같은 문자열이어도 자동 번역하지 않습니다. 새 전달 스냅샷은 구조화된 답변 사본도 보관하여 읽기 전용으로 번역 표시합니다. 구조화된 사본이 없는 이전 전달 기록도 보관된 답변이 당시 요약을 정확히 재현하는 경우 표시를 번역합니다. 일치 여부를 확인할 수 없으면 제목만 번역하고 당시 본문을 보존합니다.
+
+번역 추가 시 `src/i18n/en.json`과 `ko.json`에 동일한 키·변수를 추가합니다. 보이는 문구는 `tr(key, params)`, 상태에 보관할 오류·알림은 `message(key, params)`와 `messageText()`를 사용합니다. 사용자 입력에 이 함수를 적용하지 마세요. 누락된 키는 영어 문구 또는 일반 안내로 대체하며 개발 콘솔과 `missingKeys`에 기록합니다. `npm test`가 리소스 키·변수 일치 및 참조 누락을 검사합니다.
+
+다국어 브라우저 검증: `npm run test:e2e -- tests/browser/i18n.spec.js`. 기존 한국어 회귀 테스트는 언어 설정을 명시적으로 `ko`로 준비합니다. 자세한 결과는 [다국어 구현 기록](../docs/localization.md)을 참고하세요.
+
+## REST API 연동 문서
+
+현재 mock 함수·데이터 모델, 연동용 요청/응답·오류·동시성·다국어 규칙은 [환자 프론트엔드 REST API 명세](../docs/frontend-rest-api.md)에 정리했습니다. 제안 API는 아직 구현되지 않았으며 기존 `/api/sessions`와 구분됩니다.
+
+## Doctor Dashboard
+
+전용 의사 영역 `/#/doctor`를 추가했다. `doctor@example.test` / `Demo1234!`로 로그인하여 오늘 환자 목록, AI 요약/원문 대조, 버전별 메모와 검토 완료를 체험할 수 있다. 기존 환자 로그인과 문진 흐름은 유지한다. 실제 서버 인증이나 EMR 연동은 없는 가상 데이터 데모다.
+
+경로, 환자 제출본 연결, 저장 범위, 실패/새 버전 재현 및 검증 방법은 [Doctor Dashboard 안내](../docs/doctor-dashboard.md)를 참고한다.
+
+환자·의사 모두 `/#/login`에서 로그인한다. 데모 의사 버튼은 입력값만 채우며 로그인 버튼을 눌러 제출한다. 기존 `/#/doctor/login` 링크는 통합 로그인으로 연결한다. 인증 결과의 역할로 목적지를 결정하며 회원가입은 환자만 생성한다.
+
+`visit-notes-auth-v2` 단일 세션을 사용한다. 기존 분리 로그인 세션은 초기화 시 폐기하여 재로그인을 요구하지만 저장된 문진·메모·검토 기록은 보존한다. 계정 전환·로그아웃은 공통 epoch로 이전 요청을 무효화한다. 브라우저 mock 검사이며 실제 서버 권한 검증은 아니다. 통합 인증 검증: `npm test`, `npm run test:e2e -- tests/browser/auth.spec.js`.
+
+## Medical history and medicine tags
+
+The shared guest/account history and medicine screens reuse checkbox tags. History keeps free text; medicine types stay separate from optional name/dose entries. Stable IDs, legacy compatibility, inactive drafts and snapshot behavior are documented in [History and medicine tags](../docs/history-tags.md). Run `npm test` and `npm run test:e2e -- tests/browser/history.spec.js tests/browser/medicines.spec.js` for focused coverage.

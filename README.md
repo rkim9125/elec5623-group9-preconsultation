@@ -70,3 +70,23 @@ anything that doesn't fit.
 - [Frontend integration guide](docs/frontend-integration.md) — how to wire the UI to the backend
 - [Workflow catalogue](docs/workflow-catalogue.md) — 30 non-emergency consultation workflows, shared dialogue/data rules
 - [Setup](docs/setup.md)
+
+## Patient frontend prototype
+
+영어·한국어 환자용 문진 데모가 `frontend/`에 구현되어 있습니다. 백엔드 없이 실행합니다.
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+[실행 방법과 mock 범위](frontend/README.md) · [UX 설계·검증·화면 캡처](docs/patient-prototype.md)
+
+환자 계정 데모: `http://127.0.0.1:5173/#/login`. [계정·예약·문진 경로와 체험 안내](docs/patient-account.md)를 참고하세요.
+
+언어 전환: 최초 방문은 English이며 공통 헤더에서 korean으로 변경할 수 있습니다. [다국어 구현·검증 안내](docs/localization.md).
+
+환자 프론트엔드의 현재 mock 인터페이스와 서버 연동용 제안은 [REST API 연동 명세](docs/frontend-rest-api.md)를 참조하세요.
+
+의사 전용 프론트엔드 데모와 환자 제출본 연결: [Doctor Dashboard 안내](docs/doctor-dashboard.md).
