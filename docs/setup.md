@@ -1,3 +1,5 @@
+> Integration note: this document describes the preserved upstream prototype. For the running authenticated product, use [local product setup](local-product.md) and [the integration API contract](integration-contract.md). The legacy unauthenticated session API is disabled by default.
+
 # Setup
 
 ## Prerequisites

@@ -1,5 +1,9 @@
 # ELEC5623 Group 9 — Pre-Consultation
 
+## Integrated local product
+
+The complete patient and clinician integration is on `codex/integration`. Start with `bash scripts/start-local.sh`, then open http://127.0.0.1:8000. See [local product setup, email configuration and deployment guide](docs/local-product.md). The historical project documentation follows below.
+
 Pre-consultation tool: patients complete a guided intake before their appointment,
 and clinicians receive a structured summary.
 

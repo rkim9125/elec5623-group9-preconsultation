@@ -29,3 +29,9 @@ dist/
 
 # Agent
 .agent/
+# Local product state and private files
+backend/data/
+.local/
+*.log
+frontend/test-results/
+frontend/playwright-report/

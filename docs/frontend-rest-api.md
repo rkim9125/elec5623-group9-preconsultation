@@ -1,3 +1,5 @@
+> Integration note: this document describes the preserved upstream prototype. For the running authenticated product, use [local product setup](local-product.md) and [the integration API contract](integration-contract.md). The legacy unauthenticated session API is disabled by default.
+
 # 환자 프론트엔드 REST API 연동 명세
 
 작성일: 2026-09-17 · 기준 브랜치: `fr_hr` · 프론트엔드 기준 커밋: `589de65`
