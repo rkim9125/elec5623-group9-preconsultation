@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "ran_at": "2026-10-05T01:28:23.715Z",
+  "checks": [
+    "All 30 topics render with a light sidebar and topic-specific icon vocabulary",
+    "Guided questions start unselected and preserve an existing free-text answer visibly",
+    "Keyboard diagram selection and labelled choices save both precise patient-side locations",
+    "Autosave and reload retain selected regions, added detail, and untouched legacy narrative",
+    "Interactive leg map desktop: no overflow or serious/critical accessibility findings",
+    "Unknown stays uncertain; declining clears choices; a fresh answer contains only the new selection",
+    "Single-choice frequency replaces the previous option without contradictory answers",
+    "WF-02 illustrated location: no overflow or serious/critical accessibility findings",
+    "WF-05 illustrated location: no overflow or serious/critical accessibility findings",
+    "WF-14 illustrated location: no overflow or serious/critical accessibility findings",
+    "WF-20 illustrated location: no overflow or serious/critical accessibility findings",
+    "Interactive body map mobile: no overflow or serious/critical accessibility findings",
+    "Choice cards mobile: no overflow or serious/critical accessibility findings",
+    "Recorded selection evidence is the exact patient-authored value, with legacy text unchanged"
+  ],
+  "screenshots": [
+    "15-topic-icons-light-theme.png",
+    "16-interactive-leg-map-desktop.png",
+    "17-sleep-choice-cards.png",
+    "18-map-WF-02.png",
+    "18-map-WF-05.png",
+    "18-map-WF-14.png",
+    "18-map-WF-20.png",
+    "19-interactive-map-mobile.png",
+    "20-choice-cards-mobile.png"
+  ],
+  "accessibility": [
+    {
+      "page": "Interactive leg map desktop",
+      "violations": []
+    },
+    {
+      "page": "WF-02 illustrated location",
+      "violations": []
+    },
+    {
+      "page": "WF-05 illustrated location",
+      "violations": []
+    },
+    {
+      "page": "WF-14 illustrated location",
+      "violations": []
+    },
+    {
+      "page": "WF-20 illustrated location",
+      "violations": []
+    },
+    {
+      "page": "Interactive body map mobile",
+      "violations": []
+    },
+    {
+      "page": "Choice cards mobile",
+      "violations": []
+    }
+  ],
+  "errors": []
+}

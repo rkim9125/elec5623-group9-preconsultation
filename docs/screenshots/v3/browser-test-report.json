@@ -1,0 +1,108 @@
+{
+  "passed": true,
+  "ran_at": "2026-10-05T01:27:01.071Z",
+  "mode": "isolated synthetic database; real UI and API; external providers disabled",
+  "checks": [
+    "Patient dashboard desktop: no horizontal overflow",
+    "Patient dashboard desktop: no serious or critical axe violations",
+    "Real patient cookie opens authenticated dashboard",
+    "Workflow selection desktop: no horizontal overflow",
+    "Workflow selection desktop: no serious or critical axe violations",
+    "30 workflows render; multiple concerns start in a form rather than a chat",
+    "Baseline form desktop: no horizontal overflow",
+    "Baseline form desktop: no serious or critical axe violations",
+    "Grouped form autosaves exact answers, unknown and declined states once",
+    "Unavailable AI never starts a repetitive baseline fallback interview",
+    "Optional follow-up desktop: no horizontal overflow",
+    "Optional follow-up desktop: no serious or critical axe violations",
+    "Actual PNG upload, private download and attachment preview work",
+    "Summary outage is labelled honestly while recorded facts remain reviewable",
+    "Regeneration requires fresh patient confirmation of the new version",
+    "Patient summary desktop: no horizontal overflow",
+    "Patient summary desktop: no serious or critical axe violations",
+    "Draft review and explicit versioned approval share with selected clinician",
+    "Doctor dashboard desktop: no horizontal overflow",
+    "Doctor detail desktop: no horizontal overflow",
+    "Doctor detail desktop: no serious or critical axe violations",
+    "Doctor sees assigned approved record and marks it reviewed",
+    "Patient dashboard mobile: no horizontal overflow",
+    "Patient dashboard mobile: no serious or critical axe violations",
+    "Patient summary mobile: no horizontal overflow",
+    "Doctor detail mobile: no horizontal overflow",
+    "Doctor detail mobile: no serious or critical axe violations",
+    "Patient and doctor flows remain within a 390px mobile viewport",
+    "Patient withdrawal revokes clinician list, detail and attachment access",
+    "Uncategorized baseline mobile: no horizontal overflow",
+    "Baseline form mobile: no serious or critical axe violations",
+    "No-category route works and immediate in-app navigation preserves the last form edit",
+    "Live AI summary patient desktop: no serious or critical axe violations",
+    "Genuine synthetic OpenAI summary renders patient/clinician views and source details",
+    "Live AI summary clinician desktop: no serious or critical axe violations",
+    "Live AI summary patient mobile: no horizontal overflow",
+    "The exact approved AI synthesis reaches the assigned clinician",
+    "No uncaught browser JavaScript errors"
+  ],
+  "screenshots": [
+    "01-patient-dashboard-desktop.png",
+    "02-workflow-selection-desktop.png",
+    "03-baseline-form-desktop.png",
+    "04-optional-followup-desktop.png",
+    "04-patient-review-desktop.png",
+    "05-doctor-dashboard-desktop.png",
+    "06-doctor-summary-desktop.png",
+    "07-patient-dashboard-mobile.png",
+    "08-patient-summary-mobile.png",
+    "09-doctor-summary-mobile.png",
+    "10-doctor-access-revoked-mobile.png",
+    "14-general-baseline-mobile.png",
+    "11-live-ai-patient-summary.png",
+    "12-live-ai-clinician-summary.png",
+    "13-live-ai-summary-mobile.png"
+  ],
+  "accessibility": [
+    {
+      "page": "Patient dashboard desktop",
+      "violations": []
+    },
+    {
+      "page": "Workflow selection desktop",
+      "violations": []
+    },
+    {
+      "page": "Baseline form desktop",
+      "violations": []
+    },
+    {
+      "page": "Optional follow-up desktop",
+      "violations": []
+    },
+    {
+      "page": "Patient summary desktop",
+      "violations": []
+    },
+    {
+      "page": "Doctor detail desktop",
+      "violations": []
+    },
+    {
+      "page": "Patient dashboard mobile",
+      "violations": []
+    },
+    {
+      "page": "Doctor detail mobile",
+      "violations": []
+    },
+    {
+      "page": "Baseline form mobile",
+      "violations": []
+    },
+    {
+      "page": "Live AI summary patient desktop",
+      "violations": []
+    },
+    {
+      "page": "Live AI summary clinician desktop",
+      "violations": []
+    }
+  ]
+}

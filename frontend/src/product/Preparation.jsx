@@ -3,6 +3,8 @@ import Icon from "./Icons.jsx";
 import { request, dateLabel } from "./api.js";
 import { Button, ErrorNotice, Loading, Modal } from "./UI.jsx";
 import { registerNavigationGuard } from "./navigation.js";
+import GuidedField from "./GuidedField.jsx";
+import { appendGuidedDetails } from "./answerValues.js";
 
 const stages = [
   "Your concerns",
@@ -111,7 +113,11 @@ export function BaselineForm({
       setSaveState("Saved");
       setAnswers(values);
       setForm(result);
-      setOpen({ [result.groups[0]?.id]: true });
+      setOpen(
+        Object.fromEntries(
+          result.groups.slice(0, 2).map((group) => [group.id, true]),
+        ),
+      );
       const first = result.groups
         .flatMap((group) => group.fields)
         .find((field) => !field.requires_permission);
@@ -306,9 +312,11 @@ export function BaselineForm({
     const field = fields.find((item) => fieldId(item) === captureTarget);
     if (!field || !permitted(field)) return;
     const previous = latest.current[captureTarget]?.value || "";
-    const combined = previous
-      ? `${previous}\n\n${capturedText.trim()}`
-      : capturedText.trim();
+    const combined = appendGuidedDetails(
+      previous,
+      capturedText.trim(),
+      field.presentation?.options,
+    );
     if (combined.length > 6000) {
       setError(
         "The combined answer is longer than 6,000 characters. Shorten the reviewed text before adding it.",
@@ -333,9 +341,9 @@ export function BaselineForm({
           </span>
           <h2>The essentials, all in one place.</h2>
           <p>
-            Complete the questions that matter to you. You can leave a question
-            unanswered, mark it unknown, or choose not to share. Your draft
-            saves automatically.
+            Choose answers, tap a body map, or use your own words. Complete what
+            matters to you; you can leave a question unanswered, mark it
+            unknown, or choose not to share. Your draft saves automatically.
           </p>
           <div className="baseline-save-status" role="status">
             <Icon
@@ -399,7 +407,7 @@ export function BaselineForm({
                     const permission = field.input_type === "permission";
                     return (
                       <div className="baseline-field" key={key}>
-                        <label htmlFor={inputId}>
+                        <label htmlFor={inputId} id={`${inputId}-question`}>
                           {field.question || field.label}
                         </label>
                         {field.label && field.label !== field.question && (
@@ -436,21 +444,14 @@ export function BaselineForm({
                         ) : (
                           <>
                             {answer.status !== "SKIPPED" && (
-                              <textarea
-                                id={inputId}
-                                data-testid={`baseline-${field.concern_id}-${field.key}`}
-                                rows={2}
-                                value={answer.value}
-                                maxLength={6000}
-                                placeholder={
-                                  answer.status === "UNCERTAIN"
-                                    ? "Optional: add what you remember or what you’re unsure about…"
-                                    : "Your answer…"
-                                }
+                              <GuidedField
+                                field={field}
+                                inputId={inputId}
+                                answer={answer}
                                 onFocus={() => setActiveField(key)}
-                                onChange={(event) =>
+                                onChange={(value) =>
                                   change(field, {
-                                    value: event.target.value,
+                                    value,
                                     ...(answer.status === "UNCERTAIN"
                                       ? { status: "UNCERTAIN" }
                                       : {}),
@@ -476,9 +477,7 @@ export function BaselineForm({
                                 <option value="MISSING">
                                   Not answered yet
                                 </option>
-                                <option value="FILLED">
-                                  Answered in my words
-                                </option>
+                                <option value="FILLED">Answer provided</option>
                                 <option value="UNCERTAIN">I’m not sure</option>
                                 <option value="SKIPPED">
                                   Prefer not to answer
@@ -565,7 +564,7 @@ export function BaselineForm({
           <span className="assist-icon">
             <Icon name="sparkle" size={23} />
           </span>
-          <h3>Write it, say it, or add a document.</h3>
+          <h3>Choose, say it, or add a document.</h3>
           <p>
             Use your own words. You’ll review any transcript or extracted text
             before it is added to an answer.

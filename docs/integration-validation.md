@@ -8,10 +8,10 @@ The final production bundle and backend were started on `127.0.0.1:8000` with `s
 
 ## Automated checks
 
-- Backend: **400 tests passed**, including original engine/database tests, all 30 baseline forms, adaptive planning, cited synthesis, corrections, authentication, ownership, media and deployment boundaries.
-- Frontend: **59 tests passed** (55 preserved regressions and four new navigation/save-boundary tests); ESLint and production Vite build passed.
-- Browser acceptance: **38 checks passed**, including the real patient/doctor API flow, multi-select plus custom topics, no-category preparation, form autosave, immediate navigation after an edit, unavailable-provider behavior, summary regeneration requiring fresh approval, genuine synthetic AI summary perspectives/citations, sharing and revocation. Fifteen screenshots and the machine-readable report are in `docs/screenshots/v2/`.
-- Accessibility: eleven scanned desktop/390px mobile states had zero serious or critical axe violations. This is a bounded automated check, not a complete accessibility certification.
+- Backend: **434 tests passed**, including original engine/database tests, all 30 baseline forms and their optional guided inputs, exact selection evidence, adaptive planning, cited synthesis, corrections, authentication, ownership, media and deployment boundaries.
+- Frontend: **74 tests passed** (55 preserved regressions, four navigation/save-boundary tests and 15 guided-answer/body-region tests); ESLint and production Vite build passed.
+- Browser acceptance: **52 checks passed**: 38 for the full patient/doctor flow and 14 for illustrated questions. These cover real API sessions, multiple/custom topics, no-category preparation, form autosave, navigation, provider outages, versioned approval, genuine synthetic AI summaries, sharing/revocation, keyboard body-map selection, patient left/right, exact selection/custom-text reload, unknown/declined/reset and single-choice replacement. Twenty-four screenshots and both machine-readable reports are in `docs/screenshots/v3/`; the previous evidence remains in `docs/screenshots/v2/`.
+- Accessibility: eighteen scanned desktop/390px mobile states had zero serious or critical axe violations. This is a bounded automated check, not a complete accessibility certification.
 - No browser JavaScript errors or tested horizontal-overflow failures remained.
 - Git whitespace check and supplied-credential scan passed. Credentials exist only in ignored, private `backend/.env`, never in the browser bundle or committed source.
 
@@ -19,7 +19,7 @@ The browser suite uses temporary synthetic users and real server-side cookie ses
 
 ## V2 product behavior
 
-The revised journey is topic selection, a grouped baseline form, optional adaptive follow-up, then summary review and explicit sharing. The new interface uses a navy/blue/white visual system, a readable system font, responsive stages and distinct patient/clinician summary views. Fixed workflow questions are collected in the form; shared context is collected once. Unknown, declined and deferred answers retain their own states and are not repeated as baseline questions in chat.
+The revised journey is topic selection, a grouped baseline form, optional adaptive follow-up, then summary review and explicit sharing. The interface uses warm ivory surfaces, teal controls, readable text, 30 topic-specific icons, responsive stages and distinct patient/clinician summary views. Fixed workflow questions offer optional single/multiple-choice cards and seven anatomical diagram families, including front-only shins and rear-only calves. Equivalent labelled buttons support keyboard/mobile use. Selections never create default facts, and custom text remains available; exact medication, allergy, reading and date details remain text. Shared context is collected once. Unknown, declined and deferred answers retain their own states and are not repeated as baseline questions in chat.
 
 The agent organizes form evidence, activates explicitly supported detail, chooses one eligible extra question at a time, and synthesizes concise English patient and clinician accounts. Its visible activity records measured model operations. Current facts have source references; omitted, superseded and private historical values are excluded from synthesis context. Corrections invalidate old summaries and approvals. Replacing a form value invalidates dependent extracted details. Removing a medicine preserves independently authored, unrelated form concerns while still withholding stale same-concern narratives.
 

@@ -20,7 +20,7 @@ const base = process.env.PRECONSULT_TEST_URL || 'http://127.0.0.1:8001';
 const target = new URL(base);
 assert(['127.0.0.1', 'localhost'].includes(target.hostname) && target.port === '8001',
   'This test only operates on the isolated loopback fixture at port 8001.');
-const output = path.join(root, 'docs/screenshots/v2');
+const output = path.join(root, 'docs/screenshots/v3');
 await mkdir(output, { recursive: true });
 const tokens = JSON.parse(await readFile(path.join(root, '.local/browser-test/sessions.json'), 'utf8'));
 assert(tokens.patient && tokens.doctor, 'Start product-browser-server.py to seed synthetic sessions.');
@@ -93,6 +93,14 @@ async function api(context, suffix, expected = 200) {
   assert.equal(response.status(), expected, `GET ${suffix}: ${await response.text()}`);
   return expected === 200 ? response.json() : null;
 }
+async function fillAnswer(page, testId, value) {
+  const input = page.getByTestId(testId);
+  if (!(await input.isVisible())) {
+    const row = page.locator('.baseline-field').filter({ has: page.getByTestId(testId.replace(/^baseline-/, 'baseline-status-')) });
+    await row.getByRole('button', { name: 'Add details or another answer', exact: true }).click();
+  }
+  await input.fill(value);
+}
 
 try {
   const patient = await identity('patient');
@@ -131,12 +139,13 @@ try {
 
   const form = await api(patient.context, `/intakes/${intakeId}/form`);
   assert.equal(form.groups.filter(group => group.id === 'shared').length, 1);
-  await patientPage.getByTestId('baseline-session-appointment_goal').fill('I want to organise my leg and sleep concerns before my planned appointment.');
+  await fillAnswer(patientPage, 'baseline-session-appointment_goal', 'I want to organise my leg and sleep concerns before my planned appointment.');
   await patientPage.getByTestId('baseline-session-current_medications').fill('Vitamin D 1000 IU daily.');
   await patientPage.getByTestId('baseline-status-session-allergies').selectOption('UNCERTAIN');
   await patientPage.getByTestId('baseline-status-session-relevant_history').selectOption('SKIPPED');
   for (const concern of created.concerns) {
-    await patientPage.locator('.baseline-group-toggle').filter({ hasText: concern.title }).click();
+    const group = patientPage.locator('.baseline-group-toggle').filter({ hasText: concern.title });
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click();
     await patientPage.getByTestId(`baseline-${concern.id}-concern_description`).fill(concern.workflow_id === 'WF-01'
       ? 'A dull ache in my left calf after long walks for three weeks.'
       : concern.workflow_id === 'WF-08' ? 'I have difficulty falling asleep before early work meetings.'
@@ -259,7 +268,7 @@ try {
   await accessibilityCheck(patientPage, 'Baseline form mobile');
   await screenshot(patientPage, '14-general-baseline-mobile.png');
   const lastKeystroke = 'Please save this goal before I leave the form.';
-  await patientPage.getByTestId('baseline-session-appointment_goal').fill(lastKeystroke);
+  await fillAnswer(patientPage, 'baseline-session-appointment_goal', lastKeystroke);
   await patientPage.getByRole('link', { name: 'Back to overview', exact: true }).click();
   await expect(patientPage.getByRole('heading', { name: 'Welcome, Alex.' })).toBeVisible();
   const flushed = await api(patient.context, `/intakes/${general.id}`);

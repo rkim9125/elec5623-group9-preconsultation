@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from . import engine
+from . import engine, presentation
 from .workflows import CORE_QUESTIONS, SHARED_QUESTIONS, get_workflow
 
 SHARED_FIELDS = (
@@ -61,16 +61,24 @@ def initialize(session: dict, custom_concerns: list[str] | None = None) -> dict:
     return session
 
 
-def _field(owner: str, key: str, slot: dict, definition: dict | None = None, *, permission: bool = False) -> dict:
+def _field(owner: str, key: str, slot: dict, definition: dict | None = None, *, permission: bool = False,
+           workflow_id: str | None = None) -> dict:
     definition = definition or {}
-    return {"concern_id": owner, "key": key,
+    guidance = presentation.for_field(workflow_id, key)
+    question = definition.get("question", slot.get("question", ""))
+    if guidance:
+        question = guidance.pop("question", question)
+    field = {"concern_id": owner, "key": key,
             "label": LABELS.get(key, definition.get("label", slot["label"])),
-            "question": definition.get("question", slot.get("question", "")),
+            "question": question,
             "value": None if slot["status"] in {"SKIPPED", "MISSING", "NOT_APPLICABLE"} else slot.get("value"),
             "status": "MISSING" if slot["status"] == "NOT_APPLICABLE" else slot["status"],
             "required": key in {"concern_description", "appointment_goal", "current_medications", "allergies"},
             "input_type": "permission" if key == "sensitive_permission" else "textarea",
             "requires_permission": permission}
+    if guidance:
+        field["presentation"] = guidance
+    return field
 
 
 def get_form(session: dict) -> dict:
@@ -79,7 +87,7 @@ def get_form(session: dict) -> dict:
     shared = list(SHARED_FIELDS)
     if len(session.get("concerns", [])) > 1 or session.get("agenda_mode"):
         shared.insert(1, "priority_concern")
-    groups.append({"id": "shared", "title": "Your appointment & background",
+    groups.append({"id": "shared", "workflow_id": None, "title": "Your appointment & background",
                    "description": "These details apply across all your topics. Share what you know; you can leave anything for later.",
                    "fields": [_field("session", key, session["shared_slots"][key]) for key in shared]})
     for concern in session.get("concerns", []):
@@ -107,8 +115,9 @@ def get_form(session: dict) -> dict:
             if slot["status"] == "NOT_APPLICABLE" and not sensitive and not generic_frequency:
                 continue
             fields.append(_field(concern["id"], key, slot, row,
-                                 permission=sensitive and key != "sensitive_permission"))
-        groups.append({"id": concern["id"], "title": concern["title"],
+                                 permission=sensitive and key != "sensitive_permission",
+                                 workflow_id=concern["workflow_id"]))
+        groups.append({"id": concern["id"], "workflow_id": concern["workflow_id"], "title": concern["title"],
                        "description": "Include the details you would like your clinician to understand.", "fields": fields})
     return {"groups": groups, "completed": bool(session.get("baseline", {}).get("completed"))}
 

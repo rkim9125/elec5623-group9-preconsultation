@@ -15,7 +15,7 @@ import {
 } from "./Preparation.jsx";
 import "./product.css";
 import { navigateWithGuard } from "./navigation.js";
-import { topicDescription } from "./topics.js";
+import { topicDescription, topicVisual } from "./topics.js";
 
 const setRoute = (path) => {
   return navigateWithGuard(() => {
@@ -955,8 +955,11 @@ function NewIntake({ workflows, config, onCreated }) {
             )}
           </section>
           <div className="workflow-heading">
-            <h2>Browse consultation topics</h2>
-            <span>{workflows.length} care pathways</span>
+            <div>
+              <h2>Browse consultation topics</h2>
+              <p>Choose all that matter to you.</p>
+            </div>
+            <span>{workflows.length} topics</span>
           </div>
           <div className="list-controls">
             <div className="search-field">
@@ -980,10 +983,11 @@ function NewIntake({ workflows, config, onCreated }) {
             </select>
           </div>
           <div className="workflow-grid">
-            {shown.map((w, i) => (
+            {shown.map((w) => (
               <button
                 key={w.id}
-                className={`workflow-card ${selected.includes(w.id) ? "selected" : ""}`}
+                className={`workflow-card topic-${topicVisual(w).tone} ${selected.includes(w.id) ? "selected" : ""}`}
+                data-topic-id={w.id}
                 aria-pressed={selected.includes(w.id)}
                 onClick={() =>
                   setSelected((previous) =>
@@ -994,10 +998,10 @@ function NewIntake({ workflows, config, onCreated }) {
                 }
               >
                 <div className="workflow-card-top">
-                  <span className={`pathway-icon pathway-${i % 4}`}>
+                  <span className="pathway-icon">
                     <Icon
-                      name={["activity", "heart", "person", "file"][i % 4]}
-                      size={20}
+                      name={topicVisual(w).icon}
+                      size={30}
                     />
                   </span>
                   <span className="selection-mark">
@@ -1006,7 +1010,7 @@ function NewIntake({ workflows, config, onCreated }) {
                 </div>
                 <strong>{w.title}</strong>
                 <p>{topicDescription(w)}</p>
-                <small>{w.category || "General care"}</small>
+                <small>{topicVisual(w).area}</small>
               </button>
             ))}
           </div>

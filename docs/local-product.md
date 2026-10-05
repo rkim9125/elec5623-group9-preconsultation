@@ -29,12 +29,20 @@ Run `.venv/bin/python scripts/configure-email.py` for an interactive setup. Rese
 
 1. Sign in to the patient portal using an email code. Enter your preferred name if desired.
 2. Select any combination of the 30 preparation topics, add custom concerns, or continue without a predefined category. Consent to AI processing is explicit.
-3. Complete the grouped baseline form in one pass. Common medicines, allergies, background and goals are collected once; each concern has its own fixed workflow questions. Save a draft, answer unknown, or choose not to answer. You may continue with an incomplete form.
+3. Complete the grouped baseline form in one pass. Select illustrated body areas or answer cards where available, and add your own details. Common medicines, allergies, background and goals are collected once; each concern has its own fixed workflow questions. Save a draft, answer unknown, or choose not to answer. You may continue with an incomplete form.
 4. The AI checks the recorded information and asks bounded, relevant additional questions. Baseline questions are not repeated in chat. Each extra question explains its purpose; finish at any time. Voice transcription and optional document reading return editable text for patient confirmation. PDF/JPEG/PNG/WebP uploads remain private until approved sharing.
 5. Generate an AI summary with a patient overview, clinician brief, concern summaries, appointment agenda and uncertainties. Expand source references to compare the wording with the current recorded facts. Correct or remove details before approving. A failed AI operation is explicitly labelled; structured fallback notes remain available. Existing unapproved summaries can be regenerated through the same review action.
 6. Explicit approval shares exactly that reviewed version with the selected configured clinician.
 7. The clinician signs in to the doctor portal using their allowlisted email and reads approved assigned summaries and attachments. They can mark a summary reviewed and print it.
 8. Withdrawing sharing immediately removes doctor access. Deleting a preparation removes its local record and uploaded files. Downloads/printouts already made by a clinician cannot be recalled.
+
+## Illustrated questions
+
+The light ivory and teal interface gives all 30 topics a specific anatomical or care-related icon. Location questions have interactive diagrams for legs, lower back, neck/shoulders, arms/hands, head, abdomen, and skin/body locations. Front/back views explicitly label the patient's own left and right. Every selectable diagram region also has a labelled button; the diagram is a location aid, not a diagnostic image or a substitute for a precise description.
+
+Choice cards help describe patterns, sensations, sleep difficulties, daily impact and appointment priorities. Single-choice questions replace the earlier selection; multi-choice questions allow several answers. No option is selected automatically. Medicines, allergies, exact readings, dates and personal narratives remain editable text where precise information is needed. Existing text is preserved visibly rather than interpreted as a selection.
+
+Choices and optional detail are saved as human-readable patient-authored text through the same baseline API. Unknown and declined statuses keep their existing meaning. These presentation changes do not add diagnostic scores, advice or automatic clinical interpretation.
 
 ## Models and data flow
 
