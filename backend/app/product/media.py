@@ -41,6 +41,7 @@ def invalidate_review(intake: dict) -> None:
         intake['_summary_version'] = max(intake.get('_summary_version', 0), (intake.get('summary') or {}).get('version', 0))
         intake['summary'] = None
         intake['status'] = 'active'
+        intake['stage'] = 'followup' if intake.get('baseline', {}).get('completed') else 'baseline'
 
 
 def public_attachment(attachment: dict) -> dict:

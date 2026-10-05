@@ -28,15 +28,17 @@ Run `.venv/bin/python scripts/configure-email.py` for an interactive setup. Rese
 ## Patient and clinician workflow
 
 1. Sign in to the patient portal using an email code. Enter your preferred name if desired.
-2. Start a preparation, consent to AI processing and select workflows or describe the concerns freely. The AI can propose several applicable workflows, with a separate record per concern and shared medicines/allergies/history.
-3. Answer one question at a time, skip, mark uncertainty, or finish at any point. Uploaded PDF/JPEG/PNG/WebP files remain private. Voice transcription and optional document reading return editable text for patient review before submission.
-4. Review the grounded summary, its missing/uncertain information, and corrections. Explicit approval shares the specific version with the selected configured clinician.
-5. The clinician signs in to the doctor portal using their allowlisted email and reads approved assigned summaries and attachments. They can mark a summary reviewed and print it.
-6. Withdrawing sharing immediately removes doctor access. Deleting a preparation removes its local record and uploaded files. Downloads/printouts already made by a clinician cannot be recalled.
+2. Select any combination of the 30 preparation topics, add custom concerns, or continue without a predefined category. Consent to AI processing is explicit.
+3. Complete the grouped baseline form in one pass. Common medicines, allergies, background and goals are collected once; each concern has its own fixed workflow questions. Save a draft, answer unknown, or choose not to answer. You may continue with an incomplete form.
+4. The AI checks the recorded information and asks bounded, relevant additional questions. Baseline questions are not repeated in chat. Each extra question explains its purpose; finish at any time. Voice transcription and optional document reading return editable text for patient confirmation. PDF/JPEG/PNG/WebP uploads remain private until approved sharing.
+5. Generate an AI summary with a patient overview, clinician brief, concern summaries, appointment agenda and uncertainties. Expand source references to compare the wording with the current recorded facts. Correct or remove details before approving. A failed AI operation is explicitly labelled; structured fallback notes remain available. Existing unapproved summaries can be regenerated through the same review action.
+6. Explicit approval shares exactly that reviewed version with the selected configured clinician.
+7. The clinician signs in to the doctor portal using their allowlisted email and reads approved assigned summaries and attachments. They can mark a summary reviewed and print it.
+8. Withdrawing sharing immediately removes doctor access. Deleting a preparation removes its local record and uploaded files. Downloads/printouts already made by a clinician cannot be recalled.
 
 ## Models and data flow
 
-Default: `gpt-6-sol`. Alternate: `gpt-5.6-sol`. Speech: `gpt-4o-mini-transcribe`. These IDs were verified against official OpenAI documentation and the configured account's model listing during integration. The engine uses the Responses API and structured extraction; deterministic validation controls slot state, applicability, next-question eligibility and summary evidence. A provider error is visible, not silently represented as live AI. Local direct-answer capture keeps preparation possible during an API outage; automatic routing/extraction requires the API.
+Default: `gpt-6-sol`. Alternate: `gpt-5.6-sol`. Speech: `gpt-4o-mini-transcribe`. These IDs were verified against official OpenAI documentation and the configured account's model listing during integration. Separate bounded Responses operations extract facts and activation signals, choose useful extra questions from backend-eligible targets, and synthesize the final patient/clinician summary. The backend controls applicability, stopping, source IDs, corrections and approval. Actual operation/model/latency records support the university demonstration; they are not clinical quality scores. A provider error is visible, not silently represented as live AI. The baseline form remains usable during an API outage.
 
 Text submitted to the agent goes to OpenAI. Voice audio goes to OpenAI for transcription and is not retained by this app. Uploaded documents are kept locally; clicking document reading sends the selected file to OpenAI. Responses requests use `store:false`, which is not a guarantee of zero provider-side retention. Email addresses go to Resend solely to deliver sign-in codes. Review provider data-processing settings before using real patient data.
 
@@ -58,7 +60,9 @@ SQLite is appropriate for this single-instance local product. Horizontal scaling
 
 ## Verification
 
-An optional live synthetic check is available as `.venv/bin/python scripts/smoke-openai.py`; it makes two billable OpenAI calls and is never run automatically.
+An optional v2 live synthetic check is available as `.venv/bin/python scripts/smoke-product-v2.py`. It exercises a bilingual, three-concern baseline, adaptive turns, final synthesis and a removal correction using several billable OpenAI calls. It does not use real accounts or the product database and never runs automatically. Its synthetic output can seed `scripts/product-browser-server.py` for visual checks without additional provider calls. The earlier extraction-only smoke remains in `scripts/smoke-openai.py`.
+
+For a university demonstration, show the grouped form, the optional question and its purpose, the recorded model operations, the two summary perspectives, and a source reference. Then correct a fact, generate a new version, approve it and open the clinician view. This demonstrates implemented behavior without claiming superior clinical outcomes. Source-ID, ownership, uncertainty and numeric checks reduce specific failure modes; they do not prove full semantic entailment or clinical accuracy. Human review remains part of the workflow.
 
 Run product tests from `backend/` with `../.venv/bin/python -m pytest tests/test_product*.py`. Historical teaching API regression tests use `FRONTEND_ORIGIN= ENABLE_LEGACY_API=1 ../.venv/bin/python -m pytest`; never enable that variable in a running deployment. Run frontend checks with `npm test`, `npm run lint`, and `npm run build` in `frontend/`. Product browser tests use isolated synthetic data and are separate from the preserved upstream mock-UI browser scenarios.
 

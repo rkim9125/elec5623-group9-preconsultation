@@ -8,18 +8,31 @@ The final production bundle and backend were started on `127.0.0.1:8000` with `s
 
 ## Automated checks
 
-- Backend: **257 tests passed**, including original state-engine/database tests and new catalogue, agent, provider, authentication, authorization, media and deployment tests.
-- Frontend: **55 preserved regression tests passed**; ESLint and production Vite build passed.
-- Browser acceptance: **25 checks passed**, including the real patient/doctor API flow and desktop/390px mobile layouts. Ten screenshots and a machine-readable report are in `docs/screenshots/integration/`.
-- Accessibility: seven scanned states had zero serious or critical axe violations. This is a bounded automated check, not a complete accessibility certification.
+- Backend: **400 tests passed**, including original engine/database tests, all 30 baseline forms, adaptive planning, cited synthesis, corrections, authentication, ownership, media and deployment boundaries.
+- Frontend: **59 tests passed** (55 preserved regressions and four new navigation/save-boundary tests); ESLint and production Vite build passed.
+- Browser acceptance: **38 checks passed**, including the real patient/doctor API flow, multi-select plus custom topics, no-category preparation, form autosave, immediate navigation after an edit, unavailable-provider behavior, summary regeneration requiring fresh approval, genuine synthetic AI summary perspectives/citations, sharing and revocation. Fifteen screenshots and the machine-readable report are in `docs/screenshots/v2/`.
+- Accessibility: eleven scanned desktop/390px mobile states had zero serious or critical axe violations. This is a bounded automated check, not a complete accessibility certification.
 - No browser JavaScript errors or tested horizontal-overflow failures remained.
 - Git whitespace check and supplied-credential scan passed. Credentials exist only in ignored, private `backend/.env`, never in the browser bundle or committed source.
 
-The browser suite uses temporary synthetic users and real server-side cookie sessions in an isolated test database. It does not insert a production login bypass. Email OTP hashing, expiry, single-use, rate limiting and delivery-error handling are tested with a mocked mail adapter.
+The browser suite uses temporary synthetic users and real server-side cookie sessions in an isolated test database. It does not insert a production login bypass. A genuine model-generated synthetic summary from the separate live test is seeded for presentation checks; browser tests themselves disable external providers. Email OTP hashing, expiry, single-use, rate limiting and delivery-error handling are tested with a mocked mail adapter.
+
+## V2 product behavior
+
+The revised journey is topic selection, a grouped baseline form, optional adaptive follow-up, then summary review and explicit sharing. The new interface uses a navy/blue/white visual system, a readable system font, responsive stages and distinct patient/clinician summary views. Fixed workflow questions are collected in the form; shared context is collected once. Unknown, declined and deferred answers retain their own states and are not repeated as baseline questions in chat.
+
+The agent organizes form evidence, activates explicitly supported detail, chooses one eligible extra question at a time, and synthesizes concise English patient and clinician accounts. Its visible activity records measured model operations. Current facts have source references; omitted, superseded and private historical values are excluded from synthesis context. Corrections invalidate old summaries and approvals. Replacing a form value invalidates dependent extracted details. Removing a medicine preserves independently authored, unrelated form concerns while still withholding stale same-concern narratives.
 
 ## Live provider checks
 
-Real calls using synthetic input verified:
+The v2 live check (`scripts/smoke-product-v2.py`) uses synthetic input only and verified:
+
+- GPT-6 Sol reads a bilingual form containing leg pain, sleep difficulties and a custom work-certificate concern.
+- Two optional follow-up answers are processed without repeating baseline fields.
+- Real patient-overview, clinician-brief, per-concern, agenda and uncertainty sections are generated with registered current-source references.
+- A medicine-removal correction produces a new live summary version, removes the medicine and its dose/frequency from the clinician projection, and preserves the unrelated custom concern.
+
+Earlier integration checks additionally verified these unchanged provider/media paths:
 
 - Account access to `gpt-6-sol`, `gpt-5.6-sol`, and `gpt-4o-mini-transcribe`.
 - GPT-6 Sol extracts separate leg and sleep concerns and activates the multiple-concern agenda without merging their onset descriptions.
@@ -32,8 +45,8 @@ These checks establish the integration paths, not clinical accuracy across all c
 
 ## Configuration still needed from the owner
 
-`RESEND_FROM_EMAIL` and `DOCTOR_EMAILS` remain empty because the owner has not supplied a verified sending address/domain or clinician account address. The provided Resend key is restricted to sending email; its response to a domain-list query explicitly reported `restricted_api_key`. The key cannot be used to discover the verified sender.
+`RESEND_FROM_EMAIL` is now configured as the owner-supplied `uni-proj@bittool.ai`; the server reports mail configuration present. `DOCTOR_EMAILS` still requires the intended clinician login address. The provided Resend key is restricted to sending email; its response to a domain-list query explicitly reported `restricted_api_key`. That query cannot verify the domain's sending status.
 
-Therefore, live email delivery and a genuine email-code login have **not** been verified. The running login screen accurately reports that email setup is incomplete. No real verification email has been sent. Supply those addresses, run `scripts/configure-email.py` or edit `backend/.env`, restart, and complete a real OTP login to finish owner configuration.
+Live email delivery has not been tested by the agent; no real verification email was sent during automated checks. The owner can verify delivery through normal email-code sign-in. Add the clinician address through `scripts/configure-email.py` or `backend/.env`, then restart to enable that clinician account.
 
 For ongoing operation, see [the local product guide](local-product.md).

@@ -332,6 +332,7 @@ def _accept_extraction(session: dict, data: dict, msg: dict, correction: bool) -
         if not correction or not old or not _valid_span(text, removal.get('evidence')):
             rejected.append({'type': 'concern_removal', 'reason': 'unsupported_removal'}); continue
         session.setdefault('_removed_concerns', []).append({'concern': deepcopy(old), 'evidence': _provenance(msg, removal['evidence'])})
+        superseded.append({'owner': old['id'], 'key': '', 'value': old['title'], 'removal': True, 'whole_concern': True})
         session['concerns'].remove(old)
         session['items'] = [item for item in session['items'] if item['concern_id'] != old['id']]
         accepted.append({'type': 'concern_removal', 'concern_id': old['id'], 'operation': 'remove'})
@@ -388,25 +389,62 @@ def _redact_superseded(session: dict, superseded: list[dict], msg: dict) -> None
                     slots[key]['question'] = '' if slots[key].get('exclude_from_handoff') else slots[key]['question'].replace(item['_original_name'], item['name'])
     narrative_keys = {'main_concern', 'agenda_items', 'priority_concern', 'preparation_focus', 'concern_description'}
     changed_owners = {entry['owner'] for entry in superseded}
+    version_two = session.get('experience_version') == 2
+    whole_concern_removed = any(entry.get('whole_concern') for entry in superseded)
+
+    def repeats_prior(value: object, *, owner: str = '', key: str = '') -> bool:
+        if not isinstance(value, str):
+            return False
+        return any(isinstance(prior.get('value'), str) and prior['value'].strip()
+                   and not (owner == prior['owner'] and key == prior['key'])
+                   and prior['value'].casefold() in value.casefold() for prior in superseded)
+
     for owner, slots in [('session', session['shared_slots'])] + [(c['id'], c['slots']) for c in session['concerns']]:
         for key, slot in slots.items():
-            if key in narrative_keys:
-                slot['exclude_from_handoff'] = True
+            evidence = slot.get('evidence') or {}
+            current_correction = (version_two and evidence.get('message_id') == msg['id']
+                                  and slot.get('status') == 'FILLED')
+            duplicate = repeats_prior(slot.get('value'), owner=owner, key=key)
+            if current_correction and not duplicate:
+                # A newly supplied replacement is current evidence, including a
+                # direct replacement of a previously withheld narrative.
+                slot.pop('exclude_from_handoff', None)
                 continue
-            value = slot.get('value')
-            if not isinstance(value, str): continue
-            for prior in superseded:
-                # New corrected fields are already handled; other matching prose
-                # is withheld rather than rewritten by an ungrounded heuristic.
-                if owner == prior['owner'] and key == prior['key']: continue
-                if prior['value'].casefold() in value.casefold():
-                    _update_slot(slot, None, 'SKIPPED', _provenance(msg, msg['text']), correction=True)
+            if key in narrative_keys:
+                authored_in_scope = (evidence.get('source') == 'patient_form'
+                                     and evidence.get('concern_id') == owner
+                                     and evidence.get('key') == key)
+                own_concern_changed = owner != 'session' and owner in changed_owners
+                shared_agenda_changed = owner == 'session' and whole_concern_removed
+                # V2 form fields have explicit owners. A shared medicine edit
+                # does not supersede another concern's independently authored
+                # description. A change inside that concern still withholds its
+                # old narrative conservatively, even across languages.
+                independent_form_narrative = (version_two and authored_in_scope and not own_concern_changed
+                                              and not shared_agenda_changed and not duplicate)
+                if not independent_form_narrative:
                     slot['exclude_from_handoff'] = True
-                    break
-    for c in session['concerns']:
-        if c['id'] in changed_owners or 'session' in changed_owners:
-            w = get_workflow(c['workflow_id'])
-            c['title'] = w['title'] if w else 'Additional appointment concern'
+                continue
+            if duplicate:
+                # Cross-field copies of a removed/replaced value are withheld;
+                # code never rewrites mixed prose through substring replacement.
+                _update_slot(slot, None, 'SKIPPED', _provenance(msg, msg['text']), correction=True)
+                slot['exclude_from_handoff'] = True
+    for concern in session['concerns']:
+        own_scope_changed = concern['id'] in changed_owners
+        title_repeats_prior = repeats_prior(concern['title'])
+        reset_title = (own_scope_changed or title_repeats_prior) if version_two else (own_scope_changed or 'session' in changed_owners)
+        if reset_title:
+            workflow = get_workflow(concern['workflow_id'])
+            concern['title'] = workflow['title'] if workflow else 'Additional appointment concern'
+    if version_two:
+        # This inventory is derived from the current concern records, not a
+        # patient-authored paragraph. Rebuild it after removals/title changes.
+        agenda = session.get('shared_slots', {}).get('agenda_items')
+        if agenda and agenda.get('status') == 'FILLED' and (agenda.get('evidence') or {}).get('source') == 'concern_entries':
+            agenda.update(value='; '.join(c['title'] for c in session['concerns']),
+                          evidence={'source': 'concern_entries', 'concern_ids': [c['id'] for c in session['concerns']]})
+            agenda.pop('exclude_from_handoff', None)
 
 
 def _accept_items(session: dict, items: list, aliases: dict, msg: dict, correction: bool, accepted: list, rejected: list) -> None:
@@ -571,7 +609,8 @@ def process_message(session: dict, text: str, action: str = 'answer', *, provide
                 c['preparation_status'] = 'in progress'
     accepted['activations'].extend(_apply_conditions(session))
     # A consented, volunteered narrative supplies main concern even during a resumed draft.
-    if session['concerns'] and session['shared_slots']['main_concern']['status'] == 'MISSING':
+    if (session.get('experience_version') != 2 and session['concerns']
+            and session['shared_slots']['main_concern']['status'] == 'MISSING'):
         session['shared_slots']['main_concern'].update(status='FILLED', value=text, evidence=_provenance(msg, text))
     eligible = _select_question(session)
     session['audit'].append({'message_id': msg['id'], 'target_before': target_before,
@@ -660,7 +699,7 @@ def _render_review(session: dict) -> dict:
             lines.append('• No details supplied for this section.')
         lines.append('')
     if session.get('_has_corrections'):
-        lines.extend(['Original broad narrative has been superseded by your corrections. Only the current structured details below are intended for sharing; your original messages remain in your private conversation.', ''])
+        lines.extend(['Your corrections are reflected in this draft. Superseded wording remains in your private conversation.', ''])
     if session.get('unclassified_notes') and not session.get('_has_corrections'):
         lines.append('Patient notes not yet structured')
         lines.extend(f"• {note['text']}" for note in session['unclassified_notes'])

@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from copy import deepcopy
 import shutil
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from . import engine
+from . import engine, forms, pipeline
 from .auth import (csrf_protect, normalize_email, require_user, require_patient,
                    require_doctor, check_rate_limit)
 from .config import get_settings, model_options
@@ -24,6 +24,29 @@ class CreateIntake(BaseModel):
     model: str | None = Field(default=None, max_length=100)
     workflow_ids: list[str] = Field(default_factory=list, max_length=30)
     title: str | None = Field(default=None, max_length=150)
+    custom_concerns: list[Annotated[str, Field(min_length=1, max_length=150)]] = Field(default_factory=list, max_length=10)
+
+    @field_validator("custom_concerns")
+    @classmethod
+    def valid_custom_concerns(cls, values: list[str]) -> list[str]:
+        if any(not value.strip() for value in values):
+            raise ValueError("Give each custom concern a short name.")
+        return list(dict.fromkeys(value.strip() for value in values))
+
+
+class BaselineAnswer(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    concern_id: str = Field(default="session", min_length=1, max_length=100)
+    key: str = Field(min_length=1, max_length=150)
+    value: str | None = Field(default=None, max_length=6000)
+    status: Literal["FILLED", "UNCERTAIN", "SKIPPED", "MISSING"] = "FILLED"
+
+
+class BaselineInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    answers: list[BaselineAnswer] = Field(default_factory=list, max_length=400)
+    complete: bool = False
+    revision: int | None = Field(default=None, ge=1)
 
 
 class MessageInput(BaseModel):
@@ -168,12 +191,59 @@ def create_intake(body: CreateIntake, request: Request, user: dict = Depends(req
     session = run_engine(engine.new_intake, user, model, workflow_ids, body.title)
     session["consent"] = True
     session["consented_at"] = utc_now()
+    session = run_engine(forms.initialize, session, body.custom_concerns)
     return persist(session)
 
 
 @router.get("/intakes/{intake_id}")
 def patient_intake(intake_id: str, user: dict = Depends(require_patient)) -> dict:
     return public_session(require_owner(intake_id, user))
+
+
+@router.get("/intakes/{intake_id}/form")
+def preparation_form(intake_id: str, user: dict = Depends(require_patient)) -> dict:
+    session = require_owner(intake_id, user)
+    # Legacy free-text drafts without a topic gain a GENERAL concern when the
+    # patient saves a form. A read never mutates the stored preparation.
+    view = deepcopy(session)
+    if not view.get("concerns"):
+        engine._add_concern(view, "GENERAL", "Your appointment concern")
+        # A stable ID keeps GET fields addressable on the subsequent PUT.
+        view["concerns"][-1]["id"] = f"general-{session['id']}"
+    return {**forms.get_form(view), "revision": session.get("revision")}
+
+
+@router.put("/intakes/{intake_id}/baseline", dependencies=[Depends(csrf_protect)])
+def save_baseline(intake_id: str, body: BaselineInput, request: Request, user: dict = Depends(require_patient)) -> dict:
+    session = require_owner(intake_id, user)
+    ensure_editable(session)
+    if session.get("status") == "interrupted":
+        raise HTTPException(409, "This preparation was paused by a safety concern and cannot accept more answers.")
+    if body.revision is not None and body.revision != session.get("revision"):
+        raise HTTPException(409, "This intake changed. Refresh the form before saving it again.")
+    if not session.get("concerns"):
+        engine._add_concern(session, "GENERAL", "Your appointment concern")
+        session["concerns"][-1]["id"] = f"general-{session['id']}"
+    try:
+        session = forms.apply_baseline(session, [answer.model_dump() for answer in body.answers], complete=body.complete)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
+    if body.complete and session.get("consent") and session.get("status") != "interrupted":
+        check_rate_limit(request, "intake_message", user["email"])
+        session = run_engine(pipeline.start_followup, session)
+    return persist(session)
+
+
+@router.post("/intakes/{intake_id}/followup", dependencies=[Depends(csrf_protect)])
+def retry_followup(intake_id: str, request: Request, user: dict = Depends(require_patient)) -> dict:
+    session = require_owner(intake_id, user)
+    ensure_editable(session)
+    if session.get("status") == "interrupted":
+        raise HTTPException(409, "This preparation was paused by a safety concern.")
+    if not session.get("baseline", {}).get("completed"):
+        raise HTTPException(409, "Complete the preparation form before requesting AI follow-up.")
+    check_rate_limit(request, "intake_message", user["email"])
+    return persist(run_engine(pipeline.start_followup, session))
 
 
 @router.post("/intakes/{intake_id}/messages", dependencies=[Depends(csrf_protect)])
@@ -185,7 +255,7 @@ def message(intake_id: str, body: MessageInput, request: Request, user: dict = D
     if len(session.get("messages", [])) >= 400:
         raise HTTPException(409, "This intake has reached its message limit. Review your summary or begin a new intake.")
     check_rate_limit(request, "intake_message", user["email"])
-    session = run_engine(engine.process_message, session, body.text.strip(), body.action)
+    session = run_engine(pipeline.process_message, session, body.text.strip(), body.action)
     return persist(session)
 
 
@@ -196,7 +266,7 @@ def review(intake_id: str, request: Request, user: dict = Depends(require_patien
     if session.get("status") == "interrupted":
         raise HTTPException(409, "This intake was interrupted by a safety concern. Follow the urgent-care guidance shown in the conversation.")
     check_rate_limit(request, "intake_review", user["email"])
-    return persist(run_engine(engine.build_review, session))
+    return persist(run_engine(pipeline.build_review, session))
 
 
 @router.patch("/intakes/{intake_id}/review", dependencies=[Depends(csrf_protect)])
@@ -206,7 +276,7 @@ def correct_review(intake_id: str, body: CorrectionInput, request: Request, user
     if not session.get("summary") or session.get("status") != "review":
         raise HTTPException(409, "Create a draft summary before correcting it.")
     check_rate_limit(request, "intake_review", user["email"])
-    return persist(run_engine(engine.build_review, session, correction=body.text.strip()))
+    return persist(run_engine(pipeline.build_review, session, correction=body.text.strip()))
 
 
 @router.post("/intakes/{intake_id}/approve", dependencies=[Depends(csrf_protect)])

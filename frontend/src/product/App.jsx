@@ -6,26 +6,66 @@ import {
   dateLabel,
   fileSize,
   progressFor,
-  statusLabel,
 } from "./api.js";
+import { Button, ErrorNotice, Loading, Status, Empty, Modal } from "./UI.jsx";
+import {
+  BaselineForm,
+  JourneyNavigation,
+  SynthesisSummary,
+} from "./Preparation.jsx";
 import "./product.css";
+import { navigateWithGuard } from "./navigation.js";
+import { topicDescription } from "./topics.js";
 
 const setRoute = (path) => {
-  window.location.hash = path;
+  return navigateWithGuard(() => {
+    window.location.hash = path;
+  });
 };
 function useHash() {
   const [route, update] = useState(
     location.hash.slice(1) ||
       (location.pathname.startsWith("/doctor") ? "/doctor" : "/patient"),
   );
+  const currentRoute = useRef(route);
   useEffect(() => {
-    const listener = () =>
-      update(
+    const listener = async () => {
+      const target =
         location.hash.slice(1) ||
-          (location.pathname.startsWith("/doctor") ? "/doctor" : "/patient"),
-      );
+        (location.pathname.startsWith("/doctor") ? "/doctor" : "/patient");
+      const previous = currentRoute.current;
+      const changed = await navigateWithGuard(() => {
+        currentRoute.current = target;
+        update(target);
+      });
+      if (
+        !changed &&
+        currentRoute.current === previous &&
+        location.hash.slice(1) === target
+      )
+        history.replaceState(null, "", `#${previous}`);
+    };
+    const links = (event) => {
+      const link = event.target.closest?.("a[href^='#/']");
+      if (
+        !link ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        link.target === "_blank"
+      )
+        return;
+      event.preventDefault();
+      setRoute(link.getAttribute("href").slice(1));
+    };
     window.addEventListener("hashchange", listener);
-    return () => window.removeEventListener("hashchange", listener);
+    document.addEventListener("click", links, true);
+    return () => {
+      window.removeEventListener("hashchange", listener);
+      document.removeEventListener("click", links, true);
+    };
   }, []);
   return route;
 }
@@ -48,96 +88,6 @@ function Brand({ light = false }) {
         PreConsult<span className="brand-sub">ELEC5623 · GROUP 9</span>
       </span>
     </a>
-  );
-}
-function Button({ children, icon, className = "", busy, ...props }) {
-  return (
-    <button
-      className={`button ${className}`}
-      {...props}
-      disabled={props.disabled || busy}
-    >
-      {busy ? (
-        <span className="spinner" />
-      ) : icon ? (
-        <Icon name={icon} size={17} />
-      ) : null}
-      {children}
-    </button>
-  );
-}
-function ErrorNotice({ children }) {
-  return children ? (
-    <div className="notice error" role="alert">
-      <Icon name="info" />
-      <span>{children}</span>
-    </div>
-  ) : null;
-}
-function Loading({ label = "Loading your workspace…" }) {
-  return (
-    <div className="loading-state" role="status">
-      <span className="spinner" />
-      <p>{label}</p>
-    </div>
-  );
-}
-function Status({ status }) {
-  return (
-    <span className={`status status-${status}`}>
-      <i />
-      {statusLabel(status)}
-    </span>
-  );
-}
-function Empty({ title, children, action, icon = "file" }) {
-  return (
-    <div className="empty-state">
-      <span className="empty-icon">
-        <Icon name={icon} size={29} />
-      </span>
-      <h3>{title}</h3>
-      <p>{children}</p>
-      {action}
-    </div>
-  );
-}
-function Modal({ title, onClose, children, wide = false }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    const before = document.activeElement;
-    const dialog = ref.current;
-    dialog.showModal();
-    return () => {
-      dialog.close();
-      before?.focus();
-    };
-  }, []);
-  return (
-    <dialog
-      className={`modal ${wide ? "modal-wide" : ""}`}
-      ref={ref}
-      onCancel={(e) => {
-        e.preventDefault();
-        onClose();
-      }}
-      onClick={(e) => {
-        if (e.target === ref.current) onClose();
-      }}
-      aria-labelledby="modal-title"
-    >
-      <div className="modal-heading">
-        <h2 id="modal-title">{title}</h2>
-        <button
-          className="icon-button"
-          onClick={onClose}
-          aria-label="Close dialog"
-        >
-          <Icon name="close" />
-        </button>
-      </div>
-      {children}
-    </dialog>
   );
 }
 
@@ -830,22 +780,24 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
       />
       {!history && !doctor && (
         <div className="how-it-works">
-          <h3>A thoughtful start, in three steps</h3>
+          <h3>Your preparation, step by step</h3>
           <div>
             <p>
               <span>01</span>
-              <strong>Tell your story</strong>
-              <small>Use text, your voice, or a document.</small>
+              <strong>Choose your concerns</strong>
+              <small>Select topics or describe your own.</small>
             </p>
             <p>
               <span>02</span>
-              <strong>Review the details</strong>
-              <small>Check and correct your summary.</small>
+              <strong>Complete the essentials</strong>
+              <small>A grouped form, followed by relevant AI questions.</small>
             </p>
             <p>
               <span>03</span>
-              <strong>Share when ready</strong>
-              <small>You decide when your doctor sees it.</small>
+              <strong>Review and share</strong>
+              <small>
+                Check the AI summary, then approve it for your doctor.
+              </small>
             </p>
           </div>
         </div>
@@ -856,6 +808,8 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
 
 function NewIntake({ workflows, config, onCreated }) {
   const [selected, setSelected] = useState([]);
+  const [customConcerns, setCustomConcerns] = useState([]);
+  const [customConcern, setCustomConcern] = useState("");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All concerns");
   const [model, setModel] = useState(config?.default_model || "gpt-6-sol");
@@ -884,6 +838,7 @@ function NewIntake({ workflows, config, onCreated }) {
           consent,
           model,
           workflow_ids: selected,
+          custom_concerns: customConcerns,
           title: title.trim() || undefined,
         },
       });
@@ -904,33 +859,103 @@ function NewIntake({ workflows, config, onCreated }) {
           <span className="overline">LET’S GET READY FOR YOUR VISIT</span>
           <h1>What brings you here?</h1>
           <p>
-            Choose any concerns that fit, or let the assistant guide you. You
-            can discuss several together.
+            Choose several topics, add concerns in your own words, or continue
+            without a category. Your consultation can include all of them.
           </p>
         </div>
       </div>
+      <JourneyNavigation current={0} />
       <div className="new-layout">
         <section>
           <button
-            className={`auto-route-card ${selected.length === 0 ? "selected" : ""}`}
-            onClick={() => setSelected([])}
+            className={`auto-route-card ${selected.length === 0 && customConcerns.length === 0 ? "selected" : ""}`}
+            onClick={() => {
+              setSelected([]);
+              setCustomConcerns([]);
+            }}
           >
             <span className="auto-icon">
               <Icon name="sparkle" size={25} />
             </span>
             <span>
-              <strong>Help me work it out</strong>
+              <strong>Start without a category</strong>
               <small>
-                Describe things in your own words. We’ll find the right
-                questions.
+                Use a general health information form and describe what matters
+                to you.
               </small>
             </span>
             <span className="selection-mark">
-              {!selected.length && <Icon name="check" size={14} />}
+              {!selected.length && !customConcerns.length && (
+                <Icon name="check" size={14} />
+              )}
             </span>
           </button>
+          <section className="custom-concerns-card">
+            <div>
+              <h2>Add your own concern</h2>
+              <p>
+                Not on the list? Describe it in a short phrase. You can add up
+                to 10.
+              </p>
+            </div>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const value = customConcern.trim();
+                if (
+                  value &&
+                  customConcerns.length < 10 &&
+                  !customConcerns.some(
+                    (item) => item.toLowerCase() === value.toLowerCase(),
+                  )
+                ) {
+                  setCustomConcerns((items) => [...items, value]);
+                  setCustomConcern("");
+                }
+              }}
+            >
+              <label className="sr-only" htmlFor="custom-concern">
+                Your own concern
+              </label>
+              <input
+                id="custom-concern"
+                className="input"
+                value={customConcern}
+                onChange={(event) => setCustomConcern(event.target.value)}
+                placeholder="e.g. Questions about a recent health change"
+                maxLength={150}
+              />
+              <Button
+                className="secondary"
+                type="submit"
+                icon="plus"
+                disabled={!customConcern.trim() || customConcerns.length >= 10}
+              >
+                Add concern
+              </Button>
+            </form>
+            {customConcerns.length > 0 && (
+              <div className="tag-list custom-concern-list">
+                {customConcerns.map((concern) => (
+                  <button
+                    className="tag removable"
+                    key={concern}
+                    aria-label={`Remove custom concern: ${concern}`}
+                    onClick={() =>
+                      setCustomConcerns((items) =>
+                        items.filter((item) => item !== concern),
+                      )
+                    }
+                  >
+                    {concern}
+                    <Icon name="close" size={14} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
           <div className="workflow-heading">
-            <h2>Or choose your concerns</h2>
+            <h2>Browse consultation topics</h2>
             <span>{workflows.length} care pathways</span>
           </div>
           <div className="list-controls">
@@ -980,17 +1005,15 @@ function NewIntake({ workflows, config, onCreated }) {
                   </span>
                 </div>
                 <strong>{w.title}</strong>
-                <p>
-                  {w.description ||
-                    "Prepare the relevant details for your doctor."}
-                </p>
+                <p>{topicDescription(w)}</p>
                 <small>{w.category || "General care"}</small>
               </button>
             ))}
           </div>
           {!shown.length && (
             <Empty title="No matching pathways" icon="search">
-              Try another search, or choose “Help me work it out”.
+              Try another search, add your own concern, or start without a
+              category.
             </Empty>
           )}
         </section>
@@ -998,13 +1021,30 @@ function NewIntake({ workflows, config, onCreated }) {
           <span className="overline">YOUR CONSULTATION</span>
           <h2>A few things before we begin.</h2>
           <div className="selected-concerns">
-            {selected.length ? (
+            {selected.length + customConcerns.length > 0 ? (
               <>
                 <span className="field-label">
-                  {selected.length} concern{selected.length !== 1 ? "s" : ""}{" "}
+                  {selected.length + customConcerns.length} concern
+                  {selected.length + customConcerns.length !== 1
+                    ? "s"
+                    : ""}{" "}
                   selected
                 </span>
                 <div className="tag-list">
+                  {customConcerns.map((concern) => (
+                    <button
+                      key={`custom-${concern}`}
+                      className="tag removable"
+                      onClick={() =>
+                        setCustomConcerns((items) =>
+                          items.filter((item) => item !== concern),
+                        )
+                      }
+                    >
+                      {concern}
+                      <Icon name="close" size={13} />
+                    </button>
+                  ))}
                   {selected.map((id) => (
                     <button
                       key={id}
@@ -1021,7 +1061,7 @@ function NewIntake({ workflows, config, onCreated }) {
               </>
             ) : (
               <p>
-                <Icon name="sparkle" size={16} /> Guided by your story
+                <Icon name="file" size={16} /> General consultation
               </p>
             )}
           </div>
@@ -1082,7 +1122,7 @@ function NewIntake({ workflows, config, onCreated }) {
             disabled={!consent}
             onClick={create}
           >
-            Start preparation
+            Continue to health information
             <Icon name="arrow" size={17} />
           </Button>
           <p className="emergency-note">
@@ -1479,7 +1519,7 @@ function CarePlan({ session }) {
         <Icon name="sparkle" size={17} />
       </div>
       <div className="progress-heading">
-        <span>Information gathered</span>
+        <span>Questions addressed</span>
         <strong>{progress.percent}%</strong>
       </div>
       <div
@@ -1494,7 +1534,7 @@ function CarePlan({ session }) {
       </div>
       <p className="progress-hint">
         {progress.total
-          ? `${progress.completed} of ${progress.total} topics addressed`
+          ? `${progress.completed} of ${progress.total} questions addressed. Includes unknown and skipped answers.`
           : "Your plan develops as you share."}
       </p>
       {session.concerns?.length ? (
@@ -1550,207 +1590,188 @@ function CarePlan({ session }) {
   );
 }
 
-function IntakeChat({ session, onUpdate, refresh, config }) {
+function IntakeChat({ session, onUpdate, refresh, config, onEditBaseline }) {
   const [text, setText] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
   const [busyAction, setBusyAction] = useState("");
-  const [confirmReview, setConfirmReview] = useState(false);
-  const end = useRef(null);
   const composer = useRef(null);
-  useEffect(() => {
-    end.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [session.messages?.length, busy]);
-  async function send(action = "answer") {
+  const busy = !!busyAction;
+  const assistant = session.assistant || {};
+  const question = session.current_question;
+  const messages = (session.messages || []).filter(
+    (message) =>
+      !session.followup_started_at ||
+      message.created_at >= session.followup_started_at,
+  );
+  async function perform(action) {
     if (action === "answer" && !text.trim()) return;
-    setBusy(true);
     setBusyAction(action);
     setError("");
     setNotice("");
     try {
-      const next = await request(`/intakes/${session.id}/messages`, {
+      const path =
+        action === "review"
+          ? "review"
+          : action === "retry"
+            ? "followup"
+            : "messages";
+      const next = await request(`/intakes/${session.id}/${path}`, {
         method: "POST",
-        body: { text: action === "answer" ? text.trim() : "", action },
+        ...(["review", "retry"].includes(action)
+          ? {}
+          : { body: { text: action === "answer" ? text.trim() : "", action } }),
       });
       onUpdate(next);
-      setText("");
-      composer.current?.focus();
+      if (action === "answer") setText("");
     } catch (err) {
       setError(err.message);
     } finally {
-      setBusy(false);
       setBusyAction("");
     }
   }
-  async function review() {
-    setConfirmReview(false);
-    setBusy(true);
-    setBusyAction("review");
-    setError("");
-    try {
-      onUpdate(
-        await request(`/intakes/${session.id}/review`, { method: "POST" }),
-      );
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-      setBusyAction("");
-    }
-  }
-  function addText(value, type) {
+  function addText(value, kind) {
     if (!value?.trim()) return;
     setText((previous) => (previous ? `${previous}\n\n${value}` : value));
     setNotice(
-      `${type} added below. Check the wording, make any corrections, then send when ready.`,
+      `${kind} is ready to review below. Correct the wording, then send when you’re ready.`,
     );
     composer.current?.focus();
   }
-  const messages = session.messages || [];
-  const currentShown = messages.some(
-    (m) =>
-      m.role === "assistant" &&
-      m.text?.includes(session.current_question?.question || "\0"),
-  );
   return (
-    <>
-      <div className="intake-layout">
-        <section className="conversation-card">
-          <div className="conversation-header">
-            <span className="assistant-avatar">
-              <Icon name="sparkle" size={19} />
+    <div className="intake-layout followup-layout">
+      <section className="followup-main">
+        <div className="followup-intro">
+          <div className="assist-icon">
+            <Icon name="sparkle" size={25} />
+          </div>
+          <div>
+            <span className="section-kicker">
+              STEP 3 · OPTIONAL AI FOLLOW-UP
             </span>
-            <div>
-              <h2>Your preparation assistant</h2>
-              <p>One thoughtful question at a time</p>
-            </div>
-            <span className="live-label">
-              <i />
-              Private conversation
+            <h2>A few relevant follow-ups</h2>
+            <p>
+              Your basic information is already recorded. This step explores
+              only additional details that may help prepare your consultation.
+            </p>
+          </div>
+        </div>
+        <ErrorNotice>{error}</ErrorNotice>
+        <div
+          className={`assistant-overview ${assistant.mode === "unavailable" ? "unavailable" : ""}`}
+        >
+          <div className="small-heading">
+            <h3>
+              {assistant.mode === "unavailable"
+                ? "AI follow-up is unavailable"
+                : "What the assistant is focusing on"}
+            </h3>
+            <span className="assistant-mode">
+              {assistant.mode === "live"
+                ? "AI connected"
+                : assistant.mode === "unavailable"
+                  ? "Unavailable"
+                  : "Ready"}
             </span>
           </div>
-          <div
-            className="conversation"
-            tabIndex={0}
-            role="region"
-            aria-label="Preparation conversation"
-            aria-live="polite"
-            aria-relevant="additions"
-          >
-            <div className="conversation-date">
-              TODAY · YOUR PRE-CONSULTATION STORY
-            </div>
-            {messages.length ? (
-              messages.map((message, index) => (
-                <div
-                  className={`message message-${message.role}`}
-                  key={message.id || index}
-                >
-                  {message.role === "assistant" && (
-                    <span className="message-avatar">
-                      <Icon name="sparkle" size={15} />
-                    </span>
-                  )}
-                  <div>
-                    <span className="message-author">
-                      {message.role === "patient"
-                        ? "You"
-                        : "PreConsult assistant"}
-                    </span>
-                    <div className="message-bubble">{message.text}</div>
-                    {message.created_at && (
-                      <time>
-                        {new Date(message.created_at).toLocaleTimeString(
-                          "en-AU",
-                          { hour: "numeric", minute: "2-digit" },
-                        )}
-                      </time>
-                    )}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="message message-assistant">
-                <span className="message-avatar">
-                  <Icon name="sparkle" size={15} />
+          <p>
+            {assistant.overview ||
+              "Your information is saved. You can add any additional context or move on to your summary."}
+          </p>
+          {assistant.focus && (
+            <p className="assistant-focus">
+              <strong>Focus:</strong> {assistant.focus}
+            </p>
+          )}
+          {assistant.rationale && (
+            <p className="assistant-rationale">
+              <Icon name="info" size={17} />
+              {assistant.rationale}
+            </p>
+          )}
+          {assistant.mode === "unavailable" && (
+            <Button
+              className="secondary"
+              icon="sparkle"
+              busy={busyAction === "retry"}
+              disabled={busy}
+              onClick={() => perform("retry")}
+            >
+              Retry AI follow-up
+            </Button>
+          )}
+        </div>
+        {question ? (
+          <div className="followup-question">
+            <span className="section-kicker">
+              ADDITIONAL QUESTION {assistant.question_count || 1}
+              {assistant.questions_remaining != null
+                ? ` · ${assistant.questions_remaining} remaining`
+                : ""}
+            </span>
+            <h3>{question.question}</h3>
+            {question.why && (
+              <p>
+                <Icon name="info" size={18} />
+                <span>
+                  <strong>Why this helps:</strong> {question.why}
                 </span>
-                <div>
-                  <span className="message-author">PreConsult assistant</span>
-                  <div className="message-bubble">
-                    {session.current_question?.question ||
-                      "What would you like your doctor to help you with? You can mention more than one concern."}
-                  </div>
-                </div>
-              </div>
+              </p>
             )}
-            {messages.length > 0 &&
-              session.current_question?.question &&
-              !currentShown && (
-                <div className="message message-assistant">
-                  <span className="message-avatar">
-                    <Icon name="sparkle" size={15} />
-                  </span>
-                  <div>
-                    <span className="message-author">Next question</span>
-                    <div className="message-bubble">
-                      {session.current_question.question}
-                    </div>
-                  </div>
-                </div>
-              )}
-            {busy && (
-              <div className="assistant-thinking" role="status">
-                <span />
-                <span />
-                <span />
-                {busyAction === "review"
-                  ? "Preparing your review…"
-                  : "Organising your response…"}
-              </div>
-            )}
-            <div ref={end} />
           </div>
+        ) : (
+          <div className="followup-ready">
+            <Icon name="check" size={25} />
+            <div>
+              <h3>
+                {assistant.mode === "unavailable"
+                  ? "You can still prepare your summary"
+                  : "Ready to bring your information together"}
+              </h3>
+              <p>
+                No further question is waiting. Add anything else below, or
+                generate your summary now.
+              </p>
+            </div>
+          </div>
+        )}
+        <section className="conversation-card followup-composer">
           <div className="composer-area">
-            <ErrorNotice>{error}</ErrorNotice>
             {notice && (
               <div className="notice success" role="status">
-                <Icon name="check" size={17} />
+                <Icon name="check" size={18} />
                 <span>{notice}</span>
               </div>
             )}
-            {session.ai_status?.mode === "unavailable" &&
-              session.plan?.turns > 0 && (
-                <div className="notice warning">
-                  <Icon name="info" size={17} />
-                  <span>
-                    {session.ai_status.message ||
-                      "The AI service is unavailable. Please try again shortly."}
-                  </span>
-                </div>
-              )}
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                send();
+              onSubmit={(event) => {
+                event.preventDefault();
+                perform("answer");
               }}
             >
-              <label htmlFor="response" className="sr-only">
-                Your response
+              <label className="field-label" htmlFor="response">
+                {question ? "Your response" : "Anything else to add?"}
               </label>
               <textarea
                 id="response"
                 ref={composer}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Tell us in your own words…"
-                rows={3}
+                rows={4}
                 maxLength={12000}
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                placeholder={
+                  question
+                    ? "Answer in your own words…"
+                    : "Optional: add context or a question for your doctor…"
+                }
                 disabled={busy}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    send();
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    (event.metaKey || event.ctrlKey)
+                  ) {
+                    event.preventDefault();
+                    perform("answer");
                   }
                 }}
               />
@@ -1765,97 +1786,142 @@ function IntakeChat({ session, onUpdate, refresh, config }) {
                 <Button
                   type="submit"
                   className="primary"
-                  busy={busy && busyAction === "answer"}
+                  busy={busyAction === "answer"}
                   disabled={busy || !text.trim()}
                 >
                   Send response
-                  <Icon name="arrow" size={16} />
+                  <Icon name="arrow" size={17} />
                 </Button>
               </div>
             </form>
-            <div className="answer-shortcuts">
-              <button
-                className="text-button"
-                disabled={busy}
-                onClick={() => send("unknown")}
-              >
-                I don’t know
-              </button>
-              <span>·</span>
-              <button
-                className="text-button"
-                disabled={busy}
-                onClick={() => send("skip")}
-              >
-                Skip this question
-              </button>
-              <span className="keyboard-hint">⌘ / Ctrl + Enter to send</span>
-            </div>
-          </div>
-          <div className="conversation-footer">
-            <Icon name="lock" size={14} />
-            <span>
-              Saved securely to your account. Your doctor can’t see this yet.
-            </span>
+            {question && (
+              <div className="answer-shortcuts">
+                <Button
+                  className="subtle"
+                  disabled={busy}
+                  onClick={() => perform("unknown")}
+                >
+                  I don’t know
+                </Button>
+                <Button
+                  className="subtle"
+                  disabled={busy}
+                  onClick={() => perform("skip")}
+                >
+                  Skip this question
+                </Button>
+              </div>
+            )}
           </div>
         </section>
-        <aside className="intake-aside">
-          <CarePlan session={session} />
-          <Attachments
-            session={session}
-            onRefresh={refresh}
-            onText={(value) => addText(value, "Extracted document details")}
-            onError={setError}
-          />
-          <div className="finish-card">
-            <h3>Ready to bring it together?</h3>
+        {messages.length > 0 && (
+          <details className="conversation-history">
+            <summary>
+              <Icon name="clock" size={18} />
+              <span>Conversation history ({messages.length})</span>
+              <Icon name="chevron" size={17} />
+            </summary>
+            <div
+              className="conversation"
+              tabIndex={0}
+              role="region"
+              aria-label="Preparation conversation"
+            >
+              {messages.map((message, i) => (
+                <div
+                  className={`message message-${message.role}`}
+                  key={message.id || i}
+                >
+                  <span className="message-author">
+                    {message.role === "patient"
+                      ? "You"
+                      : "PreConsult assistant"}
+                  </span>
+                  <div className="message-bubble">{message.text}</div>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+        <div className="followup-next">
+          <div>
+            <h3>You decide when to finish.</h3>
             <p>
-              You can review now, even with unanswered questions. Gaps will be
-              made clear.
+              You can create a summary at any point. Missing and uncertain
+              information stays clearly marked.
+            </p>
+          </div>
+          <Button
+            className="primary"
+            icon="sparkle"
+            busy={busyAction === "review"}
+            disabled={busy || !!text.trim()}
+            onClick={() => perform("review")}
+          >
+            Generate my summary
+          </Button>
+          {text.trim() && (
+            <p className="field-hint">
+              Send or clear your unsent response before generating the summary.
+            </p>
+          )}
+        </div>
+      </section>
+      <aside className="intake-aside">
+        <CarePlan session={session} />
+        <div className="baseline-complete-card">
+          <Icon name="check" size={20} />
+          <div>
+            <h3>Health information saved</h3>
+            <p>
+              Your fixed questions are complete for this preparation. You can
+              return to correct or add details.
             </p>
             <Button
               className="secondary full"
-              busy={busy && busyAction === "review"}
               disabled={busy}
-              onClick={() => setConfirmReview(true)}
+              onClick={onEditBaseline}
             >
-              Finish & review
-              <Icon name="arrow" size={16} />
+              Edit health information
             </Button>
           </div>
+        </div>
+        <Attachments
+          session={session}
+          onRefresh={refresh}
+          onText={(value) => addText(value, "Extracted document details")}
+          onError={setError}
+        />
+        <div className="ai-activity">
+          <h3>Assistant activity</h3>
           <p className="model-caption">
-            <Icon name="sparkle" size={13} />
-            {config?.models?.find((m) => m.id === session.model)?.label ||
-              session.model}
+            <Icon name="sparkle" size={16} />
+            {config?.models?.find((model) => model.id === session.model)
+              ?.label || session.model}
           </p>
-        </aside>
-      </div>
-      {confirmReview && (
-        <Modal
-          title="Prepare your summary?"
-          onClose={() => setConfirmReview(false)}
-        >
-          <p className="modal-copy">
-            We’ll organise what you’ve shared into a draft for you to review.
-            Any unanswered or uncertain details will be clearly marked.
-          </p>
-          <p className="modal-copy">
-            Your doctor will only see it after you approve sharing.
-          </p>
-          <div className="modal-actions">
-            <Button
-              className="secondary"
-              onClick={() => setConfirmReview(false)}
-            >
-              Keep preparing
-            </Button>
-            <Button className="primary" onClick={review}>
-              Create my summary
-            </Button>
-          </div>
-        </Modal>
-      )}
-    </>
+          {session.ai_activity?.length ? (
+            <ul>
+              {session.ai_activity
+                .slice(-4)
+                .reverse()
+                .map((activity, i) => (
+                  <li key={`${activity.created_at}-${i}`}>
+                    <span>{String(activity.operation).replace(/_/g, " ")}</span>
+                    <strong>
+                      {activity.status}
+                      {Number.isFinite(activity.duration_ms)
+                        ? ` · ${(activity.duration_ms / 1000).toFixed(1)}s`
+                        : ""}
+                    </strong>
+                  </li>
+                ))}
+            </ul>
+          ) : (
+            <p>No AI operations recorded yet.</p>
+          )}
+        </div>
+      </aside>
+    </div>
   );
 }
 
@@ -1919,6 +1985,13 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [withdraw, setWithdraw] = useState(false);
+  useEffect(
+    () => setConfirmed(false),
+    [
+      session.summary?.version,
+      session.attachments?.map((file) => file.id).join(","),
+    ],
+  );
   const canApprove = !doctor && session.status === "review";
   async function correct(event) {
     event.preventDefault();
@@ -1981,7 +2054,7 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
         doctor
           ? "This submission has been marked as reviewed."
           : kind === "review"
-            ? "Your preparation is a private draft again. Check or correct it before sharing."
+            ? "Your summary has been refreshed. Review the current version before sharing."
             : "Sharing has been withdrawn. This summary is no longer visible in the doctor portal.",
       );
     } catch (err) {
@@ -2064,7 +2137,7 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
               <h2>
                 {doctor
                   ? session.patient_name || session.patient_email
-                  : "Your story, brought together."}
+                  : "Your consultation summary"}
               </h2>
               <p>
                 {dateLabel(session.created_at)} <span>·</span> Version{" "}
@@ -2088,45 +2161,69 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
           <div className="summary-disclaimer">
             <Icon name="info" size={17} />
             <p>
-              AI-assisted, patient-reported information.{" "}
+              {session.summary?.synthesis?.status === "live"
+                ? "AI-assisted, patient-reported information."
+                : "Structured, patient-reported information."}{" "}
               {doctor
                 ? "Verify details with the patient. This is not a diagnosis or treatment recommendation."
                 : "Check for missing or incorrect details. This is not a diagnosis or treatment recommendation."}
             </p>
           </div>
-          <SummaryText
-            text={
-              session.summary?.text ||
-              (session.status === "interrupted"
-                ? session.messages?.filter((m) => m.role === "assistant").at(-1)
-                    ?.text
-                : "")
-            }
-          />
-          {session.summary?.gaps?.length > 0 &&
-            !session.summary?.text?.includes(
-              "Unknown, skipped and uncollected information",
-            ) && (
-              <details className="summary-gaps">
-                <summary>
-                  <Icon name="info" size={18} />
-                  <span>
-                    Details still to clarify ({session.summary.gaps.length})
-                  </span>
-                  <Icon name="chevron" size={16} />
-                </summary>
-                <ul>
-                  {session.summary.gaps.map((gap, i) => (
-                    <li key={i}>{readable(gap)}</li>
-                  ))}
-                </ul>
-              </details>
-            )}
-          <div className="structured-heading">
-            <h3>Detailed health information</h3>
-            <p>Review the information gathered for each concern.</p>
-          </div>
-          <SlotDetails session={session} />
+          {session.summary && (
+            <SynthesisSummary
+              synthesis={session.summary.synthesis}
+              doctor={doctor}
+              busy={busy}
+              readOnly={
+                doctor || !canApprove || !!session.summary.needs_reconciliation
+              }
+              onGenerate={() => action("review")}
+            />
+          )}
+          <details
+            className="raw-record"
+            open={session.summary?.synthesis?.status !== "live"}
+          >
+            <summary>
+              <Icon name="file" size={18} />
+              <span>Structured preparation record</span>
+              <Icon name="chevron" size={17} />
+            </summary>
+            <SummaryText
+              text={
+                session.summary?.text ||
+                (session.status === "interrupted"
+                  ? session.messages
+                      ?.filter((m) => m.role === "assistant")
+                      .at(-1)?.text
+                  : "")
+              }
+            />
+            {session.summary?.gaps?.length > 0 &&
+              !session.summary?.text?.includes(
+                "Unknown, skipped and uncollected information",
+              ) && (
+                <details className="summary-gaps">
+                  <summary>
+                    <Icon name="info" size={18} />
+                    <span>
+                      Details still to clarify ({session.summary.gaps.length})
+                    </span>
+                    <Icon name="chevron" size={16} />
+                  </summary>
+                  <ul>
+                    {session.summary.gaps.map((gap, i) => (
+                      <li key={i}>{readable(gap)}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            <div className="structured-heading">
+              <h3>Detailed health information</h3>
+              <p>Review the information gathered for each concern.</p>
+            </div>
+            <SlotDetails session={session} />
+          </details>
           {canApprove && (
             <form className="correction-form" onSubmit={correct}>
               <label htmlFor="correction">
@@ -2336,6 +2433,7 @@ function IntakePage({ id, user, config, onChanged }) {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [view, setView] = useState(null);
   const mounted = useRef(true);
   const readGeneration = useRef(0);
   const doctor = user.role === "doctor";
@@ -2434,14 +2532,65 @@ function IntakePage({ id, user, config, onChanged }) {
           </button>
         )}
       </div>
+      {!doctor && (
+        <JourneyNavigation
+          current={
+            view === "baseline"
+              ? 1
+              : view === "followup"
+                ? 2
+                : session.status === "active"
+                  ? session.stage === "baseline" || !session.stage
+                    ? 1
+                    : 2
+                  : 3
+          }
+          completed={
+            session.baseline?.completed
+              ? session.status === "review"
+                ? 3
+                : 2
+              : 1
+          }
+          onSelect={
+            !["approved", "withdrawn", "interrupted"].includes(session.status)
+              ? (step) =>
+                  navigateWithGuard(() => {
+                    if (step === 1) setView("baseline");
+                    else if (step === 2) setView("followup");
+                    else setView(null);
+                  })
+              : undefined
+          }
+        />
+      )}
       <ErrorNotice>{error}</ErrorNotice>
-      {!doctor && session.status === "active" ? (
+      {!doctor &&
+      !["approved", "withdrawn", "interrupted"].includes(session.status) &&
+      (view === "baseline" ||
+        (session.status === "active" &&
+          view !== "followup" &&
+          (session.stage === "baseline" || !session.stage))) ? (
+        <BaselineForm
+          key={`form-${session.id}`}
+          session={session}
+          onUpdate={update}
+          refresh={refresh}
+          VoiceInput={VoiceInput}
+          Attachments={Attachments}
+          onContinue={() => setView(null)}
+        />
+      ) : !doctor && (session.status === "active" || view === "followup") ? (
         <IntakeChat
           key={session.id}
           session={session}
           config={config}
-          onUpdate={update}
+          onUpdate={(data) => {
+            update(data);
+            if (data.status === "review") setView(null);
+          }}
           refresh={refresh}
+          onEditBaseline={() => setView("baseline")}
         />
       ) : (
         <Review
@@ -2606,7 +2755,7 @@ export default function ProductApp() {
     let expanded = [];
     const beforePrint = () => {
       expanded = Array.from(
-        document.querySelectorAll(".summary-text details:not([open])"),
+        document.querySelectorAll(".review-document details:not([open])"),
       );
       expanded.forEach((detail) => {
         detail.open = true;
@@ -2704,12 +2853,14 @@ export default function ProductApp() {
     if (user && roleFromRoute(route) !== user.role) setRoute(`/${user.role}`);
   }, [user, route]);
   async function logout() {
-    try {
-      await request("/auth/logout", { method: "POST" });
-      adoptIdentity(null);
-    } catch (err) {
-      if (currentGeneration === authGeneration.current) setError(err.message);
-    }
+    await navigateWithGuard(async () => {
+      try {
+        await request("/auth/logout", { method: "POST" });
+        adoptIdentity(null);
+      } catch (err) {
+        if (currentGeneration === authGeneration.current) setError(err.message);
+      }
+    });
   }
   if (loading)
     return (

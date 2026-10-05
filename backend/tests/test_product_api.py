@@ -1,6 +1,5 @@
 """Ownership, sharing and concurrency boundaries independent of LLM behavior."""
 from copy import deepcopy
-from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import pytest
@@ -12,8 +11,6 @@ from .test_product_auth import product_env, sign_in
 @pytest.fixture
 def api(product_env, monkeypatch):
     from app.product import routes
-    def fake_new(patient, model, workflow_ids, title=None):
-        return {"id":uuid4().hex, "patient_id":patient["id"], "patient_email":patient["email"], "patient_name":patient["name"], "title":title or "My intake", "status":"active", "model":model, "consent":True, "concerns":[], "messages":[], "summary":None, "attachments":[]}
     def fake_review(session, correction=None):
         session["summary"] = {"version":(session.get("summary") or {}).get("version", 0)+1, "text":correction or "Patient-reported intake draft.", "gaps":[]}
         session["status"] = "review"
@@ -22,9 +19,9 @@ def api(product_env, monkeypatch):
         session["messages"].append({"role":"patient", "text":text})
         session["status"] = "active"
         return session
-    monkeypatch.setattr(routes.engine, "new_intake", fake_new)
-    monkeypatch.setattr(routes.engine, "build_review", fake_review)
-    monkeypatch.setattr(routes.engine, "process_message", fake_message)
+    # Keep real intake/form initialization; isolate only the remote AI operations.
+    monkeypatch.setattr(routes.pipeline, "build_review", fake_review)
+    monkeypatch.setattr(routes.pipeline, "process_message", fake_message)
     app = FastAPI()
     app.include_router(auth.router, prefix="/api/v1")
     app.include_router(routes.router, prefix="/api/v1")
@@ -72,7 +69,7 @@ def test_patient_isolation_for_reads_edits_and_deletes(api):
     assert bob.post(url+"/messages", json={"text":"Harmful overwrite"}).status_code == 404
     assert bob.post(url+"/review").status_code == 404
     assert bob.delete(url).status_code == 404
-    assert alice.get(url).json()["messages"] == []
+    assert alice.get(url).json()["messages"] == intake["messages"]
 
 
 def test_clinician_sees_only_explicitly_approved_assigned_version(api):
@@ -187,7 +184,7 @@ def test_concurrent_engine_update_returns_409(api, monkeypatch):
         save_intake(other)
         session["title"] = "Stale title"
         return session
-    monkeypatch.setattr(routes.engine, "process_message", racing_message)
+    monkeypatch.setattr(routes.pipeline, "process_message", racing_message)
     result = patient.post(f"/api/v1/intakes/{intake['id']}/messages", json={"text":"Hello"})
     assert result.status_code == 409
     assert load_intake(intake["id"])["title"] == "Concurrent saved title"
@@ -230,8 +227,8 @@ def test_clinician_does_not_receive_nested_history_or_declined_words(api):
     result = doctor.get(f"/api/v1/clinician/intakes/{intake['id']}")
     assert result.status_code == 200
     assert secret not in result.text
-    assert "history" not in result.text
-    assert "evidence" not in result.text
+    assert '"history":' not in result.text
+    assert '"evidence":' not in result.text
     assert "Last week" in result.text
     assert secret in patient.get(f"/api/v1/intakes/{intake['id']}").text
 

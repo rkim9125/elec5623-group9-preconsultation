@@ -249,3 +249,82 @@ def test_unknown_deletion_target_or_ungrounded_request_remains_unreconciled():
     s=_medicine_session();text='Remove that medicine.'
     build_review(s,text,provider=Stub(remove_items=[{'item_id':'invented-item','evidence':text}]))
     assert s['summary']['needs_reconciliation'] and len(s['items'])==2
+
+def test_form_followup_answer_does_not_become_the_entire_reason_for_visit():
+    from app.product import forms
+    s = forms.initialize(new(['WF-08']))
+    forms.apply_baseline(s, [], complete=True)
+    cid = s['concerns'][0]['id']
+    s['current_question'] = {'concern_id': cid, 'key': 'symptom_onset', 'question': 'When did it begin?'}
+    process_message(s, 'About two months ago.', provider=Stub(facts=[fact(cid, 'symptom_onset', 'About two months ago.')]))
+    assert s['concerns'][0]['slots']['symptom_onset']['value'] == 'About two months ago.'
+    assert s['shared_slots']['main_concern']['status'] == 'MISSING'
+    assert s['shared_slots']['main_concern']['value'] is None
+
+def _v2_form_medicine_session(*, custom_title='Work certificate', custom_description='I need paperwork for my employer.'):
+    from app.product import forms
+    s=forms.initialize(new(['WF-01']),[custom_title]);leg,custom=s['concerns']
+    forms.apply_baseline(s,[
+        {'concern_id':'session','key':'current_medications','value':'Vitamin D 1000 IU daily','status':'FILLED'},
+        {'concern_id':leg['id'],'key':'concern_description','value':'我的左小腿疼了三周。','status':'FILLED'},
+        {'concern_id':leg['id'],'key':'leg.pain_site','value':'left calf','status':'FILLED'},
+        {'concern_id':custom['id'],'key':'concern_description','value':custom_description,'status':'FILLED'},
+    ],complete=True)
+    process_message(s,'Vitamin D 1000 IU daily',provider=Stub(items=[
+        {'kind':'medication','concern_id':'session','existing_item_id':None,'name':'Vitamin D','evidence':'Vitamin D 1000 IU daily',
+         'fields':[{'key':'dose','value':'1000 IU','evidence':'1000 IU','certainty':'stated'},{'key':'frequency','value':'daily','evidence':'daily','certainty':'stated'}]},
+    ]))
+    build_review(s)
+    return s,leg,custom
+
+def test_v2_shared_medicine_removal_preserves_unrelated_form_narratives_and_custom_title():
+    from app.product.routes import clinician_public_session
+    import json
+    s,leg,custom=_v2_form_medicine_session();item=s['items'][0]
+    text='Remove Vitamin D and its details.'
+    build_review(s,text,provider=Stub(remove_items=[{'item_id':item['id'],'evidence':text}]))
+    assert not s['summary']['needs_reconciliation']
+    assert custom['title']=='Work certificate'
+    assert not custom['slots']['concern_description'].get('exclude_from_handoff')
+    assert not leg['slots']['concern_description'].get('exclude_from_handoff')
+    assert 'I need paperwork for my employer.' in s['summary']['text']
+    assert '我的左小腿疼了三周。' in s['summary']['text']
+    public=json.dumps(clinician_public_session(s),ensure_ascii=False)
+    assert 'Work certificate' in public and 'Vitamin D' not in public and '1000 IU' not in public
+
+def test_v2_removed_medicine_cannot_survive_in_another_form_narrative_or_title():
+    from app.product.routes import clinician_public_session
+    import json
+    s,leg,custom=_v2_form_medicine_session(custom_title='Vitamin D paperwork',custom_description='My paperwork includes Vitamin D.')
+    item=s['items'][0];text='Remove Vitamin D and its details.'
+    build_review(s,text,provider=Stub(remove_items=[{'item_id':item['id'],'evidence':text}]))
+    assert custom['slots']['concern_description']['exclude_from_handoff']
+    assert 'Vitamin D' not in json.dumps(clinician_public_session(s),ensure_ascii=False)
+    assert '我的左小腿疼了三周。' in s['summary']['text']
+
+def test_v2_own_scope_site_correction_withholds_bilingual_old_narrative_only_in_that_scope():
+    s,leg,custom=_v2_form_medicine_session()
+    text='Actually the affected site is my right calf.'
+    build_review(s,text,provider=Stub(facts=[fact(leg['id'],'leg.pain_site','right calf')]))
+    assert leg['slots']['concern_description']['exclude_from_handoff']
+    assert '我的左小腿疼了三周。' not in s['summary']['text']
+    assert 'right calf' in s['summary']['text']
+    assert custom['title']=='Work certificate' and 'I need paperwork for my employer.' in s['summary']['text']
+
+def test_v2_newly_corrected_narrative_is_current_and_can_be_shared():
+    s,leg,custom=_v2_form_medicine_session()
+    text='Actually my right calf has a dull ache.'
+    build_review(s,text,provider=Stub(facts=[fact(leg['id'],'concern_description','my right calf has a dull ache')]))
+    assert not leg['slots']['concern_description'].get('exclude_from_handoff')
+    assert 'my right calf has a dull ache' in s['summary']['text']
+    assert '我的左小腿疼了三周。' not in s['summary']['text']
+    assert 'I need paperwork for my employer.' in s['summary']['text']
+
+def test_v2_removal_still_redacts_a_newly_extracted_duplicate_of_removed_item():
+    from app.product.routes import clinician_public_session
+    import json
+    s,leg,custom=_v2_form_medicine_session();item=s['items'][0]
+    text='Remove Vitamin D and its details.'
+    build_review(s,text,provider=Stub(remove_items=[{'item_id':item['id'],'evidence':text}],facts=[fact('session','relevant_history','Vitamin D')]))
+    assert 'Vitamin D' not in json.dumps(clinician_public_session(s),ensure_ascii=False)
+    assert custom['title']=='Work certificate' and 'I need paperwork for my employer.' in s['summary']['text']

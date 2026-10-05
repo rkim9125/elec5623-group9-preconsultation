@@ -15,7 +15,7 @@ os.environ.update(PRODUCT_DB_PATH=str(TEST / 'test.sqlite3'), UPLOAD_DIR=str(TES
                   OPENAI_API_KEY='', RESEND_API_KEY='', RESEND_FROM_EMAIL='', APP_ENV='local',
                   APP_BASE_URL='http://127.0.0.1:8001', DOCTOR_EMAILS='doctor@example.test', ENABLE_LEGACY_API='0')
 sys.path.insert(0, str(ROOT / 'backend'))
-from app.product.database import init_db, get_connection
+from app.product.database import init_db, get_connection, save_intake
 init_db()
 tokens = {}
 with get_connection() as conn:
@@ -31,6 +31,23 @@ with get_connection() as conn:
 path = TEST / 'sessions.json'
 path.write_text(json.dumps(tokens))
 path.chmod(0o600)
+# Optional genuine OpenAI output produced by the separate, explicit synthetic
+# smoke test. Browser tests still make no external calls and never use real users.
+live_fixture = ROOT / '.local/v2-live-smoke.json'
+if live_fixture.exists():
+    seed = json.loads(live_fixture.read_text())
+    if seed.get('patient_id') != 'synthetic-v2-smoke':
+        raise RuntimeError('Only the synthetic v2 smoke record may seed this fixture.')
+    seed.update(id='browser-live-summary', patient_id='browser-test-patient',
+                patient_email='patient@example.test', patient_name='Alex Morgan',
+                title='Appointment preparation · live AI example', status='review',
+                doctor_email=None, shared_at=None, reviewed_at=None, reviewed_by=None)
+    seed.pop('revision', None)
+    seed['attachments'] = []
+    if seed.get('summary'):
+        seed['summary'].pop('approved_at', None)
+        seed['summary'].pop('approved_version', None)
+    save_intake(seed)
 from app.core.main import create_app
 import uvicorn
 uvicorn.run(create_app(enable_legacy=False), host='127.0.0.1', port=8001, access_log=False)

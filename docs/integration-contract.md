@@ -1,5 +1,7 @@
 # Integration contract (v1)
 
+For the current form-first journey, adaptive AI follow-up, and cited summaries, see [the v2 additions](product-v2-contract.md). The v1 endpoints below remain available unless superseded there.
+
 The production app extends the original FastAPI/React repository. Legacy engine and tests remain available; legacy unauthenticated APIs must be disabled in the deployed app.
 
 ## HTTP
