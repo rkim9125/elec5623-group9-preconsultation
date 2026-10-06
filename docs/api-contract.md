@@ -98,7 +98,11 @@ Example — `GET /api/sessions/{session_id}/summary` (only after `complete`, els
   "version": 1,
   "approved": false,
   "approved_at": null,
-  "sections": { "Main reason for the visit": "sore throat", "Current severity": "moderate" },
+  "items": [
+    { "slot_id": "chief_complaint", "label": "Reasons for the visit", "status": "confirmed", "text": "sore throat, poor sleep" },
+    { "slot_id": "current_medications", "label": "Current medications", "status": "unknown", "text": "(patient does not know)" }
+  ],
+  "sections": { "Reasons for the visit": "sore throat, poor sleep", "Current severity": "moderate" },
   "patient_questions": ["What are the most likely causes of my symptoms?"],
   "model": "fake-llm-0"
 }
@@ -119,6 +123,12 @@ then, approving the stale version returns `409 SUMMARY_VERSION_CONFLICT` rather
 than carrying consent forward onto text they never read. Approving the same
 version twice with the same actor is idempotent.
 
+Build UI against **`items`**, not `sections`. `items` is ordered by the
+consultation schema, addressed by `slot_id`, and carries each slot's `status`,
+so "skipped" stays distinguishable from "doesn't know" without parsing prose.
+`sections` is the original label-keyed map, kept for existing consumers — but a
+label is display text and the wrong thing to key a lookup on.
+
 > **Until a summary is approved it is a draft.** `completed` only means the
 > intake finished. The clinician view must check `approved` before presenting
 > anything as the final handoff — `GET /summary` returns the latest version
@@ -132,7 +142,7 @@ Returned by `GET /api/sessions/{session_id}` and embedded (partially) in message
 responses.
 
 - `status`: `in_progress` | `awaiting_confirmation` | `completed` | `abandoned`
-- `schema_version`: consultation schema the session was created against (currently `"0.3"`)
+- `schema_version`: consultation schema the session was created against (currently `"0.4"`)
 - `slots`: map of `slot_id` → [slot object](#3-slot-schema)
 - `current_prompt`: the slot the intake flow is currently asking about, or `null`
 - `history`: append-only audit trail of slot state transitions (correction
@@ -147,7 +157,7 @@ responses.
   "updated_at": "2026-09-10T04:20:00Z",
   "patient_ref": "pat_9f8e7d",
   "locale": "en-AU",
-  "schema_version": "0.3",
+  "schema_version": "0.4",
   "current_prompt": { "slot_id": "symptom_duration_days", "text": "How many days have you had these symptoms?" },
   "slots": {
     "chief_complaint": {

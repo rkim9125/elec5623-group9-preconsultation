@@ -81,7 +81,13 @@ class FakeLLM:
         sections: dict[str, str] = {}
         for slot in state.slots.values():
             if slot.status == SlotStatus.CONFIRMED and slot.value not in (None, [], ""):
-                sections[slot.label] = str(slot.value)
+                # A list is content, not a Python repr: a clinician should see
+                # "sore throat, poor sleep", never "['sore throat', ...]".
+                sections[slot.label] = (
+                    ", ".join(str(v) for v in slot.value)
+                    if isinstance(slot.value, list)
+                    else str(slot.value)
+                )
             elif slot.status == SlotStatus.SKIPPED:
                 # Wording matches app/llm/azure.py so the same slot state does
                 # not read differently depending on which provider is active.

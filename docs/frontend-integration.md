@@ -188,6 +188,16 @@ The UI's statuses and the backend's line up almost exactly:
 | `declined` | `skipped` |
 | — | `candidate` — extracted from free text, waiting for the patient to confirm |
 
+The UI's five answer states all map cleanly:
+
+| UI state | Backend | Note |
+|---|---|---|
+| `unasked` / `unanswered` | `empty` | never answered |
+| `none` ("no medicines") | `confirmed` with `[]` | **an answer, not a gap** |
+| `unknown` ("not sure") | `unknown` | |
+| `declined` ("prefer not to answer") | `skipped` | stays distinct from `unknown` |
+| `answered` | `confirmed` | |
+
 `candidate` is the only new one: when the patient writes free text, the backend
 proposes values but never commits them. `slot.candidates[]` holds the proposals
 (with the evidence span they came from). Show them as "is this right?" and call

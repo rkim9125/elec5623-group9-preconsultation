@@ -9,7 +9,7 @@ from app.core.planner import (
 )
 from app.llm.base import ExtractedCandidate
 
-REQUIRED = ["chief_complaint", "symptom_duration_days", "symptom_severity",
+REQUIRED = ["chief_complaint", "symptom_onset", "symptom_severity",
             "associated_symptoms", "current_medications", "allergies",
             "patient_worry", "appointment_goal", "clinician_questions"]
 
@@ -19,8 +19,8 @@ def _cand(slot_id, value):
 
 
 def _confirm_all_required(state):
-    confirm_slot(state, "chief_complaint", value="sore throat")
-    confirm_slot(state, "symptom_duration_days", value=3)
+    confirm_slot(state, "chief_complaint", value=["sore throat"])
+    confirm_slot(state, "symptom_onset", value="about three weeks ago")
     confirm_slot(state, "symptom_severity", value="mild")
     confirm_slot(state, "associated_symptoms", value=[])
     confirm_slot(state, "current_medications", value=[])
@@ -37,8 +37,8 @@ def test_fresh_state_completeness_is_zero(state):
     assert c.coverage == 0.0
     assert c.resolution == 0.0
     assert set(c.unresolved_required) == set(REQUIRED)
-    # 28 slots in the schema, but fever_duration_days is inactive → 27 active
-    assert c.active_total == 27
+    # 30 slots in the schema, but fever_duration_days is inactive → 29 active
+    assert c.active_total == 29
 
 
 def test_skipped_counts_for_coverage_not_resolution(state):
@@ -80,17 +80,17 @@ def test_next_slot_is_first_required_in_schema_order(state):
 
 
 def test_next_slot_skips_resolved_and_prefers_required(state):
-    confirm_slot(state, "chief_complaint", value="x")
-    skip_slot(state, "symptom_duration_days")
+    confirm_slot(state, "chief_complaint", value=["x"])
+    skip_slot(state, "symptom_onset")
     # symptom_severity is the next required slot in schema order; optional
     # slots in between (symptom_onset, symptom_location, ...) are skipped over
     assert select_next_slot(state) == "symptom_severity"
 
 
 def test_candidate_slot_still_counts_as_pending(state):
-    confirm_slot(state, "chief_complaint", value="x")
-    apply_candidate(state, _cand("symptom_duration_days", 3))  # candidate, not confirmed
-    assert select_next_slot(state) == "symptom_duration_days"
+    confirm_slot(state, "chief_complaint", value=["x"])
+    apply_candidate(state, _cand("symptom_onset", "two weeks ago"))  # candidate, not confirmed
+    assert select_next_slot(state) == "symptom_onset"
 
 
 def test_next_slot_none_when_all_addressed(state):

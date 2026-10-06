@@ -75,12 +75,27 @@ class SummaryApprovalRequest(BaseModel):
     approved_by: str = Field(min_length=1)
 
 
+class SummaryItemOut(BaseModel):
+    """One summary line, addressable by slot rather than by its display label."""
+
+    slot_id: str
+    label: str
+    status: str
+    text: str
+
+
 class SummaryResponse(BaseModel):
     session_id: str
     summary_ref: str | None
     version: int
     approved: bool
     approved_at: str | None
+    # `items` is the one to build UI against: ordered, keyed by slot_id, and it
+    # carries the slot status so "skipped" and "don't know" stay distinguishable
+    # without parsing prose. `sections` is the original label-keyed shape, kept
+    # so existing consumers don't break — but a label is display text, so it is
+    # the wrong thing to look a field up by.
+    items: list[SummaryItemOut]
     sections: dict[str, str]
     patient_questions: list[str]
     model: str
