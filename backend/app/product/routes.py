@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from . import engine, forms, pipeline
+from .assessment import public_report
 from .auth import (csrf_protect, normalize_email, require_user, require_patient,
                    require_doctor, check_rate_limit)
 from .config import get_settings, model_options
@@ -71,6 +72,7 @@ class ApprovalInput(BaseModel):
 def public_session(session: dict) -> dict:
     """Return patient data without local storage paths or private engine metadata."""
     result = {key: deepcopy(value) for key, value in session.items() if not key.startswith("_")}
+    result["ai_report"] = public_report(session)
     for attachment in result.get("attachments", []):
         attachment.pop("storage_path", None)
     return result
@@ -81,7 +83,7 @@ def clinician_public_session(session: dict) -> dict:
     allowed = {"id", "title", "patient_id", "patient_email", "patient_name",
                "created_at", "updated_at", "status", "model", "consent",
                "concerns", "shared_slots", "summary", "attachments",
-               "doctor_email", "reviewed_at", "reviewed_by", "shared_at"}
+               "doctor_email", "reviewed_at", "reviewed_by", "shared_at", "ai_report"}
     result = {key: value for key, value in public_session(session).items() if key in allowed}
     # Slots contain superseded values and source excerpts for the patient's own
     # correction history. Clinicians receive only the current approved values.
@@ -138,6 +140,8 @@ def run_engine(operation, *args, **kwargs) -> dict:
 
 
 def persist(session: dict) -> dict:
+    if session.get("ai_report") and public_report(session) is None:
+        session.pop("ai_report", None)
     try:
         save_intake(session)
     except ConcurrentUpdate as exc:

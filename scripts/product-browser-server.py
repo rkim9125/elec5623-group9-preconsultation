@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import secrets
+import shutil
 import sys
 import time
 
@@ -47,6 +48,36 @@ if live_fixture.exists():
     if seed.get('summary'):
         seed['summary'].pop('approved_at', None)
         seed['summary'].pop('approved_version', None)
+    save_intake(seed)
+# The assessment smoke uses only synthetic data and generated attachments. Copy
+# those files into this isolated upload root so PDF browser checks stay local.
+assessment_fixture = ROOT / '.local/assessment-smoke/session.json'
+if assessment_fixture.exists():
+    seed = json.loads(assessment_fixture.read_text())
+    if seed.get('patient_id') != 'synthetic-assessment-smoke':
+        raise RuntimeError('Only a synthetic assessment may seed this fixture.')
+    seed.update(id='browser-assessment', patient_id='browser-test-patient',
+                patient_email='patient@example.test', patient_name='Alex Morgan (synthetic)',
+                status='review', doctor_email=None, shared_at=None,
+                reviewed_at=None, reviewed_by=None)
+    seed.pop('revision', None)
+    seed['summary'].pop('approved_at', None)
+    seed['summary'].pop('approved_version', None)
+    upload_root = ROOT / '.local/assessment-smoke/uploads'
+    target_dir = TEST / 'uploads' / 'browser-assessment'
+    target_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    for attachment in seed.get('attachments', []):
+        source = Path(attachment['storage_path']).resolve()
+        if not source.is_relative_to(upload_root.resolve()):
+            raise RuntimeError('Assessment fixture file is outside the synthetic upload root.')
+        target = target_dir / source.name
+        shutil.copy2(source, target)
+        target.chmod(0o600)
+        attachment['storage_path'] = str(target)
+        attachment['url'] = f"/api/v1/intakes/browser-assessment/attachments/{attachment['id']}"
+    from app.product.assessment import public_report
+    if not public_report(seed):
+        raise RuntimeError('Synthetic assessment is not current after fixture copying.')
     save_intake(seed)
 from app.core.main import create_app
 import uvicorn

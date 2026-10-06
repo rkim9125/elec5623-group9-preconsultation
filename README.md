@@ -4,6 +4,8 @@
 
 The complete patient and clinician integration is on `codex/integration`. Start with `bash scripts/start-local.sh`, then open http://127.0.0.1:8000. See [local product setup, email configuration and deployment guide](docs/local-product.md). The historical project documentation follows below.
 
+The current integration includes a separate **AI diagnosis & consultation guidance** assessment for patient and clinician review, plus complete PDF export with uploaded images and every page of uploaded PDFs. AI diagnostic possibilities remain preliminary and require clinical confirmation. See the [assessment and export contract](docs/assessment-report.md).
+
 Pre-consultation tool: patients complete a guided intake before their appointment,
 and clinicians receive a structured summary.
 

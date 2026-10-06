@@ -38,6 +38,33 @@ export async function request(path, options = {}) {
 export const attachmentUrl = (sessionId, id) =>
   `/api/v1/intakes/${encodeURIComponent(sessionId)}/attachments/${encodeURIComponent(id)}`;
 
+export async function reportPdf(sessionId) {
+  let response;
+  try {
+    response = await fetch(
+      `/api/v1/intakes/${encodeURIComponent(sessionId)}/report.pdf`,
+      { credentials: "same-origin" },
+    );
+  } catch {
+    throw new Error(
+      "We couldn’t reach the server. Please try downloading again.",
+    );
+  }
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(
+      typeof data.detail === "string"
+        ? data.detail
+        : "The complete PDF could not be prepared. Please try again.",
+    );
+  }
+  if (!response.headers.get("content-type")?.includes("application/pdf"))
+    throw new Error(
+      "The server did not return a PDF. Please sign in again and retry.",
+    );
+  return response.blob();
+}
+
 export function dateLabel(value, time = false) {
   if (!value || Number.isNaN(new Date(value).getTime())) return "—";
   return new Intl.DateTimeFormat("en-AU", {

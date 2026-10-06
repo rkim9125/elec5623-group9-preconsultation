@@ -18,3 +18,4 @@ pytest-asyncio
 python-multipart>=0.0.20
 Pillow>=11
 pypdf>=5
+reportlab>=4.4,<5

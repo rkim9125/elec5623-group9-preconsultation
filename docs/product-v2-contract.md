@@ -2,6 +2,8 @@
 
 Patient journey: choose topics → grouped baseline form → optional adaptive follow-up → AI summary and correction → explicit approval. Existing sessions remain readable; approved versions cannot change until sharing is withdrawn. All interface text is English.
 
+The integration now also provides a separate preliminary AI assessment and a complete PDF with attachments. See [the assessment/report contract](assessment-report.md). The factual-summary contract below is unchanged; the added assessment does not rewrite an approved summary.
+
 ## API and ownership contract
 
 `POST /api/v1/intakes` adds `custom_concerns: string[]` (max 10, each max 150). Empty predefined and custom selections are valid and create a GENERAL concern. New sessions have `experience_version: 2`, `stage: baseline`, and `baseline: {completed: false}`. The existing status field retains active/review/approved/etc semantics.

@@ -21,6 +21,8 @@ def create_app(*, enable_legacy: bool | None = None) -> FastAPI:
     from app.product.auth import router as auth_router
     from app.product.routes import router as product_router
     from app.product.media import router as media_router
+    from app.product.assessment import router as assessment_router
+    from app.product.report_pdf import router as report_pdf_router
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -64,6 +66,8 @@ def create_app(*, enable_legacy: bool | None = None) -> FastAPI:
     app.include_router(auth_router, prefix='/api/v1')
     app.include_router(product_router, prefix='/api/v1')
     app.include_router(media_router, prefix='/api/v1')
+    app.include_router(assessment_router, prefix='/api/v1')
+    app.include_router(report_pdf_router, prefix='/api/v1')
     # The original unowned teaching API is opt-in for historical tests only.
     if legacy_enabled:
         app.include_router(sessions.router, prefix='/api')

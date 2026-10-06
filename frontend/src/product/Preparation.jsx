@@ -880,8 +880,8 @@ export function SynthesisSummary({
                     : source.value == null
                       ? "Not provided"
                       : JSON.stringify(source.value)}
+                  <small>{source.status?.toLowerCase().replace(/_/g, " ")}</small>
                 </dd>
-                <small>{source.status?.toLowerCase().replace(/_/g, " ")}</small>
               </div>
             ))}
           </dl>

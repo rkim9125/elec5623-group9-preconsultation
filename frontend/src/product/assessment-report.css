@@ -1,0 +1,428 @@
+.assessment-report {
+  margin: 28px 0 36px;
+  border: 1px solid #bad6cc;
+  border-radius: 15px;
+  overflow: hidden;
+  background: #fff;
+}
+.assessment-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 25px 25px 22px;
+  background: linear-gradient(120deg, #edf5ef, #f8faf4);
+}
+.assessment-heading-icon,
+.complete-report-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 45px;
+  height: 45px;
+  color: #176b60;
+  background: #dcece2;
+  border-radius: 12px;
+}
+.assessment-heading h2 {
+  font-size: clamp(21px, 2vw, 27px);
+  line-height: 1.3;
+  margin: 6px 0 9px;
+  letter-spacing: -0.6px;
+}
+.assessment-heading p {
+  color: #526c60;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.assessment-boundary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 25px;
+  background: #fffaf0;
+  border-top: 1px solid #eee2c8;
+  border-bottom: 1px solid #eee2c8;
+  color: #6d562b;
+}
+.assessment-boundary > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.assessment-boundary p {
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.assessment-report > .notice {
+  margin: 22px 25px 0;
+}
+.assessment-progress {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  padding: 22px 25px;
+  background: #f3f8f6;
+}
+.assessment-progress .spinner {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.assessment-progress p,
+.assessment-empty p,
+.assessment-actions > p {
+  font-size: 14px;
+  line-height: 1.75;
+  color: #52685f;
+  margin-top: 7px;
+}
+.assessment-empty {
+  padding: 25px 25px 0;
+}
+.assessment-empty h3 {
+  font-size: 18px;
+}
+.assessment-content {
+  padding: 26px 25px 10px;
+}
+.assessment-content p,
+.assessment-content li {
+  font-size: 15px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.assessment-content h3 {
+  font-size: 19px;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  color: #2f5347;
+}
+.assessment-overview > p {
+  font-size: 16px;
+  line-height: 1.85;
+}
+.assessment-care {
+  border: 1px solid #d4e2d9;
+  border-left: 4px solid #648e70;
+  border-radius: 9px;
+  background: #f4f8f2;
+  padding: 20px;
+  margin-top: 25px;
+}
+.assessment-care-urgent,
+.assessment-care-uncertain {
+  background: #fff9ed;
+  border-color: #ead8ad;
+  border-left-color: #a97823;
+}
+.assessment-care-emergency {
+  background: #fff3ef;
+  border-color: #edc6b8;
+  border-left-color: #b04734;
+}
+.assessment-care-title,
+.assessment-section-heading {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.assessment-care-title > svg {
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.assessment-care-title h3 {
+  margin-top: 5px;
+}
+.assessment-care > p + p {
+  margin-top: 6px;
+}
+.assessment-care > small {
+  display: block;
+  font-size: 12px;
+  color: #59675c;
+  line-height: 1.7;
+  margin-top: 13px;
+}
+.assessment-section {
+  margin-top: 29px;
+}
+.assessment-section-heading > svg {
+  color: #4d7967;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.assessment-section-heading h3 {
+  margin-bottom: 9px;
+}
+.assessment-section-intro {
+  color: #586d62;
+  margin-bottom: 16px;
+}
+.assessment-diagnoses,
+.assessment-files {
+  display: grid;
+  gap: 15px;
+}
+.assessment-diagnoses > article {
+  border: 1px solid #dbe5df;
+  background: #fafcf9;
+  border-radius: 10px;
+  padding: 20px;
+}
+.assessment-diagnoses h4,
+.assessment-files h4 {
+  font-size: 17px;
+  line-height: 1.5;
+  color: #285c4d;
+  margin-bottom: 9px;
+  overflow-wrap: anywhere;
+}
+.assessment-evidence-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 19px;
+  border-top: 1px solid #e2e9e2;
+  margin-top: 15px;
+  padding-top: 16px;
+}
+.assessment-evidence-columns h5 {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0 0 8px;
+  color: #496957;
+}
+.assessment-evidence-columns ul,
+.assessment-limitations ul,
+.assessment-item-list {
+  padding-left: 20px;
+  margin: 0;
+}
+.assessment-evidence-columns li {
+  font-size: 14px;
+}
+.assessment-content li + li {
+  margin-top: 9px;
+}
+.assessment-red-flags {
+  margin-top: 27px;
+  border-radius: 10px;
+  background: #fff8ef;
+  border: 1px solid #eadac6;
+  padding: 21px;
+}
+.assessment-red-flags > p:first-of-type {
+  color: #785737;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.assessment-emergency {
+  border-top: 1px solid #eaddc8;
+  padding-top: 12px;
+  margin-top: 15px;
+  color: #6d482c;
+}
+.assessment-files > article {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  border: 1px solid #dbe5df;
+  padding: 18px;
+  border-radius: 9px;
+}
+.assessment-files > article > div {
+  min-width: 0;
+}
+.assessment-file-preview {
+  width: 84px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbe4dd;
+  border-radius: 5px;
+  color: #4d7462;
+  background: #f3f6ef;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.assessment-file-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+.assessment-file-status {
+  display: inline-block;
+  color: #43644f;
+  background: #edf4ec;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 11px;
+  margin-bottom: 9px;
+}
+.assessment-file-status.limited {
+  color: #795424;
+  background: #fcf2dd;
+}
+.assessment-file-limit {
+  color: #756344;
+  margin-top: 8px;
+}
+.assessment-original {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #176b60;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin-top: 10px;
+}
+.assessment-limitations {
+  padding-top: 23px;
+  margin-top: 27px;
+  border-top: 1px solid #e0e7df;
+}
+.assessment-limitations li {
+  font-size: 13px;
+  color: #667264;
+}
+.assessment-generated {
+  margin-top: 22px;
+  color: #667369;
+  font-size: 11px !important;
+}
+.assessment-actions {
+  padding: 20px 25px 25px;
+}
+.assessment-actions > .button {
+  margin-top: 15px;
+}
+.assessment-actions > p {
+  font-size: 12px;
+}
+.factual-summary-heading {
+  padding-top: 3px;
+}
+.factual-summary-heading h2 {
+  font-size: 23px;
+  margin-top: 8px;
+}
+.complete-report-card {
+  border: 1px solid #ceded3;
+  border-radius: 12px;
+  background: #f2f7ef;
+  padding: 23px;
+  margin-bottom: 20px;
+}
+.complete-report-card h3 {
+  font-size: 20px;
+  line-height: 1.4;
+  margin: 15px 0 9px;
+  color: #345545;
+}
+.complete-report-card > p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #50694e;
+}
+.complete-report-card > p.field-hint {
+  font-size: 12px;
+}
+.complete-report-card > .button {
+  margin-top: 18px;
+  text-align: center;
+  line-height: 1.5;
+}
+@media (max-width: 700px) {
+  .assessment-heading {
+    padding: 19px 17px;
+    gap: 11px;
+  }
+  .assessment-heading-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 9px;
+  }
+  .assessment-heading-icon svg {
+    width: 21px;
+    height: 21px;
+  }
+  .assessment-heading h2 {
+    font-size: 21px;
+  }
+  .assessment-heading .section-kicker {
+    font-size: 9px;
+  }
+  .assessment-boundary {
+    padding: 15px 17px;
+  }
+  .assessment-content {
+    padding: 21px 17px 7px;
+  }
+  .assessment-empty,
+  .assessment-actions,
+  .assessment-progress {
+    padding: 19px 17px;
+  }
+  .assessment-report > .notice {
+    margin: 17px 17px 0;
+  }
+  .assessment-empty {
+    padding-bottom: 0;
+  }
+  .assessment-diagnoses > article,
+  .assessment-care,
+  .assessment-red-flags {
+    padding: 16px;
+  }
+  .assessment-evidence-columns {
+    grid-template-columns: 1fr;
+  }
+  .assessment-files > article {
+    flex-direction: column;
+    padding: 16px;
+  }
+  .assessment-file-preview {
+    width: 100%;
+    height: 160px;
+  }
+  .assessment-content p,
+  .assessment-content li {
+    font-size: 14px;
+  }
+  .assessment-actions > .button {
+    width: 100%;
+  }
+}
+@media print {
+  .assessment-actions,
+  .assessment-progress,
+  .complete-report-card {
+    display: none !important;
+  }
+  .assessment-report {
+    overflow: visible;
+    border-color: #aaa;
+  }
+  .assessment-heading,
+  .assessment-boundary,
+  .assessment-care,
+  .assessment-red-flags,
+  .assessment-diagnoses > article {
+    background: #fff;
+  }
+  .assessment-heading,
+  .assessment-boundary,
+  .assessment-care-title,
+  .assessment-section-heading,
+  .assessment-content h4 {
+    break-after: avoid;
+  }
+  .assessment-evidence-columns {
+    display: block;
+  }
+  .assessment-files > article {
+    break-inside: avoid;
+  }
+}

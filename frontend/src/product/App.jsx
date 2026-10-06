@@ -16,6 +16,8 @@ import {
 import "./product.css";
 import { navigateWithGuard } from "./navigation.js";
 import { topicDescription, topicVisual } from "./topics.js";
+import AssessmentReport, { ReportDownloadCard } from "./AssessmentReport.jsx";
+import { shouldGenerateAssessment } from "./reportState.js";
 
 const setRoute = (path) => {
   return navigateWithGuard(() => {
@@ -1165,9 +1167,11 @@ function NewIntake({ workflows, config, onCreated }) {
           <div className="consent-information">
             <Icon name="shield" size={19} />
             <p>
-              Your responses and uploaded files are processed with AI to prepare
-              a summary. AI can make mistakes. Review all details before
-              sharing. This service does not diagnose or replace clinical care.
+              Your responses and all uploaded files are processed with AI to
+              prepare a factual summary and a preliminary assessment with
+              possible diagnoses and consultation guidance. AI can make
+              mistakes. Review the details before sharing; a clinician must
+              confirm any diagnosis and treatment.
             </p>
           </div>
           <label className="checkbox-label">
@@ -1177,8 +1181,9 @@ function NewIntake({ workflows, config, onCreated }) {
               onChange={(e) => setConsent(e.target.checked)}
             />
             <span>
-              I consent to AI processing of the health information I provide and
-              understand that I control sharing with my doctor.
+              I consent to AI processing of my health information and uploaded
+              files for the summary and preliminary assessment. I understand
+              that I control sharing with my doctor.
             </span>
           </label>
           <ErrorNotice>{error}</ErrorNotice>
@@ -1507,7 +1512,9 @@ function Attachments({
           </button>
           <p className="file-help">
             Files are shared with your approved summary. Use “Extract details”
-            to review AI-read content before adding it to your story.
+            to review AI-read content before adding it to your story. The final
+            AI assessment considers all uploaded files, and the complete PDF
+            includes every image and uploaded PDF page.
           </p>
         </>
       )}
@@ -1914,7 +1921,8 @@ function IntakeChat({ session, onUpdate, refresh, config, onEditBaseline }) {
             <h3>You decide when to finish.</h3>
             <p>
               You can create a summary at any point. Missing and uncertain
-              information stays clearly marked.
+              information stays clearly marked. We’ll then prepare a preliminary
+              AI assessment using your recorded answers and all uploaded files.
             </p>
           </div>
           <Button
@@ -2041,13 +2049,23 @@ function SlotDetails({ session }) {
   );
 }
 
-function Review({ session, config, doctor, onUpdate, refresh }) {
+function Review({
+  session,
+  config,
+  doctor,
+  onUpdate,
+  refresh,
+  assessmentBusy,
+  assessmentError,
+  onGenerateAssessment,
+}) {
   const [correction, setCorrection] = useState("");
   const [doctorEmail, setDoctorEmail] = useState(
     session.doctor_email || config?.care_team?.[0]?.email || "",
   );
   const [confirmed, setConfirmed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [actionBusy, setBusy] = useState(false);
+  const busy = actionBusy || assessmentBusy;
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [withdraw, setWithdraw] = useState(false);
@@ -2195,7 +2213,7 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
             <div>
               <span className="overline">
                 {doctor
-                  ? "PATIENT-APPROVED PRE-CONSULTATION SUMMARY"
+                  ? "SHARED CONSULTATION RECORD"
                   : canApprove
                     ? "YOUR DRAFT · FOR YOUR REVIEW"
                     : "YOUR CONSULTATION SUMMARY"}
@@ -2203,7 +2221,7 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
               <h2>
                 {doctor
                   ? session.patient_name || session.patient_email
-                  : "Your consultation summary"}
+                  : "Your consultation report"}
               </h2>
               <p>
                 {dateLabel(session.created_at)} <span>·</span> Version{" "}
@@ -2216,13 +2234,18 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
                 )}
               </p>
             </div>
-            <button
-              className="icon-button print-button"
-              onClick={() => window.print()}
-              aria-label="Print summary"
-            >
-              <Icon name="print" />
-            </button>
+          </div>
+          <AssessmentReport
+            session={session}
+            busy={busy}
+            generating={assessmentBusy}
+            error={assessmentError}
+            onGenerate={onGenerateAssessment}
+            configured={config?.ai_configured !== false}
+          />
+          <div className="factual-summary-heading">
+            <span className="section-kicker">THE RECORDED INFORMATION</span>
+            <h2>Patient preparation summary</h2>
           </div>
           <div className="summary-disclaimer">
             <Icon name="info" size={17} />
@@ -2322,6 +2345,11 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
           )}
         </section>
         <aside className="review-aside">
+          <ReportDownloadCard
+            session={session}
+            busy={busy}
+            onBusyChange={setBusy}
+          />
           {canApprove && (
             <form className="approval-card" onSubmit={approve}>
               <span className="approval-icon">
@@ -2381,8 +2409,9 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
                   onChange={(e) => setConfirmed(e.target.checked)}
                 />
                 <span>
-                  I have reviewed this summary and approve sharing it and my
-                  attached files with this doctor.
+                  I have reviewed this consultation record and approve sharing
+                  the summary, AI assessment and my attached files with this
+                  doctor.
                 </span>
               </label>
               <Button
@@ -2422,7 +2451,7 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
               <p>
                 {session.reviewed_at
                   ? `Marked as reviewed ${dateLabel(session.reviewed_at, true)}.`
-                  : "Review the patient’s summary, concerns and supporting documents before your consultation."}
+                  : "Review the patient’s summary, preliminary AI assessment and supporting documents before your consultation."}
               </p>
               {!session.reviewed_at && (
                 <Button
@@ -2434,18 +2463,15 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
                   Mark as reviewed
                 </Button>
               )}
-              <Button
-                className="secondary full"
-                icon="print"
-                onClick={() => window.print()}
-              >
-                Print summary
-              </Button>
+              <p className="field-hint">
+                Marking this record as reviewed does not confirm the AI’s
+                proposed diagnoses.
+              </p>
             </div>
           )}
           <Attachments
             session={session}
-            readonly={doctor || session.status !== "review"}
+            readonly={busy || doctor || session.status !== "review"}
             onRefresh={refresh}
             onError={setError}
           />
@@ -2453,7 +2479,7 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
             <div className="sharing-control">
               <h3>Sharing settings</h3>
               <p>
-                Your summary and files are visible to{" "}
+                Your summary, AI assessment and files are visible to{" "}
                 <strong>{session.doctor_email}</strong>.
               </p>
               <Button
@@ -2510,6 +2536,9 @@ function IntakePage({ id, user, config, onChanged }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [view, setView] = useState(null);
+  const [assessmentBusy, setAssessmentBusy] = useState(false);
+  const [assessmentError, setAssessmentError] = useState("");
+  const assessmentPending = useRef(false);
   const mounted = useRef(true);
   const readGeneration = useRef(0);
   const doctor = user.role === "doctor";
@@ -2540,11 +2569,28 @@ function IntakePage({ id, user, config, onChanged }) {
       readGeneration.current += 1;
     };
   }, [refresh]);
+  async function generateAssessment() {
+    if (!mounted.current || assessmentPending.current) return;
+    assessmentPending.current = true;
+    setAssessmentBusy(true);
+    setAssessmentError("");
+    try {
+      await request(`/intakes/${id}/ai-report`, { method: "POST" });
+      if (mounted.current) await refresh();
+    } catch (err) {
+      if (mounted.current) setAssessmentError(err.message);
+    } finally {
+      assessmentPending.current = false;
+      if (mounted.current) setAssessmentBusy(false);
+    }
+  }
   function update(data) {
     if (!mounted.current) return;
+    const generate = shouldGenerateAssessment(session, data, doctor);
     readGeneration.current += 1;
     setSession(data);
     onChanged();
+    if (generate && config?.ai_configured !== false) generateAssessment();
   }
   async function remove() {
     setDeleting(true);
@@ -2602,6 +2648,7 @@ function IntakePage({ id, user, config, onChanged }) {
           <button
             className="icon-button delete-consultation"
             aria-label="Delete consultation"
+            disabled={assessmentBusy}
             onClick={() => setDeleteOpen(true)}
           >
             <Icon name="trash" size={18} />
@@ -2629,6 +2676,7 @@ function IntakePage({ id, user, config, onChanged }) {
               : 1
           }
           onSelect={
+            !assessmentBusy &&
             !["approved", "withdrawn", "interrupted"].includes(session.status)
               ? (step) =>
                   navigateWithGuard(() => {
@@ -2676,6 +2724,9 @@ function IntakePage({ id, user, config, onChanged }) {
           doctor={doctor}
           onUpdate={update}
           refresh={refresh}
+          assessmentBusy={assessmentBusy}
+          assessmentError={assessmentError}
+          onGenerateAssessment={generateAssessment}
         />
       )}{" "}
       {deleteOpen && (

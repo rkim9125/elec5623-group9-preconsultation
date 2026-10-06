@@ -37,6 +37,7 @@ def authorized(intake_id: str, user: dict, write: bool = False) -> dict:
 
 
 def invalidate_review(intake: dict) -> None:
+    intake.pop('ai_report', None)
     if intake.get('status') == 'review':
         intake['_summary_version'] = max(intake.get('_summary_version', 0), (intake.get('summary') or {}).get('version', 0))
         intake['summary'] = None

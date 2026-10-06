@@ -20,7 +20,7 @@ const base = process.env.PRECONSULT_TEST_URL || 'http://127.0.0.1:8001';
 const target = new URL(base);
 assert(['127.0.0.1', 'localhost'].includes(target.hostname) && target.port === '8001',
   'This test only operates on the isolated loopback fixture at port 8001.');
-const output = path.join(root, 'docs/screenshots/v3');
+const output = path.resolve(root, process.env.PRECONSULT_TEST_OUTPUT || 'docs/screenshots/v3');
 await mkdir(output, { recursive: true });
 const tokens = JSON.parse(await readFile(path.join(root, '.local/browser-test/sessions.json'), 'utf8'));
 assert(tokens.patient && tokens.doctor, 'Start product-browser-server.py to seed synthetic sessions.');
@@ -190,12 +190,12 @@ try {
   const doctorField = patientPage.getByLabel('Doctor’s email address');
   if (await doctorField.evaluate(element => element.tagName) === 'SELECT') await doctorField.selectOption('doctor@example.test');
   else await doctorField.fill('doctor@example.test');
-  await patientPage.getByRole('checkbox', { name: /I have reviewed this summary/ }).check();
+  await patientPage.getByRole('checkbox', { name: /I have reviewed this consultation record/ }).check();
   const regenerated = await responseFor(patientPage, `/intakes/${intakeId}/review`, 'POST', () => patientPage.getByRole('button', { name: 'Generate AI summary', exact: true }).click());
   assert(regenerated.summary.version > draft.summary.version);
-  await expect(patientPage.getByRole('checkbox', { name: /I have reviewed this summary/ })).not.toBeChecked();
+  await expect(patientPage.getByRole('checkbox', { name: /I have reviewed this consultation record/ })).not.toBeChecked();
   await expect(shareButton).toBeDisabled();
-  await patientPage.getByRole('checkbox', { name: /I have reviewed this summary/ }).check();
+  await patientPage.getByRole('checkbox', { name: /I have reviewed this consultation record/ }).check();
   passed('Regeneration requires fresh patient confirmation of the new version');
   await noOverflow(patientPage, 'Patient summary desktop');
   await screenshot(patientPage, '04-patient-review-desktop.png');
@@ -296,7 +296,7 @@ try {
     const liveDoctor = patientPage.getByLabel('Doctor’s email address');
     if (await liveDoctor.evaluate(element => element.tagName) === 'SELECT') await liveDoctor.selectOption('doctor@example.test');
     else await liveDoctor.fill('doctor@example.test');
-    await patientPage.getByRole('checkbox', { name: /I have reviewed this summary/ }).check();
+    await patientPage.getByRole('checkbox', { name: /I have reviewed this consultation record/ }).check();
     const sharedLive = await responseFor(patientPage, '/intakes/browser-live-summary/approve', 'POST', () => patientPage.getByRole('button', { name: 'Approve & share' }).click());
     assert.deepEqual(sharedLive.summary.synthesis, liveRecord.summary.synthesis);
     await doctorPage.setViewportSize({ width: 1440, height: 1024 });
