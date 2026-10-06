@@ -71,11 +71,11 @@ function useHash() {
 }
 const roleFromRoute = (route) =>
   route.startsWith("/doctor") ? "doctor" : "patient";
-function Brand({ light = false }) {
+function Brand({ light = false, role = "patient" }) {
   return (
     <a
       className={`brand ${light ? "brand-light" : ""}`}
-      href="#/patient"
+      href={`#/${role}`}
       aria-label="PreConsult home"
     >
       <span className="brand-symbol">
@@ -91,7 +91,7 @@ function Brand({ light = false }) {
   );
 }
 
-function Login({ role, config, onLogin }) {
+function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
@@ -100,6 +100,7 @@ function Login({ role, config, onLogin }) {
   const [notice, setNotice] = useState("");
   const [resendAt, setResendAt] = useState(0);
   const [seconds, setSeconds] = useState(0);
+  const attemptGeneration = useRef(0);
   useEffect(() => {
     const timer = setInterval(
       () => setSeconds(Math.max(0, Math.ceil((resendAt - Date.now()) / 1000))),
@@ -108,13 +109,19 @@ function Login({ role, config, onLogin }) {
     return () => clearInterval(timer);
   }, [resendAt]);
   useEffect(() => {
+    attemptGeneration.current += 1;
     setSent(false);
     setError("");
     setCode("");
     setNotice("");
+    setBusy(false);
+    return () => {
+      attemptGeneration.current += 1;
+    };
   }, [role]);
   async function send(event) {
     event?.preventDefault();
+    const attempt = attemptGeneration.current;
     setBusy(true);
     setError("");
     try {
@@ -122,6 +129,7 @@ function Login({ role, config, onLogin }) {
         method: "POST",
         body: { email: email.trim(), role },
       });
+      if (attempt !== attemptGeneration.current) return;
       setSent(true);
       setNotice(
         result.message || "A sign-in code has been sent to your email.",
@@ -129,13 +137,14 @@ function Login({ role, config, onLogin }) {
       setResendAt(Date.now() + 60000);
       setSeconds(60);
     } catch (err) {
-      setError(err.message);
+      if (attempt === attemptGeneration.current) setError(err.message);
     } finally {
-      setBusy(false);
+      if (attempt === attemptGeneration.current) setBusy(false);
     }
   }
   async function verify(event) {
     event.preventDefault();
+    const attempt = attemptGeneration.current;
     setBusy(true);
     setError("");
     try {
@@ -143,17 +152,17 @@ function Login({ role, config, onLogin }) {
         method: "POST",
         body: { email: email.trim(), code: code.trim(), role },
       });
-      onLogin(result.user);
+      if (attempt === attemptGeneration.current) onLogin(result.user);
     } catch (err) {
-      setError(err.message);
+      if (attempt === attemptGeneration.current) setError(err.message);
     } finally {
-      setBusy(false);
+      if (attempt === attemptGeneration.current) setBusy(false);
     }
   }
   return (
     <div className="auth-page">
       <div className="auth-story">
-        <Brand light />
+        <Brand light role={role} />
         <div className="story-copy">
           <span className="eyebrow">
             <span className="tiny-dot" /> A BETTER START TO YOUR CONSULTATION
@@ -216,14 +225,22 @@ function Login({ role, config, onLogin }) {
               : "YOUR HEALTH, IN YOUR WORDS"}
           </span>
           <h2>
-            {sent
-              ? "Check your inbox."
-              : role === "doctor"
-                ? "Welcome, doctor."
-                : "Let’s start with you."}
+            {currentUser
+              ? `Switch to the ${role} portal?`
+              : sent
+                ? "Check your inbox."
+                : role === "doctor"
+                  ? "Welcome, doctor."
+                  : "Let’s start with you."}
           </h2>
           <p className="auth-intro">
-            {sent ? (
+            {currentUser ? (
+              <>
+                You’re signed in to the {currentUser.role} portal as{" "}
+                <strong>{currentUser.email}</strong>. This browser uses one
+                account and portal at a time.
+              </>
+            ) : sent ? (
               <>
                 Enter the verification code sent to <strong>{email}</strong>.
               </>
@@ -233,7 +250,16 @@ function Login({ role, config, onLogin }) {
               "Sign in or create your account with an email verification code. No password to remember."
             )}
           </p>
-          <ErrorNotice>{error}</ErrorNotice>
+          <ErrorNotice>{error || switchError}</ErrorNotice>
+          {role === "doctor" && config?.doctor_configured === false && (
+            <div className="notice warning" role="status">
+              <Icon name="info" />
+              <span>
+                Doctor access is not set up yet. Ask the service administrator
+                to register your clinician email before signing in.
+              </span>
+            </div>
+          )}
           {config && (!config.auth_configured || !config.mail_configured) && (
             <div className="notice warning">
               <Icon name="info" />
@@ -243,7 +269,38 @@ function Login({ role, config, onLogin }) {
               </span>
             </div>
           )}
-          {sent ? (
+          {currentUser ? (
+            <div className="portal-session-switch">
+              <p>
+                To continue, sign out and verify your email in the {role}{" "}
+                portal. Your saved consultations will remain available.
+              </p>
+              <Button
+                className="primary full"
+                busy={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await onSwitch();
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Sign out and continue to {role} sign-in
+              </Button>
+              <a
+                className="button secondary full"
+                href={`#/${currentUser.role}`}
+              >
+                Return to {currentUser.role} portal
+              </a>
+              <p className="field-hint">
+                To use both portals at the same time, open one in a private
+                window or another browser profile.
+              </p>
+            </div>
+          ) : sent ? (
             <form onSubmit={verify}>
               <label className="field-label" htmlFor="auth-code">
                 Verification code
@@ -285,6 +342,7 @@ function Login({ role, config, onLogin }) {
                 <button
                   type="button"
                   className="text-button"
+                  disabled={busy}
                   onClick={() => {
                     setSent(false);
                     setCode("");
@@ -314,7 +372,14 @@ function Login({ role, config, onLogin }) {
                   required
                 />
               </div>
-              <Button type="submit" className="primary full" busy={busy}>
+              <Button
+                type="submit"
+                className="primary full"
+                busy={busy}
+                disabled={
+                  role === "doctor" && config?.doctor_configured === false
+                }
+              >
                 Continue with email
                 <Icon name="arrow" size={18} />
               </Button>
@@ -361,7 +426,7 @@ function Shell({ user, route, onLogout, children }) {
         Skip to content
       </a>
       <aside className="sidebar">
-        <Brand />
+        <Brand role={user.role} />
         <div className="workspace-label">
           {doctor ? "CLINICIAN WORKSPACE" : "PATIENT WORKSPACE"}
         </div>
@@ -999,10 +1064,7 @@ function NewIntake({ workflows, config, onCreated }) {
               >
                 <div className="workflow-card-top">
                   <span className="pathway-icon">
-                    <Icon
-                      name={topicVisual(w).icon}
-                      size={30}
-                    />
+                    <Icon name={topicVisual(w).icon} size={30} />
                   </span>
                   <span className="selection-mark">
                     {selected.includes(w.id) && <Icon name="check" size={14} />}
@@ -2303,6 +2365,15 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
               <p className="field-hint">
                 Only this authorised clinician can access the shared record.
               </p>
+              {config?.doctor_configured === false && (
+                <div className="notice warning" role="status">
+                  <Icon name="info" />
+                  <span>
+                    Sharing is not available yet. Ask the service administrator
+                    to register your clinician’s email. Your draft is saved.
+                  </span>
+                </div>
+              )}
               <label className="checkbox-label">
                 <input
                   type="checkbox"
@@ -2319,6 +2390,7 @@ function Review({ session, config, doctor, onUpdate, refresh }) {
                 type="submit"
                 disabled={
                   !confirmed ||
+                  config?.doctor_configured === false ||
                   !doctorEmail.trim() ||
                   busy ||
                   !!correction.trim() ||
@@ -2743,6 +2815,8 @@ export default function ProductApp() {
   const authGeneration = useRef(0);
   const listGeneration = useRef(0);
   const currentGeneration = authGeneration.current;
+  const requestedRole = roleFromRoute(route);
+  const portalMatches = !!user && requestedRole === user.role;
   function adoptIdentity(value) {
     authGeneration.current += 1;
     listGeneration.current += 1;
@@ -2805,7 +2879,8 @@ export default function ProductApp() {
     };
   }, [epoch]);
   const refresh = useCallback(async () => {
-    if (!user || currentGeneration !== authGeneration.current) return;
+    if (!user || !portalMatches || currentGeneration !== authGeneration.current)
+      return;
     const read = ++listGeneration.current;
     const isCurrent = () =>
       currentGeneration === authGeneration.current &&
@@ -2824,11 +2899,30 @@ export default function ProductApp() {
         adoptIdentity(null);
         return;
       }
+      if (err.status === 403) {
+        try {
+          const identity = await request("/auth/me");
+          if (!isCurrent()) return;
+          if (
+            identity.user.id !== user.id ||
+            identity.user.role !== user.role
+          ) {
+            adoptIdentity(identity.user);
+            return;
+          }
+        } catch (identityError) {
+          if (!isCurrent()) return;
+          if ([401, 403].includes(identityError.status)) {
+            adoptIdentity(null);
+            return;
+          }
+        }
+      }
       setError(err.message);
     } finally {
       if (isCurrent()) setListBusy(false);
     }
-  }, [user, currentGeneration]);
+  }, [user, currentGeneration, portalMatches]);
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -2854,8 +2948,38 @@ export default function ProductApp() {
     };
   }, [user?.id, user?.role, currentGeneration]);
   useEffect(() => {
-    if (user && roleFromRoute(route) !== user.role) setRoute(`/${user.role}`);
-  }, [user, route]);
+    if (loading) return;
+    let alive = true;
+    let checking = false;
+    const revalidate = async () => {
+      if (checking || document.visibilityState === "hidden") return;
+      checking = true;
+      const generation = authGeneration.current;
+      try {
+        const result = await request("/auth/me");
+        if (!alive || generation !== authGeneration.current) return;
+        if (result.user.id !== user?.id || result.user.role !== user?.role)
+          adoptIdentity(result.user);
+      } catch (err) {
+        if (
+          alive &&
+          generation === authGeneration.current &&
+          user &&
+          [401, 403].includes(err.status)
+        )
+          adoptIdentity(null);
+      } finally {
+        checking = false;
+      }
+    };
+    window.addEventListener("focus", revalidate);
+    document.addEventListener("visibilitychange", revalidate);
+    return () => {
+      alive = false;
+      window.removeEventListener("focus", revalidate);
+      document.removeEventListener("visibilitychange", revalidate);
+    };
+  }, [user?.id, user?.role, currentGeneration, loading]);
   async function logout() {
     await navigateWithGuard(async () => {
       try {
@@ -2869,14 +2993,14 @@ export default function ProductApp() {
   if (loading)
     return (
       <div className="boot-screen">
-        <Brand />
+        <Brand role={requestedRole} />
         <Loading />
       </div>
     );
   if (bootError && !config)
     return (
       <div className="boot-screen">
-        <Brand />
+        <Brand role={requestedRole} />
         <div className="connection-error">
           <h1>Let’s reconnect.</h1>
           <p>The PreConsult server could not be reached.</p>
@@ -2894,11 +3018,15 @@ export default function ProductApp() {
         </div>
       </div>
     );
-  if (!user)
+  if (!user || !portalMatches)
     return (
       <Login
-        role={roleFromRoute(route)}
+        key={`${requestedRole}:${user ? `switch:${user.id}:${user.role}` : "signin"}`}
+        role={requestedRole}
         config={config}
+        currentUser={user}
+        onSwitch={logout}
+        switchError={error}
         onLogin={(value) => {
           adoptIdentity(value);
           setRoute(`/${value.role}`);

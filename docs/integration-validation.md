@@ -43,10 +43,16 @@ Earlier integration checks additionally verified these unchanged provider/media 
 
 These checks establish the integration paths, not clinical accuracy across all cases. The 30-workflow catalogue and safety rules require clinical review before use as a real clinical service. A preparation completion indicator never establishes that waiting for an appointment is safe.
 
-## Configuration still needed from the owner
+## Portal access correction — 7 October 2026
 
-`RESEND_FROM_EMAIL` is now configured as the owner-supplied `uni-proj@bittool.ai`; the server reports mail configuration present. `DOCTOR_EMAILS` still requires the intended clinician login address. The provided Resend key is restricted to sending email; its response to a domain-list query explicitly reported `restricted_api_key`. That query cannot verify the domain's sending status.
+Removed the automatic role-based URL rewrite. A patient session opening a doctor URL (or the reverse) now sees an explicit switch screen, with no intake list/detail requests or workspace rendered for the mismatched route. Switching signs out the actual server session and retains the requested portal for email-code login. Portal-specific logos, focus/visibility identity refresh, and stale OTP response guards prevent accidental navigation or reuse of an earlier identity. Missing clinician configuration is explained before login/sharing instead of permitting a doomed submission.
 
-Live email delivery has not been tested by the agent; no real verification email was sent during automated checks. The owner can verify delivery through normal email-code sign-in. Add the clinician address through `scripts/configure-email.py` or `backend/.env`, then restart to enable that clinician account.
+The focused `scripts/test-portal-switch-browser.mjs` harness passed 20 checks: 16 using real synthetic sessions/APIs and four explicitly labelled UI simulations for provider/configuration edge cases. Both desktop/mobile accessibility scans had no serious/critical violations, no horizontal overflow, and no browser JavaScript errors. The existing 74 frontend tests, 29 backend authentication/ownership API tests, ESLint and production build also passed. Reports and screenshots are kept in ignored `.local/portal-tests/`. It never sends real email.
+
+## Mail and clinician configuration
+
+`RESEND_FROM_EMAIL` is configured as the owner-supplied `uni-proj@bittool.ai`; the server reports mail configuration present. On 7 October, the owner explicitly confirmed their intended clinician login email; it is now in the private local `DOCTOR_EMAILS` allowlist. The provided Resend key is restricted to sending email; its response to a domain-list query explicitly reported `restricted_api_key`. That query cannot verify the domain's sending status.
+
+Live email delivery has not been tested by the agent; no real verification email was sent during automated checks. The owner can verify delivery through normal email-code sign-in. Future clinician changes can be made through `scripts/configure-email.py` or private `backend/.env`, followed by a restart.
 
 For ongoing operation, see [the local product guide](local-product.md).

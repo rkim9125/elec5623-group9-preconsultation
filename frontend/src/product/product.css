@@ -17,6 +17,13 @@
   --accent-soft: #e9f2ec;
   --text-muted: #63716b;
 }
+.portal-session-switch {
+  display: grid;
+  gap: 16px;
+}
+.portal-session-switch > p {
+  color: var(--muted);
+}
 * {
   box-sizing: border-box;
 }

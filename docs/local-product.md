@@ -13,6 +13,8 @@ This integration builds on the complete upstream repository at `36a10c4` on loca
 
 The startup script builds the React bundle and serves both web interfaces and the API on one localhost address. SQLite starts inside the application. Docker, a separate database service, and Aliyun OSS are not needed for this local deployment. The server binds only to the Mac's loopback interface. Keep the Mac awake while using it; restart after reboot. Use separate browser profiles or an incognito window to test patient and doctor sessions simultaneously. Microphone access requires browser permission. Localhost is a browser secure context; remote microphone use requires HTTPS.
 
+Patient and doctor portals share one browser session. Opening the other portal keeps the requested URL and shows an explicit identity-switch screen; it never silently redirects to the current role or grants another role. Choose **Sign out and continue to doctor sign-in** (or the patient equivalent), then verify the appropriate email. The doctor email still requires administrator authorization. Returning to a tab rechecks the server identity and clears the old workspace when the server reports an identity change. Each portal's home logo stays within that portal.
+
 ## Finish email setup
 
 The application has no password login, fixed verification code, or demo authentication bypass. It sends a single-use six-digit code through Resend, valid for ten minutes. Doctor emails must be explicitly configured; selecting the doctor portal does not grant doctor access.
