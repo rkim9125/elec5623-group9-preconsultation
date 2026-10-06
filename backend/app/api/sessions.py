@@ -20,6 +20,7 @@ from app.api.schemas import (
     SlotActionRequest,
     SlotActionResponse,
     SummaryApprovalRequest,
+    SummaryItemOut,
     SummaryResponse,
 )
 from app.core import flow
@@ -40,6 +41,7 @@ from app.core.errors import (
 )
 from app.core.models import SessionState, SessionStatus
 from app.core.planner import Completeness, compute_completeness
+from app.core.schema import all_slot_ids
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -174,10 +176,50 @@ def _summary_response(session_id: str, store) -> SummaryResponse:
         version=latest["version"],
         approved=latest["approved_at"] is not None,
         approved_at=latest["approved_at"],
+        items=_summary_items(state, summary),
         sections=summary.sections,
         patient_questions=summary.patient_questions,
         model=summary.model,
     )
+
+
+def _summary_items(state, summary) -> list[SummaryItemOut]:
+    """Same content as `sections`, addressed by slot instead of by label.
+
+    Ordered by the consultation schema so the UI can render it directly, and
+    carrying `status` so a skipped answer stays distinguishable from one the
+    patient didn't know without reading the prose.
+    """
+    by_label = {slot.label: slot for slot in state.slots.values()}
+    items: list[SummaryItemOut] = []
+    for slot_id in all_slot_ids():
+        slot = state.slots.get(slot_id)
+        if slot is None or slot.label not in summary.sections:
+            continue
+        items.append(
+            SummaryItemOut(
+                slot_id=slot_id,
+                label=slot.label,
+                status=slot.status.value,
+                text=summary.sections[slot.label],
+            )
+        )
+    # Anything the generator added under a label we don't recognise still has
+    # to surface rather than silently vanish from the UI.
+    known = {item.label for item in items}
+    for label, text in summary.sections.items():
+        if label in known:
+            continue
+        slot = by_label.get(label)
+        items.append(
+            SummaryItemOut(
+                slot_id=slot.slot_id if slot else "",
+                label=label,
+                status=slot.status.value if slot else "unknown",
+                text=text,
+            )
+        )
+    return items
 
 
 @router.get("/{session_id}/summary", response_model=SummaryResponse)

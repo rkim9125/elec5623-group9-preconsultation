@@ -341,6 +341,39 @@ Total: 124 tests passing.
 
 Total: 127 tests passing.
 
+- **Schema v0.4 — resolving the frontend's stated blockers**
+  (`feat/c3-schema-v0.4-frontend-blockers`)
+  - `docs/frontend-rest-api.md` §8 (written 22 Sep) lists six reasons the UI
+    "doesn't map onto the backend", and concludes that whether to reuse the
+    session engine at all is deferred. Three of the six were already fixed by
+    work merged after that date; the other three are fixed here.
+  - **Already resolved before this change** — `unknown` has been a state
+    distinct from `skipped` since 17 Sep, the patient approval gate shipped on
+    29 Sep, and `functional_impact` / `symptom_progression` landed in v0.3.
+  - **Onset no longer forces a number.** `symptom_onset` is now a required
+    STRING that keeps the patient's wording ("about three weeks ago",
+    "며칠 전부터"); `symptom_duration_days` is demoted to optional, for when a
+    number is actually given. The catalogue forbids converting an approximate
+    onset into an exact date (§3.2), and the old required NUMBER did exactly
+    that. The old sudden/gradual enum is renamed `symptom_onset_pattern`.
+  - **`chief_complaint` is a LIST.** Patients arrive with several reasons and
+    the order they give them in is their priority. A bare string still coerces
+    to a single-item list, so extraction and older callers keep working.
+    Per-concern symptom timelines remain the separate, deferred change.
+  - **`symptom_frequency` added** (free text — "comes and goes" is an answer).
+  - **Summaries are addressable by slot.** `SummaryResponse.items[]` is ordered
+    by the schema, keyed by `slot_id`, and carries each slot's `status`, so
+    skipped and unknown stay distinguishable without parsing prose. `sections`
+    is kept unchanged for existing consumers.
+  - List values now render as "a, b, c" rather than a Python repr.
+  - Tests: `tests/test_frontend_blockers.py` pins each listed blocker using the
+    shapes the UI actually sends. Also verified live end to end with the UI's
+    real data (multiple Korean reasons, free-text onset, unknown vs skipped).
+  - Touched two teammate test files only where my label rename broke a literal
+    string (`"Main reason for the visit"` → `"Reasons for the visit"`).
+
+Total: 139 tests passing.
+
 ## Remaining project work
 
 ### In progress
