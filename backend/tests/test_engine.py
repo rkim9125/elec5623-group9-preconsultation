@@ -26,7 +26,8 @@ def _cand(slot_id, value, confidence=0.7):
 @pytest.mark.parametrize(
     "slot_id, raw, expected",
     [
-        ("chief_complaint", "  sore throat ", "sore throat"),
+        ("symptom_onset", "  about three weeks ago ", "about three weeks ago"),
+        ("chief_complaint", "sore throat", ["sore throat"]),  # bare text becomes one reason
         ("symptom_duration_days", "3", 3),
         ("symptom_duration_days", 2.0, 2),
         ("symptom_severity", "Moderate", "moderate"),
@@ -43,7 +44,7 @@ def test_validate_value_ok(slot_id, raw, expected):
 @pytest.mark.parametrize(
     "slot_id, raw",
     [
-        ("chief_complaint", "   "),
+        ("symptom_onset", "   "),
         ("symptom_duration_days", "a while"),
         ("symptom_duration_days", -1),
         ("symptom_severity", "extreme"),
@@ -57,12 +58,12 @@ def test_validate_value_rejected(slot_id, raw):
 # --- apply_candidate ----------------------------------------------------- #
 
 def test_apply_candidate_records_and_sets_status(state):
-    res = apply_candidate(state, _cand("chief_complaint", "sore throat"))
+    res = apply_candidate(state, _cand("symptom_onset", "three weeks ago"))
     assert res.outcome == ApplyOutcome.ACCEPTED
-    slot = state.slots["chief_complaint"]
+    slot = state.slots["symptom_onset"]
     assert slot.status == SlotStatus.CANDIDATE
     assert slot.value is None
-    assert slot.candidates[0].value == "sore throat"
+    assert slot.candidates[0].value == "three weeks ago"
 
 
 def test_apply_candidate_rejects_invalid(state):
@@ -77,9 +78,9 @@ def test_apply_candidate_unknown_slot(state):
 
 
 def test_candidates_sorted_by_confidence(state):
-    apply_candidate(state, _cand("chief_complaint", "low", confidence=0.2))
-    apply_candidate(state, _cand("chief_complaint", "high", confidence=0.9))
-    assert [c.value for c in state.slots["chief_complaint"].candidates] == ["high", "low"]
+    apply_candidate(state, _cand("symptom_onset", "low", confidence=0.2))
+    apply_candidate(state, _cand("symptom_onset", "high", confidence=0.9))
+    assert [c.value for c in state.slots["symptom_onset"].candidates] == ["high", "low"]
 
 
 # --- confirm / edit / skip --------------------------------------------- #
@@ -185,14 +186,14 @@ def test_conditional_slot_inactive_until_dependency_matches(state):
 # --- correction / audit history --------------------------------------- #
 
 def test_confirm_records_a_confirmed_history_entry(state):
-    confirm_slot(state, "chief_complaint", value="sore throat")
+    confirm_slot(state, "chief_complaint", value=["sore throat"])
     assert len(state.history) == 1
     entry = state.history[0]
     assert entry.slot_id == "chief_complaint"
     assert entry.event == SlotHistoryEvent.CONFIRMED
     assert entry.previous_value is None
     assert entry.previous_status == SlotStatus.EMPTY
-    assert entry.new_value == "sore throat"
+    assert entry.new_value == ["sore throat"]
     assert entry.new_status == SlotStatus.CONFIRMED
     assert entry.source == SlotSource.PATIENT
 
@@ -240,16 +241,16 @@ def test_reopening_a_skipped_slot_is_recorded(state):
 
 
 def test_history_is_append_only_and_in_order(state):
-    confirm_slot(state, "chief_complaint", value="a")
-    edit_slot(state, "chief_complaint", "b")
-    edit_slot(state, "chief_complaint", "c")
+    confirm_slot(state, "chief_complaint", value=["a"])
+    edit_slot(state, "chief_complaint", ["b"])
+    edit_slot(state, "chief_complaint", ["c"])
 
     values = [e.new_value for e in state.history if e.slot_id == "chief_complaint"]
-    assert values == ["a", "b", "c"]
+    assert values == [["a"], ["b"], ["c"]]
 
 
 def test_history_across_slots_does_not_interfere(state):
-    confirm_slot(state, "chief_complaint", value="x")
+    confirm_slot(state, "chief_complaint", value=["x"])
     skip_slot(state, "past_conditions")
     assert len(state.history) == 2
     assert {e.slot_id for e in state.history} == {"chief_complaint", "past_conditions"}

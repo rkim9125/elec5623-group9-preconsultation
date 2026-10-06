@@ -215,7 +215,7 @@ def test_generate_summary_uses_only_resolved_slots():
 
     summary = client.generate_summary(state)
 
-    assert summary.sections["Main reason for the visit"] == (
+    assert summary.sections["Reasons for the visit"] == (
         "The patient reports a severe headache."
     )
     assert summary.sections["Known allergies"] == "(patient chose to skip)"

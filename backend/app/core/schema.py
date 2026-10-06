@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from app.core.models import Slot, SlotStatus, SlotType
 
-SCHEMA_VERSION = "0.3"
+SCHEMA_VERSION = "0.4"
 
 
 class SlotActivation(BaseModel):
@@ -46,14 +46,27 @@ CONSULTATION_SCHEMA: list[SlotDef] = [
     # factors/treatments-tried) — see docs/implementation-status.md for the
     # references this was checked against (v0.2).
     SlotDef(
+        # A list, not a single string: patients arrive with more than one
+        # reason, and the order they give them in is their own priority.
+        # Per-concern symptom timelines are still a separate, deferred change.
         slot_id="chief_complaint",
-        label="Main reason for the visit",
-        type=SlotType.STRING,
+        label="Reasons for the visit",
+        type=SlotType.LIST,
         required=True,
-        prompt_hint="In your own words, what is the main reason for this visit?",
+        prompt_hint="In your own words, what would you like to cover in this visit?",
     ),
     SlotDef(
+        # Free text on purpose. "about three weeks ago" is a real answer; the
+        # catalogue forbids silently converting an approximate onset into an
+        # exact date (§3.2), so this never becomes a number.
         slot_id="symptom_onset",
+        label="When the symptoms started",
+        type=SlotType.STRING,
+        required=True,
+        prompt_hint="When did you first notice this?",
+    ),
+    SlotDef(
+        slot_id="symptom_onset_pattern",
         label="How the symptoms started",
         type=SlotType.ENUM,
         required=False,
@@ -61,11 +74,20 @@ CONSULTATION_SCHEMA: list[SlotDef] = [
         prompt_hint="Did this come on suddenly, or build up gradually?",
     ),
     SlotDef(
+        # Optional, and only for when the patient actually gives a number.
+        # `symptom_onset` above is the one that must always be answerable.
         slot_id="symptom_duration_days",
         label="How long symptoms have lasted (days)",
         type=SlotType.NUMBER,
-        required=True,
-        prompt_hint="How many days have you had these symptoms?",
+        required=False,
+        prompt_hint="If you know roughly how many days, how many?",
+    ),
+    SlotDef(
+        slot_id="symptom_frequency",
+        label="How often the symptoms occur",
+        type=SlotType.STRING,
+        required=False,
+        prompt_hint="Is it there all the time, or does it come and go?",
     ),
     SlotDef(
         slot_id="symptom_location",

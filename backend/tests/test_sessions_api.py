@@ -35,7 +35,7 @@ def test_create_and_fetch_session():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "in_progress"
-    assert body["schema_version"] == "0.3"
+    assert body["schema_version"] == "0.4"
     assert "chief_complaint" in body["slots"]
 
 
@@ -180,7 +180,7 @@ def test_full_flow_to_summary():
     r = client.get(f"/api/sessions/{sid}/summary")
     assert r.status_code == 200
     body = r.json()
-    assert body["sections"]["Main reason for the visit"] == "sore throat"
+    assert body["sections"]["Reasons for the visit"] == "sore throat"
     assert len(body["patient_questions"]) >= 1
 
     # second complete is a conflict
