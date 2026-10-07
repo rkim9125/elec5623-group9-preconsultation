@@ -18,6 +18,7 @@ import { navigateWithGuard } from "./navigation.js";
 import { topicDescription, topicVisual } from "./topics.js";
 import AssessmentReport, { ReportDownloadCard } from "./AssessmentReport.jsx";
 import { shouldGenerateAssessment } from "./reportState.js";
+import "./portal-theme.css";
 
 const setRoute = (path) => {
   return navigateWithGuard(() => {
@@ -162,7 +163,7 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
     }
   }
   return (
-    <div className="auth-page">
+    <div className="auth-page" data-portal={role}>
       <div className="auth-story">
         <Brand light role={role} />
         <div className="story-copy">
@@ -416,7 +417,7 @@ function Shell({ user, route, onLogout, children }) {
   const base = doctor ? "/doctor" : "/patient";
   useEffect(() => setMenu(false), [route]);
   return (
-    <div className={`app-shell ${menu ? "menu-open" : ""}`}>
+    <div className={`app-shell ${menu ? "menu-open" : ""}`} data-portal={user.role}>
       <a
         className="skip-link"
         href="#main-content"

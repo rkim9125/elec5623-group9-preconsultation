@@ -1,0 +1,145 @@
+/* Role-scoped screen colors: retain light clinical reading surfaces and printed reports. */
+@media screen {
+  [data-portal="doctor"] {
+    --blue: #245448;
+    --accent: #245448;
+    --accent-soft: #dfeae2;
+    --ink: #223e34;
+    --border: #cedbd1;
+  }
+
+  .app-shell[data-portal="doctor"] {
+    background: #eff3ef;
+  }
+
+  [data-portal="doctor"] .sidebar {
+    background: #254d43;
+    color: #d6e6dc;
+    border-right-color: #21463d;
+  }
+
+  [data-portal="doctor"] :is(.sidebar, .auth-story) .brand {
+    color: #f4f8f3;
+  }
+
+  [data-portal="doctor"] :is(.sidebar, .auth-story) .brand-sub,
+  [data-portal="doctor"] .workspace-label {
+    color: #c0d4c7;
+  }
+
+  [data-portal="doctor"] :is(.sidebar, .auth-story) .brand-symbol span:first-child {
+    background: #94c2ac;
+  }
+
+  [data-portal="doctor"] .side-nav > a {
+    color: #d8e6de;
+  }
+
+  [data-portal="doctor"] .side-nav > a:hover {
+    background: #335f52;
+    color: #fff;
+  }
+
+  [data-portal="doctor"] .side-nav > a.active {
+    color: #fff;
+    background: #3d6a5a;
+    box-shadow: inset 3px 0 0 #b7d1b9;
+  }
+
+  [data-portal="doctor"] .side-note {
+    background: #2e5749;
+    border-color: #4a705f;
+  }
+
+  [data-portal="doctor"] .side-note h4,
+  [data-portal="doctor"] .user-details strong {
+    color: #f3f7ef;
+  }
+
+  [data-portal="doctor"] .side-note-icon {
+    color: #c0d8ae;
+  }
+
+  [data-portal="doctor"] .side-note p,
+  [data-portal="doctor"] .user-details span,
+  [data-portal="doctor"] .sidebar-bottom .icon-button {
+    color: #d0e0d3;
+  }
+
+  [data-portal="doctor"] .sidebar-bottom {
+    border-top-color: #4a6b5b;
+  }
+
+  [data-portal="doctor"] .user-avatar {
+    color: #285042;
+    background: #dbe8d9;
+  }
+
+  [data-portal="doctor"] .sidebar-bottom .icon-button:hover {
+    color: #fff;
+    background: #3d6757;
+  }
+
+  [data-portal="doctor"] .topbar {
+    background: #e6eee7;
+    border-bottom-color: #c9d8cd;
+  }
+
+  [data-portal="doctor"] .connection-tag {
+    background: #d6e4d8;
+    color: #2d513c;
+    border-color: #b7ccbb;
+  }
+
+  [data-portal="doctor"] .primary:hover:not(:disabled),
+  [data-portal="doctor"] .cream:hover:not(:disabled) {
+    background: #193f34;
+    border-color: #193f34;
+    box-shadow: 0 4px 12px #193f341a;
+  }
+
+  [data-portal="doctor"] .metric-icon.mint,
+  [data-portal="doctor"] .assessment-heading-icon,
+  [data-portal="doctor"] .complete-report-icon {
+    background: #d5e4d8;
+    color: #285542;
+  }
+
+  [data-portal="doctor"] .assessment-heading {
+    background: linear-gradient(120deg, #e0ebe2, #edf2e9);
+  }
+
+  [data-portal="doctor"] .complete-report-card {
+    background: #e8efe5;
+    border-color: #bacfbf;
+  }
+
+  [data-portal="doctor"] .auth-story {
+    background: linear-gradient(145deg, #234b41, #335f4e);
+    border-right-color: #315d4d;
+  }
+
+  [data-portal="doctor"] .story-copy h1 {
+    color: #f4f8ef;
+  }
+
+  [data-portal="doctor"] .story-copy h1 em {
+    color: #b9d6b7;
+  }
+
+  [data-portal="doctor"] .story-copy > p,
+  [data-portal="doctor"] .story-copy .eyebrow,
+  [data-portal="doctor"] .story-points > span,
+  [data-portal="doctor"] .auth-story-footer {
+    color: #d1e1cf;
+  }
+
+  [data-portal="doctor"] .portal-switch a.active {
+    color: #fff;
+    background: #245448;
+  }
+
+  [data-portal="doctor"] .auth-form-wrap:before {
+    color: #245448;
+  }
+}
