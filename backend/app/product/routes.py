@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from . import engine, forms, pipeline
 from .assessment import public_report
+from . import usage
 from .auth import (csrf_protect, normalize_email, require_user, require_patient,
                    require_doctor, check_rate_limit)
 from .config import get_settings, model_options
@@ -358,3 +359,24 @@ def mark_reviewed(intake_id: str, user: dict = Depends(require_doctor)) -> dict:
     session["reviewed_by"] = user["email"]
     persist(session)
     return clinician_public_session(session)
+
+
+@router.get("/intakes/{intake_id}/usage")
+def intake_usage(intake_id: str, user: dict = Depends(require_patient)) -> dict:
+    """What this preparation cost in model calls, tokens, latency and money.
+
+    `cost_usd` is null unless a rate for the model is configured in
+    MODEL_PRICES_USD — tokens are measured, prices are not guessable.
+    """
+    session = require_owner(intake_id, user)
+    return usage.usage_for_intake(session["id"])
+
+
+@router.get("/usage")
+def usage_summary(user: dict = Depends(require_doctor)) -> dict:
+    """Totals across every preparation, including average cost per intake.
+
+    Clinician-only: it describes spend across other people's preparations, so
+    it is not something an individual patient should be able to read.
+    """
+    return usage.usage_totals()

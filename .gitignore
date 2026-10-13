@@ -35,3 +35,7 @@ backend/data/
 *.log
 frontend/test-results/
 frontend/playwright-report/
+
+# Coverage artifacts
+.coverage
+htmlcov/

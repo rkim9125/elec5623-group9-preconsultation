@@ -1,0 +1,83 @@
+# Model usage and cost
+
+Answers "what does one preparation actually cost" with measurements rather than
+estimates. Added in response to the tutor's **"report → costing?"** feedback, and
+it also covers the token/latency recording listed under C4 in
+[component-breakdown.md](component-breakdown.md).
+
+## What is recorded
+
+Every OpenAI call already returned a `usage` block; it was being discarded. Each
+call now writes one row to `model_usage`:
+
+| Column | Meaning |
+|---|---|
+| `intake_id` | Which preparation the call belongs to (null for calls outside one) |
+| `purpose` | `extraction`, `assessment`, `transcription`, `image`, `intelligence` |
+| `model` | The model actually used |
+| `input_tokens` / `output_tokens` | From the provider's own `usage` block |
+| `latency_ms` | Measured wall-clock time for the call |
+| `failed` | Timeouts and rejected calls are recorded, not dropped |
+
+Failed calls are kept deliberately. A timeout still consumed wall-clock time and
+sometimes tokens; excluding them would make the cost picture look better than
+reality.
+
+## Cost is configured, never guessed
+
+Token counts are facts. **Prices are not** — they depend on the provider's rate
+card, which changes and which nothing in this codebase can know. Rates come from
+`MODEL_PRICES_USD`, in USD per 1,000,000 tokens:
+
+```bash
+MODEL_PRICES_USD={"gpt-6-sol": {"input": 1.25, "output": 10.00}}
+```
+
+A model with no configured rate reports its token counts with `cost_usd: null`.
+That is "no rate configured", not "free". If *any* model in a total is unpriced,
+the total is `null` too — a partial sum would read as the full cost and quietly
+understate it.
+
+Copy the real numbers from the provider's pricing page before quoting any figure
+in the report.
+
+## Reading it
+
+```
+GET /api/v1/intakes/{intake_id}/usage   # patient, own preparation only
+GET /api/v1/usage                       # clinician — totals and per-intake average
+```
+
+```json
+{
+  "calls": 7,
+  "failed_calls": 1,
+  "input_tokens": 18420,
+  "output_tokens": 3110,
+  "latency_ms_total": 21840,
+  "by_purpose": { "extraction": 5, "assessment": 2 },
+  "by_model": { "gpt-6-sol": { "calls": 7, "input_tokens": 18420, "output_tokens": 3110, "cost_usd": 0.054 } },
+  "cost_usd": 0.054
+}
+```
+
+`/api/v1/usage` adds `intakes` and `cost_usd_per_intake` — the number to quote
+when asked what a preparation costs.
+
+The totals endpoint is clinician-only: it describes spend across other people's
+preparations, so it isn't something an individual patient should be able to read.
+
+## Verified
+
+Checked against a live OpenAI response, not just fixtures:
+
+```
+usage block : {"input_tokens": 9, ..., "output_tokens": 3, "total_tokens": 12}
+parsed      : (9, 3)
+no rate     : None
+with rate   : 3e-06 USD
+```
+
+`tests/test_product_usage.py` covers the parser (including malformed responses),
+the null-cost rules, aggregation, failed-call recording, and that a logging
+failure can never break the request it describes.

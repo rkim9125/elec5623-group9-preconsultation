@@ -296,7 +296,7 @@ def test_large_combined_uploads_read_every_file_before_synthesis(report_app, mon
     for item in files:
         item['size_bytes'] = 20 * 1024 * 1024
     observed, syntheses = [], []
-    def request(self, model, content, schema, name, prompt, max_output):
+    def request(self, model, content, schema, name, prompt, max_output, intake_id=None):
         if name == 'attachment_observations':
             metadata = json.loads(content[0]['text'])
             observed.append((metadata['id'], content[1]['type']))
@@ -319,7 +319,7 @@ def test_large_upload_bad_observation_aborts_without_final_synthesis(report_app,
     context, files, _ = assessment.assessment_input(database.load_intake('i1'))
     for item in files:
         item['size_bytes'] = 20 * 1024 * 1024
-    def request(self, model, content, schema, name, prompt, max_output):
+    def request(self, model, content, schema, name, prompt, max_output, intake_id=None):
         assert name == 'attachment_observations'
         row = deepcopy(valid_report(context)['attachment_reviews'][0])
         row['source_ids'] = ['made-up']
