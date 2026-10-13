@@ -67,6 +67,20 @@ when asked what a preparation costs.
 The totals endpoint is clinician-only: it describes spend across other people's
 preparations, so it isn't something an individual patient should be able to read.
 
+## Trying it without signing in
+
+The endpoints need a session, and email sign-in currently only delivers to the
+Resend account owner — so until that's fixed, use these instead:
+
+```bash
+cd backend
+./.venv/bin/pytest tests/test_product_usage.py -v   # 16 tests
+./.venv/bin/python scripts/demo_usage.py           # simulated preparation
+./.venv/bin/python scripts/demo_usage.py --live    # one real OpenAI call
+```
+
+The demo writes to a throwaway database, so it never touches real data.
+
 ## Verified
 
 Checked against a live OpenAI response, not just fixtures:
