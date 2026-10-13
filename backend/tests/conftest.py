@@ -1,3 +1,12 @@
+import os
+
+# The pre-product backend (/api/sessions and the app/core engine) is no longer
+# mounted by default — app/product/ replaced it and only reuses check_safety.
+# Its tests still describe working behaviour, so they run against it here until
+# the team decides whether to delete that stack outright. Set before any test
+# module imports app.core.main, which reads this flag at import time.
+os.environ.setdefault("ENABLE_LEGACY_API", "1")
+
 import pytest
 
 from app.core.models import SessionState
