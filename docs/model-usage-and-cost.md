@@ -27,19 +27,21 @@ reality.
 
 Token counts are facts. **Prices are not** — they depend on the provider's rate
 card, which changes and which nothing in this codebase can know. Rates come from
-`MODEL_PRICES_USD`, in USD per 1,000,000 tokens:
+`MODEL_PRICES_AUD`, in AUD per 1,000,000 tokens:
 
 ```bash
-MODEL_PRICES_USD={"gpt-6-sol": {"input": 1.25, "output": 10.00}}
+MODEL_PRICES_AUD={"gpt-6-sol": {"input": 1.25, "output": 10.00}}
 ```
 
-A model with no configured rate reports its token counts with `cost_usd: null`.
+A model with no configured rate reports its token counts with `cost_aud: null`.
 That is "no rate configured", not "free". If *any* model in a total is unpriced,
 the total is `null` too — a partial sum would read as the full cost and quietly
 understate it.
 
 Copy the real numbers from the provider's pricing page before quoting any figure
-in the report.
+in the report — and **convert them**: OpenAI publishes prices in USD, while this
+field is in AUD. Pasting the USD list price straight in understates the cost by
+roughly the exchange rate.
 
 ## Reading it
 
@@ -56,12 +58,12 @@ GET /api/v1/usage                       # clinician — totals and per-intake av
   "output_tokens": 3110,
   "latency_ms_total": 21840,
   "by_purpose": { "extraction": 5, "assessment": 2 },
-  "by_model": { "gpt-6-sol": { "calls": 7, "input_tokens": 18420, "output_tokens": 3110, "cost_usd": 0.054 } },
-  "cost_usd": 0.054
+  "by_model": { "gpt-6-sol": { "calls": 7, "input_tokens": 18420, "output_tokens": 3110, "cost_aud": 0.054 } },
+  "cost_aud": 0.054
 }
 ```
 
-`/api/v1/usage` adds `intakes` and `cost_usd_per_intake` — the number to quote
+`/api/v1/usage` adds `intakes` and `cost_aud_per_intake` — the number to quote
 when asked what a preparation costs.
 
 The totals endpoint is clinician-only: it describes spend across other people's
@@ -89,7 +91,7 @@ Checked against a live OpenAI response, not just fixtures:
 usage block : {"input_tokens": 9, ..., "output_tokens": 3, "total_tokens": 12}
 parsed      : (9, 3)
 no rate     : None
-with rate   : 3e-06 USD
+with rate   : 3e-06 AUD
 ```
 
 `tests/test_product_usage.py` covers the parser (including malformed responses),

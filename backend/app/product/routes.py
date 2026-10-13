@@ -365,8 +365,8 @@ def mark_reviewed(intake_id: str, user: dict = Depends(require_doctor)) -> dict:
 def intake_usage(intake_id: str, user: dict = Depends(require_patient)) -> dict:
     """What this preparation cost in model calls, tokens, latency and money.
 
-    `cost_usd` is null unless a rate for the model is configured in
-    MODEL_PRICES_USD — tokens are measured, prices are not guessable.
+    `cost_aud` is null unless a rate for the model is configured in
+    MODEL_PRICES_AUD — tokens are measured, prices are not guessable.
     """
     session = require_owner(intake_id, user)
     return usage.usage_for_intake(session["id"])

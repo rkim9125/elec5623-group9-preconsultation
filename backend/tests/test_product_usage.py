@@ -16,7 +16,7 @@ from app.product import usage
 @pytest.fixture(autouse=True)
 def _isolated_db(tmp_path, monkeypatch):
     monkeypatch.setenv("PRODUCT_DB_PATH", str(tmp_path / "usage.sqlite3"))
-    monkeypatch.delenv("MODEL_PRICES_USD", raising=False)
+    monkeypatch.delenv("MODEL_PRICES_AUD", raising=False)
     from app.product.database import init_db
 
     init_db()
@@ -40,22 +40,22 @@ def test_unexpected_shapes_record_zero_rather_than_raising(body):
 
 
 def test_cost_is_null_when_no_rate_is_configured():
-    assert usage.cost_usd("gpt-6-sol", 1_000_000, 1_000_000) is None
+    assert usage.cost_aud("gpt-6-sol", 1_000_000, 1_000_000) is None
 
 
 def test_cost_uses_the_configured_rate(monkeypatch):
     monkeypatch.setenv(
-        "MODEL_PRICES_USD", json.dumps({"gpt-6-sol": {"input": 1.25, "output": 10.0}})
+        "MODEL_PRICES_AUD", json.dumps({"gpt-6-sol": {"input": 1.25, "output": 10.0}})
     )
     # 1M input at $1.25 + 0.5M output at $10.00
-    assert usage.cost_usd("gpt-6-sol", 1_000_000, 500_000) == 6.25
+    assert usage.cost_aud("gpt-6-sol", 1_000_000, 500_000) == 6.25
 
 
 def test_malformed_price_config_is_ignored_rather_than_trusted(monkeypatch):
-    monkeypatch.setenv("MODEL_PRICES_USD", "{not json")
-    assert usage.cost_usd("gpt-6-sol", 100, 100) is None
-    monkeypatch.setenv("MODEL_PRICES_USD", json.dumps({"gpt-6-sol": {"input": "free"}}))
-    assert usage.cost_usd("gpt-6-sol", 100, 100) is None
+    monkeypatch.setenv("MODEL_PRICES_AUD", "{not json")
+    assert usage.cost_aud("gpt-6-sol", 100, 100) is None
+    monkeypatch.setenv("MODEL_PRICES_AUD", json.dumps({"gpt-6-sol": {"input": "free"}}))
+    assert usage.cost_aud("gpt-6-sol", 100, 100) is None
 
 
 def test_usage_for_one_intake_aggregates_its_calls():
@@ -72,7 +72,7 @@ def test_usage_for_one_intake_aggregates_its_calls():
     assert summary["output_tokens"] == 420
     assert summary["latency_ms_total"] == 2300
     assert summary["by_purpose"] == {usage.EXTRACTION: 1, usage.ASSESSMENT: 1}
-    assert summary["cost_usd"] is None  # no rate configured
+    assert summary["cost_aud"] is None  # no rate configured
 
 
 def test_failed_calls_are_recorded_not_dropped():
@@ -88,7 +88,7 @@ def test_failed_calls_are_recorded_not_dropped():
 
 def test_totals_report_average_cost_per_intake(monkeypatch):
     monkeypatch.setenv(
-        "MODEL_PRICES_USD", json.dumps({"m1": {"input": 1.0, "output": 1.0}})
+        "MODEL_PRICES_AUD", json.dumps({"m1": {"input": 1.0, "output": 1.0}})
     )
     for intake in ("i1", "i2"):
         usage.record(purpose=usage.ASSESSMENT, model="m1", input_tokens=500_000,
@@ -96,16 +96,16 @@ def test_totals_report_average_cost_per_intake(monkeypatch):
 
     totals = usage.usage_totals()
     assert totals["intakes"] == 2
-    assert totals["cost_usd"] == 2.0
-    assert totals["cost_usd_per_intake"] == 1.0
+    assert totals["cost_aud"] == 2.0
+    assert totals["cost_aud_per_intake"] == 1.0
 
 
 def test_a_single_unpriced_model_makes_the_total_null(monkeypatch):
     # A partial sum would read as the full cost and quietly understate it.
-    monkeypatch.setenv("MODEL_PRICES_USD", json.dumps({"priced": {"input": 1.0, "output": 1.0}}))
+    monkeypatch.setenv("MODEL_PRICES_AUD", json.dumps({"priced": {"input": 1.0, "output": 1.0}}))
     usage.record(purpose=usage.EXTRACTION, model="priced", input_tokens=10, output_tokens=10)
     usage.record(purpose=usage.ASSESSMENT, model="unpriced", input_tokens=10, output_tokens=10)
-    assert usage.usage_totals()["cost_usd"] is None
+    assert usage.usage_totals()["cost_aud"] is None
 
 
 def test_track_times_the_call_and_keeps_the_exception():

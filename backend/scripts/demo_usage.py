@@ -19,10 +19,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 TMP = Path(tempfile.mkdtemp(prefix="usage-demo-"))
 os.environ["PRODUCT_DB_PATH"] = str(TMP / "demo.sqlite3")
 os.environ["UPLOAD_DIR"] = str(TMP / "uploads")
-# Example rates only. Replace with the provider's real pricing before quoting
-# any figure in the report.
+# Illustrative AUD rates only — not real pricing. OpenAI publishes in USD, so
+# convert before putting real numbers here or in the report.
 os.environ.setdefault(
-    "MODEL_PRICES_USD",
+    "MODEL_PRICES_AUD",
     json.dumps({"gpt-4o-mini": {"input": 0.15, "output": 0.60},
                 "gpt-6-sol": {"input": 1.25, "output": 10.00}}),
 )
@@ -51,8 +51,8 @@ def offline() -> None:
     show("GET /api/v1/usage", usage.usage_totals())
 
     print("\nNow the same data with no configured rate:")
-    os.environ["MODEL_PRICES_USD"] = ""
-    print(f"  cost_usd = {usage.usage_for_intake('demo-intake')['cost_usd']}"
+    os.environ["MODEL_PRICES_AUD"] = ""
+    print(f"  cost_aud = {usage.usage_for_intake('demo-intake')['cost_aud']}"
           "   <- 'no rate configured', not 'free'")
 
 

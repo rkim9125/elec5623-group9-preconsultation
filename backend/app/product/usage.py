@@ -6,8 +6,9 @@ actually cost" with measurements instead of estimates.
 
 Token counts and latency are facts taken from the call. **Cost is not**: it
 depends on a per-model price that changes and that nothing in the codebase can
-know. Rates are supplied through MODEL_PRICES_USD (see `configured_rate`), and a
-model with no configured rate reports its tokens with `cost_usd: None` rather
+know. Rates are supplied through MODEL_PRICES_AUD in Australian dollars (see
+`configured_rate`), and a
+model with no configured rate reports its tokens with `cost_aud: None` rather
 than a made-up number.
 """
 
@@ -51,13 +52,13 @@ def init_usage_table() -> None:
 
 
 def _prices() -> dict[str, dict[str, float]]:
-    """Per-model USD price per 1M tokens, e.g.
+    """Per-model AUD price per 1M tokens, e.g.
 
-        MODEL_PRICES_USD={"gpt-6-sol": {"input": 1.25, "output": 10.0}}
+        MODEL_PRICES_AUD={"gpt-6-sol": {"input": 1.25, "output": 10.0}}
 
     Left unset deliberately: nothing here should invent a provider's pricing.
     """
-    raw = os.getenv("MODEL_PRICES_USD", "").strip()
+    raw = os.getenv("MODEL_PRICES_AUD", "").strip()
     if not raw:
         return {}
     try:
@@ -77,7 +78,7 @@ def configured_rate(model: str) -> dict[str, float] | None:
         return None
 
 
-def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float | None:
+def cost_aud(model: str, input_tokens: int, output_tokens: int) -> float | None:
     """None means "no rate configured for this model", never "free"."""
     rate = configured_rate(model)
     if rate is None:
@@ -190,13 +191,13 @@ def _summarise(rows: list) -> dict:
     total_cost = 0.0
     priced = True
     for model, bucket in by_model.items():
-        bucket["cost_usd"] = cost_usd(
+        bucket["cost_aud"] = cost_aud(
             model, bucket["input_tokens"], bucket["output_tokens"]
         )
-        if bucket["cost_usd"] is None:
+        if bucket["cost_aud"] is None:
             priced = False
         else:
-            total_cost += bucket["cost_usd"]
+            total_cost += bucket["cost_aud"]
 
     by_purpose: dict[str, int] = {}
     for call in calls:
@@ -212,7 +213,7 @@ def _summarise(rows: list) -> dict:
         "by_purpose": by_purpose,
         # None when any model involved has no configured rate — a partial total
         # would read as the full cost and understate it.
-        "cost_usd": round(total_cost, 6) if priced and by_model else None,
+        "cost_aud": round(total_cost, 6) if priced and by_model else None,
     }
 
 
@@ -234,9 +235,9 @@ def usage_totals() -> dict:
             "SELECT COUNT(DISTINCT intake_id) AS n FROM model_usage WHERE intake_id IS NOT NULL"
         ).fetchone()["n"]
     summary = _summarise(rows)
-    cost = summary["cost_usd"]
+    cost = summary["cost_aud"]
     summary["intakes"] = intakes
-    summary["cost_usd_per_intake"] = (
+    summary["cost_aud_per_intake"] = (
         round(cost / intakes, 6) if cost is not None and intakes else None
     )
     return summary
