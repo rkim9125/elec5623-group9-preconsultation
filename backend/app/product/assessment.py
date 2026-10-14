@@ -15,11 +15,14 @@ import re
 from time import monotonic
 from typing import Literal
 
+import time
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .auth import check_rate_limit, csrf_protect, require_user
+from . import usage
 from .config import get_settings
 from .database import load_intake, mutate_intake, utc_now
 from .intelligence import current_concerns, current_sources
@@ -326,10 +329,20 @@ def _validate(data: dict, context: dict) -> dict:
 
 
 class OpenAIAssessment:
-    def _request(self, model: str, content: list[dict], schema: dict, name: str, prompt: str, max_output: int) -> dict:
+    def _request(self, model: str, content: list[dict], schema: dict, name: str, prompt: str, max_output: int,
+                 intake_id: str | None = None) -> dict:
         settings = get_settings()
         if not settings.openai_api_key:
             raise HTTPException(503, 'OpenAI assessment is not configured. Your preparation notes remain available.')
+        started = time.perf_counter()
+
+        def _elapsed_ms() -> int:
+            return int((time.perf_counter() - started) * 1000)
+
+        def _failed() -> None:
+            usage.record(purpose=usage.ASSESSMENT, model=model, latency_ms=_elapsed_ms(),
+                         intake_id=intake_id, failed=True)
+
         try:
             response = httpx.post(settings.openai_base_url.rstrip('/') + '/responses',
                 headers={'Authorization': 'Bearer ' + settings.openai_api_key},
@@ -338,15 +351,20 @@ class OpenAIAssessment:
                       'text': {'format': {'type': 'json_schema', 'name': name, 'schema': schema, 'strict': True}},
                       'max_output_tokens': max_output}, timeout=httpx.Timeout(180, connect=10))
         except httpx.TimeoutException:
+            _failed()
             raise HTTPException(504, 'AI report generation timed out. Please retry; your notes and files are saved.') from None
         except httpx.HTTPError:
+            _failed()
             raise HTTPException(502, 'AI report generation is temporarily unreachable. Please retry.') from None
         if response.status_code != 200:
             message = {401: 'OpenAI rejected the configured credentials.', 403: 'OpenAI denied access to this model.',
                        404: 'The selected OpenAI model is unavailable.', 429: 'OpenAI usage or rate limit reached.'}.get(
                            response.status_code, 'OpenAI could not generate this report.')
+            _failed()
             raise HTTPException(503 if response.status_code in {401, 403, 404, 429} else 502,
                                 message + ' Your preparation remains saved; no other model was substituted.')
+        body = None
+        usable = False
         try:
             body = response.json()
             if body.get('status') != 'completed':
@@ -357,9 +375,16 @@ class OpenAIAssessment:
             result = json.loads(''.join(part.get('text', '') for part in parts if part.get('type') == 'output_text'))
             if not isinstance(result, dict):
                 raise ValueError('shape')
+            usable = True
             return result
         except (ValueError, TypeError, AttributeError, KeyError):
             raise HTTPException(502, 'AI could not complete a usable assessment. Your factual notes and files remain available.') from None
+        finally:
+            # HTTP 200 is not success: an incomplete, refused or unparseable
+            # body still consumed tokens and still failed the caller.
+            usage.record(purpose=usage.ASSESSMENT, model=model, latency_ms=_elapsed_ms(),
+                         intake_id=intake_id, failed=not usable,
+                         **usage.token_breakdown(body))
 
     @staticmethod
     def _file_content(file: dict) -> dict:
@@ -368,7 +393,7 @@ class OpenAIAssessment:
             return {'type': 'input_file', 'filename': file['filename'], 'file_data': url}
         return {'type': 'input_image', 'image_url': url, 'detail': 'high'}
 
-    def generate(self, *, model: str, context: dict, files: list[dict]) -> dict:
+    def generate(self, *, model: str, context: dict, files: list[dict], intake_id: str | None = None) -> dict:
         content = [{'type': 'input_text', 'text': json.dumps(context, ensure_ascii=False)}]
         if sum(file['size_bytes'] for file in files) <= 35 * 1024 * 1024:
             for file in files:
@@ -380,7 +405,8 @@ class OpenAIAssessment:
                 registry = {key: value for key, value in file.items() if key != 'data'}
                 registry['source_id'] = 'attachment_' + file['id']
                 result = self._request(model, [{'type': 'input_text', 'text': json.dumps(registry)}, self._file_content(file)],
-                                       AttachmentReview.model_json_schema(), 'attachment_observations', FILE_PROMPT, 2500)
+                                       AttachmentReview.model_json_schema(), 'attachment_observations', FILE_PROMPT, 2500,
+                                       intake_id=intake_id)
                 try:
                     review = AttachmentReview.model_validate(result).model_dump()
                 except (ValidationError, TypeError, ValueError):
@@ -393,7 +419,8 @@ class OpenAIAssessment:
                 observations = list(pool.map(read, files))
             content.append({'type': 'input_text', 'text': json.dumps({'attachment_observations': observations,
                 'note': 'Each original was read separately due to total file size. These are unverified AI observations.'}, ensure_ascii=False)})
-        return self._request(model, content, AssessmentOutput.model_json_schema(), 'provisional_clinical_assessment', PROMPT, 16000)
+        return self._request(model, content, AssessmentOutput.model_json_schema(), 'provisional_clinical_assessment', PROMPT, 16000,
+                             intake_id=intake_id)
 
 
 def get_assessment_provider() -> OpenAIAssessment:
@@ -418,7 +445,8 @@ def generate_report(intake_id: str, request: Request, user=Depends(require_user)
     except OSError:
         raise HTTPException(409, 'An uploaded file is unavailable. Restore it before generating the complete report.') from None
     started = monotonic()
-    output = get_assessment_provider().generate(model=session['model'], context=context, files=files)
+    output = get_assessment_provider().generate(model=session['model'], context=context, files=files,
+                                               intake_id=session['id'])
     result = _validate(output, context)
     result.update(status='ready', model=session['model'], generated_at=utc_now(),
                   input_fingerprint=fingerprint, summary_version=session['summary']['version'], sources=context['sources'])

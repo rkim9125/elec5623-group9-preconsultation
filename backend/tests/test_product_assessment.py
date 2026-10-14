@@ -296,7 +296,7 @@ def test_large_combined_uploads_read_every_file_before_synthesis(report_app, mon
     for item in files:
         item['size_bytes'] = 20 * 1024 * 1024
     observed, syntheses = [], []
-    def request(self, model, content, schema, name, prompt, max_output):
+    def request(self, model, content, schema, name, prompt, max_output, intake_id=None):
         if name == 'attachment_observations':
             metadata = json.loads(content[0]['text'])
             observed.append((metadata['id'], content[1]['type']))
@@ -319,7 +319,7 @@ def test_large_upload_bad_observation_aborts_without_final_synthesis(report_app,
     context, files, _ = assessment.assessment_input(database.load_intake('i1'))
     for item in files:
         item['size_bytes'] = 20 * 1024 * 1024
-    def request(self, model, content, schema, name, prompt, max_output):
+    def request(self, model, content, schema, name, prompt, max_output, intake_id=None):
         assert name == 'attachment_observations'
         row = deepcopy(valid_report(context)['attachment_reviews'][0])
         row['source_ids'] = ['made-up']
@@ -462,3 +462,34 @@ def test_attachment_filename_is_metadata_not_generated_medical_advice(report_app
     report = valid_report(context)
     validated = assessment._validate(report, context)
     assert validated['attachment_reviews'][0]['filename'] == filename
+
+
+def test_attachment_preprocessing_is_attributed_to_the_same_intake(report_app, monkeypatch):
+    """PR 26 review, finding 2.
+
+    Above the size threshold each attachment is read in its own request. Those
+    requests previously carried no intake id, so their tokens and latency never
+    appeared in the preparation's own usage — only the final synthesis did.
+    """
+    client, _, _ = report_app
+    upload_documents(client)
+    context, files, _ = assessment.assessment_input(database.load_intake('i1'))
+    for item in files:
+        item['size_bytes'] = 20 * 1024 * 1024
+
+    seen: list[str | None] = []
+
+    def request(self, model, content, schema, name, prompt, max_output, intake_id=None):
+        seen.append(intake_id)
+        if name == 'attachment_observations':
+            metadata = json.loads(content[0]['text'])
+            return next(row for row in valid_report(context)['attachment_reviews']
+                        if row['attachment_id'] == metadata['id'])
+        return valid_report(context)
+
+    monkeypatch.setattr(assessment.OpenAIAssessment, '_request', request)
+    assessment.OpenAIAssessment().generate(model='gpt-6-sol', context=context,
+                                           files=files, intake_id='i1')
+
+    assert len(seen) > 1, 'expected per-attachment requests plus the final synthesis'
+    assert set(seen) == {'i1'}, f'some calls were unattributed: {seen}'

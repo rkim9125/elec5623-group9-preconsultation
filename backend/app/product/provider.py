@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import json
 from typing import Protocol
+import time
+
 import httpx
 
 from .config import get_settings
+from . import usage
 from .workflows import WORKFLOWS, SIGNALS, question_definitions, SHARED_QUESTIONS
 
 
@@ -136,6 +139,11 @@ class OpenAIProvider:
             'text': {'format': {'type': 'json_schema', 'name': 'preconsultation_extraction', 'schema': EXTRACTION_SCHEMA, 'strict': True}},
             'max_output_tokens': 14000,
         }
+        started = time.perf_counter()
+
+        def _elapsed_ms() -> int:
+            return int((time.perf_counter() - started) * 1000)
+
         try:
             response = httpx.post(
                 f"{settings.openai_base_url.rstrip('/')}/responses",
@@ -143,8 +151,12 @@ class OpenAIProvider:
                 json=payload, timeout=httpx.Timeout(90.0, connect=10.0),
             )
         except httpx.TimeoutException as exc:
+            usage.record(purpose=usage.EXTRACTION, model=session['model'],
+                         latency_ms=_elapsed_ms(), intake_id=session.get('id'), failed=True)
             raise ProviderUnavailable('OpenAI timed out. Your message is saved. Please continue or review your notes; no model was substituted.') from exc
         except httpx.HTTPError as exc:
+            usage.record(purpose=usage.EXTRACTION, model=session['model'],
+                         latency_ms=_elapsed_ms(), intake_id=session.get('id'), failed=True)
             raise ProviderUnavailable('OpenAI could not be reached. Your message is saved; adaptive extraction is temporarily unavailable.') from exc
         if response.status_code != 200:
             status = response.status_code
@@ -156,7 +168,11 @@ class OpenAIProvider:
                 message = 'OpenAI quota or rate limit was reached. Your message is saved; adaptive extraction is temporarily unavailable.'
             else:
                 message = f'OpenAI returned an error ({status}). Your message is saved; adaptive extraction is temporarily unavailable.'
+            usage.record(purpose=usage.EXTRACTION, model=session['model'],
+                         latency_ms=_elapsed_ms(), intake_id=session.get('id'), failed=True)
             raise ProviderUnavailable(message)
+        result = None
+        usable = False
         try:
             result = response.json()
             if result.get('status') != 'completed':
@@ -165,9 +181,18 @@ class OpenAIProvider:
             data = json.loads(output_text)
             if not isinstance(data, dict) or not all(isinstance(data.get(k), list) for k in ('new_concerns', 'facts', 'signals', 'items', 'priority_order')):
                 raise ValueError('Invalid extraction shape')
+            usable = True
             return data
         except (ValueError, KeyError, TypeError) as exc:
             raise ProviderUnavailable('OpenAI returned an unusable extraction. Your message is saved; no unsupported facts were accepted.') from exc
+        finally:
+            # HTTP 200 is not success: an incomplete, refused or unparseable
+            # body still consumed tokens and still failed the caller. Record
+            # once here so both facts survive.
+            usage.record(purpose=usage.EXTRACTION, model=session['model'],
+                         latency_ms=_elapsed_ms(), intake_id=session.get('id'),
+                         failed=not usable,
+                         **usage.token_breakdown(result))
 
 
 def get_provider() -> ExtractionProvider:
