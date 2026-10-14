@@ -4,6 +4,7 @@ import { request, dateLabel } from "./api.js";
 import { Button, ErrorNotice, Loading, Modal } from "./UI.jsx";
 import { registerNavigationGuard } from "./navigation.js";
 import GuidedField from "./GuidedField.jsx";
+import { bodyOptionsFor } from "./lowerBodyModel.js";
 import { appendGuidedDetails } from "./answerValues.js";
 
 const stages = [
@@ -315,7 +316,7 @@ export function BaselineForm({
     const combined = appendGuidedDetails(
       previous,
       capturedText.trim(),
-      field.presentation?.options,
+      bodyOptionsFor(field.presentation),
     );
     if (combined.length > 6000) {
       setError(

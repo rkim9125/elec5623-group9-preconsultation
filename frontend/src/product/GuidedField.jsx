@@ -1,6 +1,12 @@
 import React, { useId, useState } from "react";
 import Icon from "./Icons.jsx";
 import BodyMap from "./BodyMap.jsx";
+import LowerBodyMap from "./LowerBodyMap.jsx";
+import {
+  bodyOptionsFor,
+  areaFromAnswer,
+  areaSummary,
+} from "./lowerBodyModel.js";
 import {
   normalizeOptions,
   parseGuidedAnswer,
@@ -44,13 +50,27 @@ export default function GuidedField({
   const [showDetails, setShowDetails] = useState(false);
   const [error, setError] = useState("");
   const presentation = field.presentation;
-  const options = normalizeOptions(presentation?.options);
+  const isLowerBody =
+    presentation?.kind === "body_map" && presentation.illustration === "legs";
+  const options = normalizeOptions(bodyOptionsFor(presentation));
   const guided =
     ["choices", "body_map", "scale"].includes(presentation?.kind) &&
     options.length > 0;
-  const parsed = guided
+  const rawParsed = guided
     ? parseGuidedAnswer(answer.value, options)
     : { selected: [], details: answer.value };
+  const parsed =
+    isLowerBody &&
+    rawParsed.selected.length &&
+    !areaFromAnswer(rawParsed.selected)
+      ? {
+          ...rawParsed,
+          selected: [],
+          details: [...rawParsed.selected, rawParsed.details]
+            .filter(Boolean)
+            .join("\n"),
+        }
+      : rawParsed;
   const update = (next) => {
     const value = serializeGuidedAnswer(next);
     if (value.length > 6000) {
@@ -104,15 +124,26 @@ export default function GuidedField({
       onFocus={onFocus}
     >
       <p className="guided-field-helper" id={helperId}>
-        {presentation.helper ||
+        {(isLowerBody
+          ? "Choose one area. You can add details in your own words."
+          : presentation.helper) ||
           (presentation.multiple
             ? "Select all that fit. You can add details in your own words."
             : "Choose one, or add your answer in your own words.")}
       </p>
       <div
-        className={`guided-options-layout ${presentation.kind === "body_map" ? "with-body-map" : ""}`}
+        className={`guided-options-layout ${presentation.kind === "body_map" && !isLowerBody ? "with-body-map" : ""}`}
       >
-        {presentation.kind === "body_map" && (
+        {isLowerBody && (
+          <LowerBodyMap
+            value={areaFromAnswer(parsed.selected)}
+            disabled={disabled}
+            onChange={(area) =>
+              update({ ...parsed, selected: area ? [areaSummary(area)] : [] })
+            }
+          />
+        )}
+        {presentation.kind === "body_map" && !isLowerBody && (
           <BodyMap
             illustration={presentation.illustration}
             options={options}
@@ -122,65 +153,67 @@ export default function GuidedField({
             label={field.label || field.question}
           />
         )}
-        <div className="guided-choice-panel">
-          {presentation.kind === "body_map" && (
-            <span className="guided-choice-label">Choose locations</span>
-          )}
-          <div
-            className={`answer-choices ${presentation.kind === "scale" ? "answer-scale" : ""}`}
-            role="group"
-            aria-labelledby={`${inputId}-question`}
-            aria-describedby={helperId}
-          >
-            {options.map((option) => {
-              const selected = parsed.selected.includes(option.value);
-              const icon = choiceIcon(field, option);
-              return (
+        {!isLowerBody && (
+          <div className="guided-choice-panel">
+            {presentation.kind === "body_map" && (
+              <span className="guided-choice-label">Choose locations</span>
+            )}
+            <div
+              className={`answer-choices ${presentation.kind === "scale" ? "answer-scale" : ""}`}
+              role="group"
+              aria-labelledby={`${inputId}-question`}
+              aria-describedby={helperId}
+            >
+              {options.map((option) => {
+                const selected = parsed.selected.includes(option.value);
+                const icon = choiceIcon(field, option);
+                return (
+                  <button
+                    type="button"
+                    key={option.value}
+                    className={`answer-choice ${selected ? "selected" : ""}`}
+                    aria-pressed={selected}
+                    onClick={() => select(option.value)}
+                    disabled={disabled}
+                  >
+                    {icon && (
+                      <span className="answer-choice-icon">
+                        <Icon name={icon} size={19} />
+                      </span>
+                    )}
+                    <span>{option.label}</span>
+                    <span
+                      className={`answer-choice-mark ${presentation.multiple ? "multiple" : "single"}`}
+                      aria-hidden="true"
+                    >
+                      {selected && <Icon name="check" size={13} />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="guided-choice-footer" aria-live="polite">
+              {parsed.selected.length ? (
+                <span>
+                  {parsed.selected.length}{" "}
+                  {parsed.selected.length === 1 ? "option" : "options"} selected
+                </span>
+              ) : (
+                <span>No selection yet</span>
+              )}
+              {parsed.selected.length > 0 && (
                 <button
                   type="button"
-                  key={option.value}
-                  className={`answer-choice ${selected ? "selected" : ""}`}
-                  aria-pressed={selected}
-                  onClick={() => select(option.value)}
+                  className="guided-clear"
+                  onClick={() => update({ ...parsed, selected: [] })}
                   disabled={disabled}
                 >
-                  {icon && (
-                    <span className="answer-choice-icon">
-                      <Icon name={icon} size={19} />
-                    </span>
-                  )}
-                  <span>{option.label}</span>
-                  <span
-                    className={`answer-choice-mark ${presentation.multiple ? "multiple" : "single"}`}
-                    aria-hidden="true"
-                  >
-                    {selected && <Icon name="check" size={13} />}
-                  </span>
+                  Clear selections
                 </button>
-              );
-            })}
+              )}
+            </div>
           </div>
-          <div className="guided-choice-footer" aria-live="polite">
-            {parsed.selected.length ? (
-              <span>
-                {parsed.selected.length}{" "}
-                {parsed.selected.length === 1 ? "option" : "options"} selected
-              </span>
-            ) : (
-              <span>No selection yet</span>
-            )}
-            {parsed.selected.length > 0 && (
-              <button
-                type="button"
-                className="guided-clear"
-                onClick={() => update({ ...parsed, selected: [] })}
-                disabled={disabled}
-              >
-                Clear selections
-              </button>
-            )}
-          </div>
-        </div>
+        )}
       </div>
       <div className="guided-custom-answer">
         {expanded ? (
