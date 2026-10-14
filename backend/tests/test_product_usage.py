@@ -119,3 +119,118 @@ def test_track_times_the_call_and_keeps_the_exception():
 def test_recording_never_raises_even_if_the_table_is_unusable(monkeypatch):
     monkeypatch.setattr(usage, "init_usage_table", lambda: (_ for _ in ()).throw(OSError("disk")))
     usage.record(purpose=usage.EXTRACTION, model="m1")  # must not raise
+
+
+# --- regressions from the PR 26 review ---------------------------------
+# The review found four defects that the original tests could not catch,
+# because they only exercised the accounting helpers in isolation. These
+# drive the provider code paths instead.
+
+
+def _ok_response(input_tokens=100, output_tokens=20, cached=0, status="completed", text='{"a": 1}'):
+    body = {
+        "status": status,
+        "usage": {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "input_tokens_details": {"cached_tokens": cached},
+        },
+        "output": [{"type": "message", "content": [{"type": "output_text", "text": text}]}],
+    }
+    return body
+
+
+class _FakeResponse:
+    def __init__(self, body, status_code=200, raises=False):
+        self._body = body
+        self.status_code = status_code
+        self._raises = raises
+
+    def json(self):
+        if self._raises:
+            raise ValueError("not json")
+        return self._body
+
+
+def _extract(monkeypatch, response):
+    """Run the real extraction provider against a canned HTTP response."""
+    from app.product import provider
+
+    monkeypatch.setattr(provider.httpx, "post", lambda *a, **k: response)
+    monkeypatch.setattr(
+        provider, "get_settings",
+        lambda: type("S", (), {"openai_api_key": "k", "openai_base_url": "https://x"})(),
+    )
+    session = {"id": "intake-x", "model": "m1", "concerns": [], "shared_slots": {}}
+    try:
+        provider.OpenAIProvider().extract(session, "hello")
+    except Exception:
+        pass
+
+
+def test_finding3_incomplete_output_is_recorded_as_a_failure(monkeypatch):
+    # HTTP 200 with status != completed is not a success, but its tokens were spent.
+    _extract(monkeypatch, _FakeResponse(_ok_response(status="incomplete")))
+    summary = usage.usage_for_intake("intake-x")
+    assert summary["calls"] == 1
+    assert summary["failed_calls"] == 1
+    assert summary["input_tokens"] == 100  # tokens retained, not discarded
+
+
+def test_finding3_unparseable_body_still_produces_a_record(monkeypatch):
+    # Previously this raised before the record was written, so the call vanished.
+    _extract(monkeypatch, _FakeResponse(None, raises=True))
+    summary = usage.usage_for_intake("intake-x")
+    assert summary["calls"] == 1 and summary["failed_calls"] == 1
+
+
+def test_finding3_usable_output_is_recorded_as_success(monkeypatch):
+    _extract(monkeypatch, _FakeResponse(_ok_response(
+        text='{"new_concerns": [], "facts": [], "signals": [], "items": [], "priority_order": []}')))
+    summary = usage.usage_for_intake("intake-x")
+    assert summary["calls"] == 1 and summary["failed_calls"] == 0
+
+
+def test_finding4_cached_input_is_priced_at_the_cached_rate(monkeypatch):
+    # The review's figures: 10k input of which 9k cached, 100 output.
+    monkeypatch.setenv("MODEL_PRICES_AUD", json.dumps(
+        {"m1": {"input": 1.0, "output": 1.0, "cached_input": 0.10}}))
+    assert usage.cost_aud("m1", 10_000, 100, 9_000) == 0.002
+
+
+def test_finding4_cached_tokens_without_a_cached_rate_are_not_charged_as_fresh(monkeypatch):
+    monkeypatch.setenv("MODEL_PRICES_AUD", json.dumps({"m1": {"input": 1.0, "output": 1.0}}))
+    # Overcharging silently is worse than admitting the rate is unknown.
+    assert usage.cost_aud("m1", 10_000, 100, 9_000) is None
+    # A call with no cache hits is unaffected.
+    assert usage.cost_aud("m1", 10_000, 100, 0) == 0.0101
+
+
+def test_finding4_cached_breakdown_survives_into_the_summary():
+    usage.record(purpose=usage.EXTRACTION, model="m1", input_tokens=10_000,
+                 output_tokens=100, cached_input_tokens=9_000, intake_id="intake-cache")
+    summary = usage.usage_for_intake("intake-cache")
+    assert summary["cached_input_tokens"] == 9_000
+    assert summary["by_model"]["m1"]["cached_input_tokens"] == 9_000
+
+
+def test_finding4_a_nonsense_cached_count_cannot_exceed_the_input_total():
+    assert usage.token_breakdown(
+        {"usage": {"input_tokens": 100, "output_tokens": 1,
+                   "input_tokens_details": {"cached_tokens": 999}}}
+    )["cached_input_tokens"] == 100
+
+
+def test_finding1_every_purpose_constant_is_actually_used():
+    # The constants were documented as covered while nothing emitted them.
+    import pathlib
+
+    source = " ".join(
+        path.read_text()
+        for path in pathlib.Path("app/product").glob("*.py")
+        if path.name != "usage.py"
+    )
+    for constant in (usage.EXTRACTION, usage.ASSESSMENT, usage.INTELLIGENCE,
+                     usage.TRANSCRIPTION, usage.IMAGE):
+        name = constant.upper()
+        assert f"usage.{name}" in source, f"{constant} is documented but never recorded"

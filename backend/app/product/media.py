@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 from uuid import uuid4
 
+import time
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Response
 from fastapi.responses import FileResponse
@@ -14,6 +16,7 @@ from PIL import Image, UnidentifiedImageError
 from pypdf import PdfReader
 
 from .auth import require_user, csrf_protect, check_rate_limit
+from . import usage
 from .config import get_settings
 from .database import load_intake, mutate_intake, utc_now
 
@@ -182,6 +185,9 @@ async def transcribe(request: Request, file: UploadFile = File(...), user=Depend
     check_rate_limit(request, 'voice_transcription', user['email'])
     data = await read_limited(file, settings.max_upload_bytes)
     extension = {'audio/mp4':'.m4a','video/mp4':'.mp4','audio/mpeg':'.mp3','audio/wav':'.wav','audio/x-wav':'.wav','audio/ogg':'.ogg'}.get(media_type, '.webm')
+    started = time.perf_counter()
+    body = None
+    usable = False
     try:
         async with httpx.AsyncClient(timeout=90) as client:
             result = await client.post(settings.openai_base_url.rstrip('/') + '/audio/transcriptions',
@@ -190,14 +196,22 @@ async def transcribe(request: Request, file: UploadFile = File(...), user=Depend
                 files={'file': ('recording' + extension, data, media_type)})
         if result.status_code != 200:
             raise provider_error(result.status_code)
-        text = result.json().get('text', '')
+        body = result.json()
+        text = body.get('text', '')
         if not isinstance(text, str) or not text.strip():
             raise HTTPException(422, 'No speech was detected. Please try again.')
+        usable = True
         return {'text': text[:16000]}
     except (ValueError, TypeError, AttributeError, KeyError):
         raise HTTPException(502, 'The transcription service returned an invalid response. Please try again.') from None
     except httpx.HTTPError:
         raise HTTPException(502, 'Voice transcription is temporarily unreachable. Your recording was not saved.') from None
+    finally:
+        # Transcription isn't tied to one preparation, so it has no intake id;
+        # it still counts towards what the product costs to run.
+        usage.record(purpose=usage.TRANSCRIPTION, model=settings.openai_transcription_model,
+                     latency_ms=int((time.perf_counter() - started) * 1000),
+                     failed=not usable, **usage.token_breakdown(body))
 
 
 @router.post('/intakes/{intake_id}/attachments/{attachment_id}/analyze')
@@ -213,6 +227,9 @@ async def analyze(intake_id: str, attachment_id: str, request: Request, user=Dep
     data_url = f"data:{attachment['media_type']};base64,{encoded}"
     content = ({'type': 'input_file', 'filename': attachment['filename'], 'file_data': data_url}
                if attachment['media_type'] == 'application/pdf' else {'type': 'input_image', 'image_url': data_url})
+    started = time.perf_counter()
+    payload = None
+    usable = False
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             result = await client.post(settings.openai_base_url.rstrip('/') + '/responses',
@@ -226,8 +243,13 @@ async def analyze(intake_id: str, attachment_id: str, request: Request, user=Dep
         text = '\n'.join(c.get('text','') for o in payload.get('output',[]) for c in o.get('content',[]) if c.get('type') == 'output_text')
         if payload.get('status') == 'incomplete' or not text.strip():
             raise HTTPException(502, 'Document reading did not finish. Please retry or describe the file yourself.')
+        usable = True
         return {'text': text[:16000], 'model': intake['model'], 'attachment_id': attachment_id}
     except (ValueError, TypeError, AttributeError, KeyError):
         raise HTTPException(502, 'The document service returned an invalid response. Please try again.') from None
     except httpx.HTTPError:
         raise HTTPException(502, 'Document reading is temporarily unreachable. Your uploaded file is still available.') from None
+    finally:
+        usage.record(purpose=usage.IMAGE, model=intake['model'], intake_id=intake.get('id'),
+                     latency_ms=int((time.perf_counter() - started) * 1000),
+                     failed=not usable, **usage.token_breakdown(payload))

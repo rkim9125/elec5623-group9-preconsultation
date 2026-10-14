@@ -171,21 +171,28 @@ class OpenAIProvider:
             usage.record(purpose=usage.EXTRACTION, model=session['model'],
                          latency_ms=_elapsed_ms(), intake_id=session.get('id'), failed=True)
             raise ProviderUnavailable(message)
+        result = None
+        usable = False
         try:
             result = response.json()
-            tokens_in, tokens_out = usage.tokens_from_response(result)
-            usage.record(purpose=usage.EXTRACTION, model=session['model'],
-                         input_tokens=tokens_in, output_tokens=tokens_out,
-                         latency_ms=_elapsed_ms(), intake_id=session.get('id'))
             if result.get('status') != 'completed':
                 raise ProviderUnavailable('OpenAI did not complete extraction. Your message is saved; no incomplete output was accepted.')
             output_text = ''.join(part['text'] for item in result.get('output', []) if item.get('type') == 'message' for part in item.get('content', []) if part.get('type') == 'output_text')
             data = json.loads(output_text)
             if not isinstance(data, dict) or not all(isinstance(data.get(k), list) for k in ('new_concerns', 'facts', 'signals', 'items', 'priority_order')):
                 raise ValueError('Invalid extraction shape')
+            usable = True
             return data
         except (ValueError, KeyError, TypeError) as exc:
             raise ProviderUnavailable('OpenAI returned an unusable extraction. Your message is saved; no unsupported facts were accepted.') from exc
+        finally:
+            # HTTP 200 is not success: an incomplete, refused or unparseable
+            # body still consumed tokens and still failed the caller. Record
+            # once here so both facts survive.
+            usage.record(purpose=usage.EXTRACTION, model=session['model'],
+                         latency_ms=_elapsed_ms(), intake_id=session.get('id'),
+                         failed=not usable,
+                         **usage.token_breakdown(result))
 
 
 def get_provider() -> ExtractionProvider:

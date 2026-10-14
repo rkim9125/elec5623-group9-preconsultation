@@ -16,12 +16,19 @@ call now writes one row to `model_usage`:
 | `purpose` | `extraction`, `assessment`, `transcription`, `image`, `intelligence` |
 | `model` | The model actually used |
 | `input_tokens` / `output_tokens` | From the provider's own `usage` block |
+| `cached_input_tokens` | The cached portion of `input_tokens`, billed at a lower rate |
 | `latency_ms` | Measured wall-clock time for the call |
 | `failed` | Timeouts and rejected calls are recorded, not dropped |
 
-Failed calls are kept deliberately. A timeout still consumed wall-clock time and
-sometimes tokens; excluding them would make the cost picture look better than
-reality.
+Instrumented call sites: extraction, AI assessment (including each
+per-attachment read), planning, factual synthesis, audio transcription and
+attachment analysis.
+
+A record is written **once per attempt, after the outcome is known**. HTTP 200
+is not success — an incomplete, refused or unparseable body still consumed
+tokens and still failed the caller, so it is recorded with `failed = 1` and its
+token counts retained. Timeouts and rejected calls are recorded too; excluding
+them would make the cost picture look better than reality.
 
 ## Cost is configured, never guessed
 
@@ -30,8 +37,12 @@ card, which changes and which nothing in this codebase can know. Rates come from
 `MODEL_PRICES_AUD`, in AUD per 1,000,000 tokens:
 
 ```bash
-MODEL_PRICES_AUD={"gpt-6-sol": {"input": 1.25, "output": 10.00}}
+MODEL_PRICES_AUD={"gpt-6-sol": {"input": 1.25, "output": 10.00, "cached_input": 0.13}}
 ```
+
+`cached_input` is optional. If a call used cached input and no cached rate is
+configured, the cost is `null` rather than charging cache hits at the full input
+rate — silently overcharging is worse than admitting the rate is unknown.
 
 A model with no configured rate reports its token counts with `cost_aud: null`.
 That is "no rate configured", not "free". If *any* model in a total is unpriced,

@@ -42,6 +42,7 @@ def init_usage_table() -> None:
                 model TEXT NOT NULL,
                 input_tokens INTEGER NOT NULL DEFAULT 0,
                 output_tokens INTEGER NOT NULL DEFAULT 0,
+                cached_input_tokens INTEGER NOT NULL DEFAULT 0,
                 latency_ms INTEGER NOT NULL DEFAULT 0,
                 failed INTEGER NOT NULL DEFAULT 0,
                 happened_at TEXT NOT NULL
@@ -49,6 +50,12 @@ def init_usage_table() -> None:
             CREATE INDEX IF NOT EXISTS usage_intake ON model_usage(intake_id);
             """
         )
+        # Databases created before cached-input accounting need the column too.
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(model_usage)")}
+        if "cached_input_tokens" not in columns:
+            conn.execute(
+                "ALTER TABLE model_usage ADD COLUMN cached_input_tokens INTEGER NOT NULL DEFAULT 0"
+            )
 
 
 def _prices() -> dict[str, dict[str, float]]:
@@ -69,45 +76,93 @@ def _prices() -> dict[str, dict[str, float]]:
 
 
 def configured_rate(model: str) -> dict[str, float] | None:
+    """`cached_input` is optional; without it, cached tokens are not priced."""
     rate = _prices().get(model)
     if not isinstance(rate, dict):
         return None
     try:
-        return {"input": float(rate["input"]), "output": float(rate["output"])}
+        resolved = {"input": float(rate["input"]), "output": float(rate["output"])}
     except (KeyError, TypeError, ValueError):
         return None
+    if "cached_input" in rate:
+        try:
+            resolved["cached_input"] = float(rate["cached_input"])
+        except (TypeError, ValueError):
+            return None
+    return resolved
 
 
-def cost_aud(model: str, input_tokens: int, output_tokens: int) -> float | None:
-    """None means "no rate configured for this model", never "free"."""
+def cost_aud(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cached_input_tokens: int = 0,
+) -> float | None:
+    """None means "cannot price this", never "free".
+
+    Cached input is billed at its own rate. If a call used cached input but the
+    model has no `cached_input` rate configured, this returns None rather than
+    charging cache hits at the full input rate — silently overcharging is worse
+    than admitting the rate is unknown.
+    """
     rate = configured_rate(model)
     if rate is None:
         return None
-    return round(
-        (input_tokens * rate["input"] + output_tokens * rate["output"]) / 1_000_000, 6
-    )
+    cached = min(max(0, cached_input_tokens), input_tokens)
+    if cached and "cached_input" not in rate:
+        return None
+    fresh = input_tokens - cached
+    total = fresh * rate["input"] + cached * rate.get("cached_input", 0.0)
+    total += output_tokens * rate["output"]
+    return round(total / 1_000_000, 6)
 
 
 def tokens_from_response(payload: object) -> tuple[int, int]:
-    """Pull input/output tokens out of an OpenAI response body.
+    """Total input and output tokens. Kept for callers that don't need detail."""
+    breakdown = token_breakdown(payload)
+    return breakdown["input_tokens"], breakdown["output_tokens"]
+
+
+def token_breakdown(payload: object) -> dict[str, int]:
+    """Input/output tokens plus the cached-input split.
+
+    Cached input is billed at a lower rate than fresh input, so collapsing them
+    into one number makes a cached request look more expensive than it was —
+    and the detail can't be recovered afterwards. `input_tokens` stays the
+    provider's total; `cached_input_tokens` is the part of it that was cached.
 
     Tolerant on purpose — usage accounting must never break a working feature,
-    so an unexpected shape records zeros rather than raising.
+    so an unexpected shape yields zeros rather than raising.
     """
+    empty = {"input_tokens": 0, "output_tokens": 0, "cached_input_tokens": 0}
     if not isinstance(payload, dict):
-        return 0, 0
+        return empty
     usage = payload.get("usage")
     if not isinstance(usage, dict):
-        return 0, 0
+        return empty
 
-    def read(*names: str) -> int:
+    def read(source: dict, *names: str) -> int:
         for name in names:
-            value = usage.get(name)
-            if isinstance(value, (int, float)):
-                return int(value)
+            value = source.get(name)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                return max(0, int(value))
         return 0
 
-    return read("input_tokens", "prompt_tokens"), read("output_tokens", "completion_tokens")
+    details = usage.get("input_tokens_details")
+    details = details if isinstance(details, dict) else {}
+    total_input = read(usage, "input_tokens", "prompt_tokens")
+    cached = read(details, "cached_tokens")
+    if not cached:
+        # chat/completions reports it as prompt_tokens_details.cached_tokens
+        prompt_details = usage.get("prompt_tokens_details")
+        if isinstance(prompt_details, dict):
+            cached = read(prompt_details, "cached_tokens")
+    return {
+        "input_tokens": total_input,
+        "output_tokens": read(usage, "output_tokens", "completion_tokens"),
+        # Never let a malformed cached count exceed the total it is part of.
+        "cached_input_tokens": min(cached, total_input),
+    }
 
 
 def record(
@@ -116,6 +171,7 @@ def record(
     model: str,
     input_tokens: int = 0,
     output_tokens: int = 0,
+    cached_input_tokens: int = 0,
     latency_ms: int = 0,
     intake_id: str | None = None,
     failed: bool = False,
@@ -126,8 +182,8 @@ def record(
         with get_connection() as conn:
             conn.execute(
                 "INSERT INTO model_usage (id, intake_id, purpose, model, input_tokens,"
-                " output_tokens, latency_ms, failed, happened_at)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " output_tokens, cached_input_tokens, latency_ms, failed, happened_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     uuid4().hex,
                     intake_id,
@@ -135,6 +191,7 @@ def record(
                     model,
                     max(0, int(input_tokens)),
                     max(0, int(output_tokens)),
+                    min(max(0, int(cached_input_tokens)), max(0, int(input_tokens))),
                     max(0, int(latency_ms)),
                     1 if failed else 0,
                     utc_now(),
@@ -165,15 +222,16 @@ def track(purpose: str, model: str, intake_id: str | None = None):
         failed = True
         raise
     finally:
-        input_tokens, output_tokens = tokens_from_response(entry.get("response"))
+        breakdown = token_breakdown(entry.get("response"))
         record(
             purpose=purpose,
             model=model,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
             latency_ms=int((time.perf_counter() - started) * 1000),
             intake_id=intake_id,
-            failed=failed,
+            # A call that returned HTTP 200 but no usable output still failed,
+            # and its tokens were still spent — keep both facts.
+            failed=failed or bool(entry.get("failed")),
+            **breakdown,
         )
 
 
@@ -182,17 +240,22 @@ def _summarise(rows: list) -> dict:
     by_model: dict[str, dict] = {}
     for call in calls:
         bucket = by_model.setdefault(
-            call["model"], {"calls": 0, "input_tokens": 0, "output_tokens": 0}
+            call["model"],
+            {"calls": 0, "input_tokens": 0, "output_tokens": 0, "cached_input_tokens": 0},
         )
         bucket["calls"] += 1
         bucket["input_tokens"] += call["input_tokens"]
         bucket["output_tokens"] += call["output_tokens"]
+        bucket["cached_input_tokens"] += call["cached_input_tokens"]
 
     total_cost = 0.0
     priced = True
     for model, bucket in by_model.items():
         bucket["cost_aud"] = cost_aud(
-            model, bucket["input_tokens"], bucket["output_tokens"]
+            model,
+            bucket["input_tokens"],
+            bucket["output_tokens"],
+            bucket["cached_input_tokens"],
         )
         if bucket["cost_aud"] is None:
             priced = False
@@ -208,6 +271,7 @@ def _summarise(rows: list) -> dict:
         "failed_calls": sum(1 for call in calls if call["failed"]),
         "input_tokens": sum(call["input_tokens"] for call in calls),
         "output_tokens": sum(call["output_tokens"] for call in calls),
+        "cached_input_tokens": sum(call["cached_input_tokens"] for call in calls),
         "latency_ms_total": sum(call["latency_ms"] for call in calls),
         "by_model": by_model,
         "by_purpose": by_purpose,

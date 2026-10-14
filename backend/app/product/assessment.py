@@ -363,11 +363,10 @@ class OpenAIAssessment:
             _failed()
             raise HTTPException(503 if response.status_code in {401, 403, 404, 429} else 502,
                                 message + ' Your preparation remains saved; no other model was substituted.')
+        body = None
+        usable = False
         try:
             body = response.json()
-            tokens_in, tokens_out = usage.tokens_from_response(body)
-            usage.record(purpose=usage.ASSESSMENT, model=model, input_tokens=tokens_in,
-                         output_tokens=tokens_out, latency_ms=_elapsed_ms(), intake_id=intake_id)
             if body.get('status') != 'completed':
                 raise ValueError('incomplete')
             parts = [part for item in body.get('output', []) if item.get('type') == 'message' for part in item.get('content', [])]
@@ -376,9 +375,16 @@ class OpenAIAssessment:
             result = json.loads(''.join(part.get('text', '') for part in parts if part.get('type') == 'output_text'))
             if not isinstance(result, dict):
                 raise ValueError('shape')
+            usable = True
             return result
         except (ValueError, TypeError, AttributeError, KeyError):
             raise HTTPException(502, 'AI could not complete a usable assessment. Your factual notes and files remain available.') from None
+        finally:
+            # HTTP 200 is not success: an incomplete, refused or unparseable
+            # body still consumed tokens and still failed the caller.
+            usage.record(purpose=usage.ASSESSMENT, model=model, latency_ms=_elapsed_ms(),
+                         intake_id=intake_id, failed=not usable,
+                         **usage.token_breakdown(body))
 
     @staticmethod
     def _file_content(file: dict) -> dict:
@@ -399,7 +405,8 @@ class OpenAIAssessment:
                 registry = {key: value for key, value in file.items() if key != 'data'}
                 registry['source_id'] = 'attachment_' + file['id']
                 result = self._request(model, [{'type': 'input_text', 'text': json.dumps(registry)}, self._file_content(file)],
-                                       AttachmentReview.model_json_schema(), 'attachment_observations', FILE_PROMPT, 2500)
+                                       AttachmentReview.model_json_schema(), 'attachment_observations', FILE_PROMPT, 2500,
+                                       intake_id=intake_id)
                 try:
                     review = AttachmentReview.model_validate(result).model_dump()
                 except (ValidationError, TypeError, ValueError):

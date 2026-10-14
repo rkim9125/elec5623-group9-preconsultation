@@ -398,7 +398,7 @@ def _plan(session: dict, intelligence: IntelligenceProvider) -> dict:
         return _finish_followup(session, 'Your baseline and optional details are ready. You can review your preparation notes now.')
     sources, concerns = current_sources(session), current_concerns(session)
     try:
-        plan = _run(session, 'planning', lambda: validate_plan(intelligence.plan(model=session['model'], sources=sources, concerns=concerns, targets=targets), sources, concerns, targets))
+        plan = _run(session, 'planning', lambda: validate_plan(intelligence.plan(model=session['model'], sources=sources, concerns=concerns, targets=targets, intake_id=session.get('id')), sources, concerns, targets))
     except IntelligenceUnavailable as exc:
         return _finish_followup(session, str(exc), 'unavailable')
     if plan.get('overview_fallback') and session.get('ai_activity'):
@@ -459,7 +459,7 @@ def _synthesize(session: dict, intelligence: IntelligenceProvider) -> dict:
         return session
     sources, concerns = current_sources(session), current_concerns(session)
     try:
-        result = _run(session, 'synthesis', lambda: validate_synthesis(intelligence.synthesize(model=session['model'], sources=sources, concerns=concerns), sources, concerns))
+        result = _run(session, 'synthesis', lambda: validate_synthesis(intelligence.synthesize(model=session['model'], sources=sources, concerns=concerns, intake_id=session.get('id')), sources, concerns))
         summary['synthesis'] = {'status': 'live', 'model': session['model'], 'generated_at': engine._now(),
                                 **result, 'sources': sources,
                                 'message': 'Review the English wording and any translations against your original source details before sharing.'}

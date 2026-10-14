@@ -12,8 +12,11 @@ import json
 import re
 from typing import Protocol
 
+import time
+
 import httpx
 
+from . import usage
 from .config import get_settings
 
 
@@ -22,8 +25,10 @@ class IntelligenceUnavailable(RuntimeError):
 
 
 class IntelligenceProvider(Protocol):
-    def plan(self, *, model: str, sources: list[dict], concerns: list[dict], targets: list[dict]) -> dict: ...
-    def synthesize(self, *, model: str, sources: list[dict], concerns: list[dict]) -> dict: ...
+    def plan(self, *, model: str, sources: list[dict], concerns: list[dict], targets: list[dict],
+             intake_id: str | None = None) -> dict: ...
+    def synthesize(self, *, model: str, sources: list[dict], concerns: list[dict],
+                   intake_id: str | None = None) -> dict: ...
 
 
 def _obj(properties: dict) -> dict:
@@ -277,7 +282,8 @@ def validate_synthesis(data: dict, sources: list[dict], concerns: list[dict]) ->
 
 
 class OpenAIIntelligence:
-    def _request(self, model: str, prompt: str, data: dict, schema: dict, name: str, max_output: int) -> dict:
+    def _request(self, model: str, prompt: str, data: dict, schema: dict, name: str, max_output: int,
+                 intake_id: str | None = None) -> dict:
         settings = get_settings()
         if not settings.openai_api_key:
             raise IntelligenceUnavailable('OpenAI is not configured. Your structured notes are saved; you can review them or retry later.')
@@ -285,19 +291,33 @@ class OpenAIIntelligence:
                    'input': json.dumps(data, ensure_ascii=False),
                    'text': {'format': {'type': 'json_schema', 'name': name, 'schema': schema, 'strict': True}},
                    'max_output_tokens': max_output}
+        started = time.perf_counter()
+
+        def _elapsed_ms() -> int:
+            return int((time.perf_counter() - started) * 1000)
+
+        def _failed() -> None:
+            usage.record(purpose=usage.INTELLIGENCE, model=model, latency_ms=_elapsed_ms(),
+                         intake_id=intake_id, failed=True)
+
         try:
             response = httpx.post(f"{settings.openai_base_url.rstrip('/')}/responses",
                                   headers={'Authorization': f'Bearer {settings.openai_api_key}'},
                                   json=payload, timeout=httpx.Timeout(75.0, connect=10.0))
         except httpx.TimeoutException as exc:
+            _failed()
             raise IntelligenceUnavailable('OpenAI timed out. Your structured notes are saved; retry AI or continue to review.') from exc
         except httpx.HTTPError as exc:
+            _failed()
             raise IntelligenceUnavailable('OpenAI could not be reached. Your structured notes are saved; retry AI or continue to review.') from exc
         if response.status_code != 200:
             messages = {401: 'OpenAI rejected the configured API key.', 403: 'OpenAI access was denied for this project.',
                         404: f'The selected model {model} is unavailable for this project.',
                         429: 'OpenAI quota or rate limit was reached.'}
+            _failed()
             raise IntelligenceUnavailable(messages.get(response.status_code, f'OpenAI returned an error ({response.status_code}).') + ' Your notes are saved. No other model was substituted.')
+        body = None
+        usable = False
         try:
             body = response.json()
             if not isinstance(body, dict) or body.get('status') != 'completed':
@@ -307,17 +327,25 @@ class OpenAIIntelligence:
             result = json.loads(text)
             if not isinstance(result, dict):
                 raise ValueError('invalid shape')
+            usable = True
             return result
         except (ValueError, KeyError, TypeError) as exc:
             raise IntelligenceUnavailable('OpenAI returned incomplete or unusable output. Your structured notes remain available.') from exc
+        finally:
+            usage.record(purpose=usage.INTELLIGENCE, model=model, latency_ms=_elapsed_ms(),
+                         intake_id=intake_id, failed=not usable,
+                         **usage.token_breakdown(body))
 
-    def plan(self, *, model: str, sources: list[dict], concerns: list[dict], targets: list[dict]) -> dict:
+    def plan(self, *, model: str, sources: list[dict], concerns: list[dict], targets: list[dict],
+             intake_id: str | None = None) -> dict:
         schema = _obj({'target_id': {'type': ['string', 'null'], 'enum': [t['target_id'] for t in targets] + [None]},
                        'overview': _CITED, 'rationale': _STRING, 'suggested_concern_ids': _arr(_STRING)})
-        return self._request(model, _PLAN_PROMPT, {'sources': sources, 'concerns': concerns, 'eligible_targets': targets}, schema, 'preparation_followup_plan', 4000)
+        return self._request(model, _PLAN_PROMPT, {'sources': sources, 'concerns': concerns, 'eligible_targets': targets}, schema, 'preparation_followup_plan', 4000, intake_id=intake_id)
 
-    def synthesize(self, *, model: str, sources: list[dict], concerns: list[dict]) -> dict:
-        return self._request(model, _SYNTHESIS_PROMPT, {'sources': sources, 'concerns': concerns}, SYNTHESIS_SCHEMA, 'preparation_synthesis', min(16000, 6500 + max(0, len(concerns) - 3) * 400))
+    def synthesize(self, *, model: str, sources: list[dict], concerns: list[dict],
+                   intake_id: str | None = None) -> dict:
+        return self._request(model, _SYNTHESIS_PROMPT, {'sources': sources, 'concerns': concerns}, SYNTHESIS_SCHEMA, 'preparation_synthesis', min(16000, 6500 + max(0, len(concerns) - 3) * 400),
+                             intake_id=intake_id)
 
 
 def get_intelligence() -> IntelligenceProvider:
