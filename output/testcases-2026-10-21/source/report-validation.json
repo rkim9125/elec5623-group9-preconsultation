@@ -1,0 +1,21 @@
+{
+  "outputs": [
+    {
+      "file": "case01/medical-exam.pdf",
+      "pages": 1,
+      "bytes": 101621,
+      "text_checks": "passed",
+      "visual_review": "passed for every page"
+    },
+    {
+      "file": "case02/checkup-and-bp-log.pdf",
+      "pages": 2,
+      "bytes": 104465,
+      "text_checks": "passed",
+      "visual_review": "passed for every page"
+    }
+  ],
+  "rendered_pages": 3,
+  "canonical_data": "report-data.json",
+  "no_real_patient_data": true
+}

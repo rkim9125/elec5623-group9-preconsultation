@@ -1,0 +1,21 @@
+{
+  "file": "manual.pdf",
+  "pages": 12,
+  "bytes": 326215,
+  "canonical_source_sha256": "aeb8ee453dd394ccaf1565347748746441179fd8dd9c2fcf3648caaed80dad4c",
+  "canonical_text_checks": 170,
+  "canonical_text_result": "passed",
+  "changed_pages": [
+    1,
+    3
+  ],
+  "rendered_and_visually_rechecked_pages": [
+    1,
+    3
+  ],
+  "unchanged_page_texts_match_previous_pdf": true,
+  "visual_review": "Pages 1 and 3 re-rendered and inspected after the voice instruction update; no clipping or missing glyphs. All other page text is identical to the previously reviewed 12-page PDF.",
+  "source_edits": "Voice instructions only; all testcase facts unchanged.",
+  "application_actions": false,
+  "browser_tests_rerun": false
+}

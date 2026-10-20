@@ -16,14 +16,16 @@ from time import monotonic
 from typing import Literal
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .auth import check_rate_limit, csrf_protect, require_user
 from .config import get_settings
-from .database import load_intake, mutate_intake, utc_now
+from .database import load_intake, mutate_intake, utc_now, registered_doctors
 from .intelligence import current_concerns, current_sources
+from .locales import Locale, language_instruction, normalize_locale, prose_matches_locale
 from .media import TYPES, attachment_path
+from .report_copy import REPORT_LOCALIZATION_VERSION, report_text
 
 router = APIRouter(tags=['AI assessment'])
 
@@ -77,7 +79,7 @@ class AssessmentOutput(StrictModel):
     limitations: list[str] = Field(min_length=1, max_length=12)
 
 
-PROMPT = """Create an English AI diagnosis and consultation guidance report for BOTH the patient and their clinician.
+PROMPT = """Create an AI diagnosis and consultation guidance report for BOTH the patient and their clinician.
 You provide provisional clinical reasoning and possible explanations, NEVER a final or confirmed diagnosis.
 You are an AI, not the treating physician; there is no examination, verified vital signs, full history or live monitoring.
 Use all supplied current sources, concerns and every supplied attachment. Think across coexisting concerns,
@@ -112,7 +114,11 @@ Every patient-specific factual claim or hypothesis must cite directly relevant r
 General conditional advice may have empty source_ids; such guidance is your suggestion, not a finding established by a source.
 Each attachment_reviews entry must include exactly its registered attachment_id, filename and its attachment source ID.
 Include one review for EVERY supplied attachment. Evidence extraction notes, when supplied, are model observations, not verified facts.
-Use plain English, no HTML or Markdown. Keep the report useful and thorough without duplicating every form answer.
+Use the requested patient language (English by default), no HTML or Markdown. Keep the report useful and thorough without duplicating every form answer.
+Localize every generated value: overview, possible diagnosis names and explanations, supporting evidence, uncertainties,
+timeframe, reason, next steps, red flags, missing information, attachment findings and limitations.
+Translate symptom and disease names into the patient's language even when the source title is English.
+Original filenames, IDs, numeric values, units and unambiguous medication identities must remain unchanged.
 Return only the strict JSON schema. Be candid about uncertainty and the need for clinician judgment.
 """
 FILE_PROMPT = PROMPT + """\nFor this request, read only the one supplied attachment and return its AttachmentReview schema.
@@ -231,12 +237,42 @@ def _ready(session: dict) -> bool:
 
 def _authorize(session: dict | None, user: dict) -> dict:
     owner = session and user['role'] == 'patient' and session.get('patient_id') == user['id']
-    doctor = (session and user['role'] == 'doctor' and user['email'] in get_settings().doctor_emails
+    doctor = (session and user['role'] == 'doctor' and user['email'] in {doctor['email'] for doctor in registered_doctors()}
               and session.get('status') == 'approved' and session.get('doctor_email') == user['email']
               and bool((session.get('summary') or {}).get('approved_at')))
     if not owner and not doctor:
         raise HTTPException(404, 'Preparation not found.')
     return session
+
+
+def _fingerprint_context(session: dict, context: dict) -> dict:
+    """Bind stored facts and metadata, independently of presentation translations.
+
+    Pre-localization reports used original slot labels and concern titles. Keep
+    that exact shape so deploying a translated catalogue does not revoke an
+    approved report. Values, statuses, source IDs, locale, summary and attachment
+    content hashes remain in the fingerprint and retain all freshness checks.
+    """
+    canonical = deepcopy(context)
+    owners = {'session': session.get('shared_slots', {})}
+    owners.update({concern['id']: concern.get('slots', {}) for concern in session.get('concerns', [])})
+    profile_labels = {
+        'profile.date_of_birth': 'Date of birth (patient reported)',
+        'profile.sex_at_birth': 'Sex at birth (patient reported)',
+        'profile.blood_group': 'Blood group (patient reported)',
+        'profile.accessibility_needs': 'Communication and accessibility needs',
+        'profile.age_at_preparation': 'Age at preparation (calculated from patient-reported date of birth)',
+    }
+    for source in canonical['sources']:
+        key, owner = source['key'], source['concern_id']
+        slot = owners.get(owner, {}).get(key)
+        if slot is not None:
+            source['label'] = str(slot.get('label') or key)[:240]
+        elif owner == 'session' and key in profile_labels:
+            source['label'] = profile_labels[key]
+    canonical['concerns'] = [{'id': concern['id'], 'title': concern['title'], 'workflow_id': concern['workflow_id']}
+                             for concern in session.get('concerns', [])]
+    return canonical
 
 
 def assessment_input(session: dict, *, include_bytes: bool = True) -> tuple[dict, list[dict], str]:
@@ -264,7 +300,10 @@ def assessment_input(session: dict, *, include_bytes: bool = True) -> tuple[dict
                     'status': 'FILLED'} for item in registry)
     data = {'sources': sources, 'concerns': current_concerns(session),
             'factual_summary': _factual_summary(session), 'attachments': registry}
-    return data, files, hashlib.sha256(_canonical(data)).hexdigest()
+    # Keep pre-v3 English report fingerprints valid until their inputs change.
+    if session.get('locale'):
+        data['locale'] = session['locale']
+    return data, files, hashlib.sha256(_canonical(_fingerprint_context(session, data))).hexdigest()
 
 
 def public_report(session: dict) -> dict | None:
@@ -278,7 +317,35 @@ def public_report(session: dict) -> dict | None:
         return None
     if report.get('input_fingerprint') != fingerprint:
         return None
-    return deepcopy(report)
+    result = deepcopy(report)
+    locale = normalize_locale(session.get('locale'))
+    # A deployment must not rewrite a patient's approved clinical conclusions.
+    # Mark old reports for explicit regeneration; translate only server copy.
+    if (report.get('localization_version') != REPORT_LOCALIZATION_VERSION
+            or normalize_locale(report.get('locale')) != locale):
+        result['localization_outdated'] = True
+    result['limitations'] = [report_text(locale, 'disclaimer') if value == DISCLAIMER
+                            else report_text(locale, 'imaging_limitation') if value == IMAGING_LIMITATION
+                            else value for value in result.get('limitations', [])]
+    return result
+
+
+def _language_valid(result: dict, context: dict) -> bool:
+    """Check generated prose, excluding identifiers and immutable filenames."""
+    locale = normalize_locale(context.get('locale'))
+    # Drug identities with doses are proper names, not prose to translate.
+    source_text = ' '.join(str(source.get('value') or '') for source in context.get('sources', []))
+    drug_names = re.findall(r'\b([A-Za-z][a-z]{2,})\s+\d+(?:\.\d+)?\s*(?:mg|mcg)\b', source_text)
+    def check(value):
+        if isinstance(value, str):
+            return prose_matches_locale(value, locale, allow_terms=drug_names)
+        if isinstance(value, list):
+            return all(check(item) for item in value)
+        if isinstance(value, dict):
+            return all(check(item) for key, item in value.items()
+                       if key not in {'source_ids', 'attachment_id', 'filename', 'urgency', 'status'})
+        return True
+    return check({key: result[key] for key in AssessmentOutput.model_fields if key in result})
 
 
 def _validate(data: dict, context: dict) -> dict:
@@ -321,7 +388,11 @@ def _validate(data: dict, context: dict) -> dict:
             raise HTTPException(502, 'AI did not cite an attachment correctly. Please retry.')
         # The server owns original names; the model cannot relabel a file.
         review['filename'] = item['filename']
-    result['limitations'] = list(dict.fromkeys([DISCLAIMER, IMAGING_LIMITATION, *result['limitations']]))
+    if not _language_valid(result, context):
+        raise HTTPException(502, 'AI did not return the report in the patient language. Please retry; your existing notes are unchanged.')
+    locale = normalize_locale(context.get('locale'))
+    result['limitations'] = list(dict.fromkeys([report_text(locale, 'disclaimer'),
+                                               report_text(locale, 'imaging_limitation'), *result['limitations']]))
     return result
 
 
@@ -380,7 +451,7 @@ class OpenAIAssessment:
                 registry = {key: value for key, value in file.items() if key != 'data'}
                 registry['source_id'] = 'attachment_' + file['id']
                 result = self._request(model, [{'type': 'input_text', 'text': json.dumps(registry)}, self._file_content(file)],
-                                       AttachmentReview.model_json_schema(), 'attachment_observations', FILE_PROMPT, 2500)
+                                       AttachmentReview.model_json_schema(), 'attachment_observations', FILE_PROMPT + language_instruction(context.get('locale', 'en')), 2500)
                 try:
                     review = AttachmentReview.model_validate(result).model_dump()
                 except (ValidationError, TypeError, ValueError):
@@ -393,11 +464,24 @@ class OpenAIAssessment:
                 observations = list(pool.map(read, files))
             content.append({'type': 'input_text', 'text': json.dumps({'attachment_observations': observations,
                 'note': 'Each original was read separately due to total file size. These are unverified AI observations.'}, ensure_ascii=False)})
-        return self._request(model, content, AssessmentOutput.model_json_schema(), 'provisional_clinical_assessment', PROMPT, 16000)
+        prompt = PROMPT + language_instruction(context.get('locale', 'en'))
+        result = self._request(model, content, AssessmentOutput.model_json_schema(), 'provisional_clinical_assessment', prompt, 16000)
+        if not _language_valid(result, context):
+            # A bounded repair from the same evidence, never a silent English
+            # fallback or a second model. Full structural/citation validation
+            # still runs before anything is saved.
+            result = self._request(model, content, AssessmentOutput.model_json_schema(), 'provisional_clinical_assessment',
+                prompt + '\nA previous attempt used the wrong language. Recreate every generated report field in the selected patient language. Preserve IDs, filenames, numbers and units.', 16000)
+        return result
 
 
 def get_assessment_provider() -> OpenAIAssessment:
     return OpenAIAssessment()
+
+
+class ReportRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    locale: Locale | None = None
 
 
 @router.get('/intakes/{intake_id}/ai-report')
@@ -407,11 +491,24 @@ def get_report(intake_id: str, user=Depends(require_user)):
 
 
 @router.post('/intakes/{intake_id}/ai-report')
-def generate_report(intake_id: str, request: Request, user=Depends(require_user)):
+def generate_report(intake_id: str, request: Request, body: 'ReportRequest | None' = Body(default=None), user=Depends(require_user)):
     csrf_protect(request)
     session = _authorize(load_intake(intake_id), user)
     if not _ready(session):
         raise HTTPException(409, 'Complete and reconcile the preparation summary before generating an AI assessment.')
+    if body and body.locale and normalize_locale(body.locale) != normalize_locale(session.get('locale')):
+        if user['role'] != 'patient':
+            raise HTTPException(403, 'Only the patient can change the report language.')
+        if session.get('status') == 'approved':
+            raise HTTPException(409, 'Withdraw sharing and review the preparation before changing its language.')
+        def change_language(current):
+            _authorize(current, user)
+            if current.get('status') == 'approved' or current.get('revision') != session.get('revision'):
+                raise HTTPException(409, 'The preparation changed. Refresh and retry.')
+            from .routes import set_patient_locale
+            set_patient_locale(current, body.locale)
+        mutate_intake(intake_id, change_language)
+        session = _authorize(load_intake(intake_id), user)
     check_rate_limit(request, 'ai_assessment', user['email'])
     try:
         context, files, fingerprint = assessment_input(session)
@@ -420,7 +517,8 @@ def generate_report(intake_id: str, request: Request, user=Depends(require_user)
     started = monotonic()
     output = get_assessment_provider().generate(model=session['model'], context=context, files=files)
     result = _validate(output, context)
-    result.update(status='ready', model=session['model'], generated_at=utc_now(),
+    result.update(status='ready', model=session['model'], generated_at=utc_now(), locale=normalize_locale(session.get('locale')),
+                  localization_version=REPORT_LOCALIZATION_VERSION,
                   input_fingerprint=fingerprint, summary_version=session['summary']['version'], sources=context['sources'])
     latest = _authorize(load_intake(intake_id), user)
     if not _ready(latest):

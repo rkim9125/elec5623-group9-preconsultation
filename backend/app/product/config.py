@@ -55,7 +55,7 @@ def get_settings() -> Settings:
         db_path=Path(os.getenv("PRODUCT_DB_PATH", str(BACKEND_DIR / "data" / "product.sqlite3"))).expanduser().resolve(),
         upload_dir=Path(os.getenv("UPLOAD_DIR", str(BACKEND_DIR / "data" / "uploads"))).expanduser().resolve(),
         openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
-        openai_model=os.getenv("OPENAI_MODEL", "gpt-6-sol").strip(),
+        openai_model=os.getenv("OPENAI_MODEL", "gpt-6-astra").strip() or "gpt-6-astra",
         openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").strip(),
         openai_transcription_model=os.getenv("OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe").strip(),
         resend_api_key=os.getenv("RESEND_API_KEY", "").strip(),
@@ -67,5 +67,5 @@ def get_settings() -> Settings:
 def model_options() -> list[dict[str, str]]:
     """Actual availability is verified by the provider, never assumed by this menu."""
     configured = get_settings().openai_model
-    ids = list(dict.fromkeys([configured, "gpt-6-sol", "gpt-5.6-sol"]))
+    ids = list(dict.fromkeys([configured, "gpt-6-astra", "gpt-6-sol", "gpt-5.6-sol"]))
     return [{"id": model, "label": model} for model in ids]

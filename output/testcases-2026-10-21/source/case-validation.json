@@ -1,0 +1,133 @@
+{
+  "checked_at": "2026-10-21",
+  "scope": "Read-only source/material QA plus pure in-memory backend validation. No live app workflow, actual AI output, DB/env access, login/email, upload or sharing executed.",
+  "input_sha256": "5baed082e8d1472a0002aba6827acec9c7b419150e3c1a96d889e3983539d81b",
+  "checks": [
+    {
+      "name": "TC01 exact field order",
+      "passed": true,
+      "details": "11 steps"
+    },
+    {
+      "name": "TC01 all canonical choices and Chinese labels",
+      "passed": true
+    },
+    {
+      "name": "TC01 bilingual source questions",
+      "passed": true
+    },
+    {
+      "name": "TC01 readable answer serialization",
+      "passed": true
+    },
+    {
+      "name": "TC01 7 profile fields",
+      "passed": true
+    },
+    {
+      "name": "TC01 report identity",
+      "passed": true
+    },
+    {
+      "name": "TC01 uploads exist and under 10 MB",
+      "passed": true
+    },
+    {
+      "name": "TC01 backend in-memory save",
+      "passed": true,
+      "details": "PatientProfileInput and forms.apply_baseline(complete=True) passed; source order and exact saved values verified; no DB/network/provider invoked."
+    },
+    {
+      "name": "TC02 exact field order",
+      "passed": true,
+      "details": "9 steps"
+    },
+    {
+      "name": "TC02 all canonical choices and Chinese labels",
+      "passed": true
+    },
+    {
+      "name": "TC02 bilingual source questions",
+      "passed": true
+    },
+    {
+      "name": "TC02 readable answer serialization",
+      "passed": true
+    },
+    {
+      "name": "TC02 7 profile fields",
+      "passed": true
+    },
+    {
+      "name": "TC02 report identity",
+      "passed": true
+    },
+    {
+      "name": "TC02 uploads exist and under 10 MB",
+      "passed": true
+    },
+    {
+      "name": "TC02 backend in-memory save",
+      "passed": true,
+      "details": "PatientProfileInput and forms.apply_baseline(complete=True) passed; source order and exact saved values verified; no DB/network/provider invoked."
+    },
+    {
+      "name": "TC02 all 14 reading rows match",
+      "passed": true
+    },
+    {
+      "name": "TC02 average systolic_mmhg",
+      "passed": true,
+      "details": "140.2"
+    },
+    {
+      "name": "TC02 average diastolic_mmhg",
+      "passed": true,
+      "details": "87.1"
+    },
+    {
+      "name": "TC02 average pulse_bpm",
+      "passed": true,
+      "details": "70.9"
+    },
+    {
+      "name": "Doctor account spelling",
+      "passed": true,
+      "details": "Matches prior user-thread account evidence; not verified against current database."
+    },
+    {
+      "name": "Generated photo visual audit",
+      "passed": true,
+      "details": "TC01 right anterior bruise on viewer-left, no left bruise, Alex/date correct. TC02 screen SYS141/DIA88/PUL72, Maya/date19:30 correct. Both visibly marked synthetic."
+    },
+    {
+      "name": "Rendered report visual audit",
+      "passed": true,
+      "details": "All 3 pages reviewed: identities, dates, 9 lab values, 14 home readings, averages, medicines, reaction uncertainty, knee sides/motion and vitals match canonical data. No clipping found."
+    },
+    {
+      "name": "Dynamic AI description",
+      "passed": true,
+      "details": "Guide treats follow-up answers as facts bank, not a guaranteed output. No live model calls were tested."
+    }
+  ],
+  "issues": [],
+  "status": "passed",
+  "source_note": "Backend dotenv loader was stubbed before imports. Only synthetic sessions created in memory.",
+  "voice_instruction_update": {
+    "input_sha256": "aeb8ee453dd394ccaf1565347748746441179fd8dd9c2fcf3648caaed80dad4c",
+    "changed_canonical_paths": [
+      "/voice_check/1",
+      "/voice_check/2",
+      "/cases/0/steps/0/note"
+    ],
+    "instructions": "Stop starts transcription and fills the existing editable input; edit there, then continue or submit. No separate transcript confirmation and no automatic submission.",
+    "canonical_facts_unchanged": true,
+    "old_confirmation_wording_absent": true,
+    "manual_canonical_text_checks": 170,
+    "status": "passed",
+    "browser_tests_rerun": false,
+    "live_app_checks_rerun": false,
+    "scope": "Material text checks only; original field/backend/image/report checks above are retained from their original input hash."
+  }
+}

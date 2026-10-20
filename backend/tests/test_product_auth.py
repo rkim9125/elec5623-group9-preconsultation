@@ -87,17 +87,67 @@ def test_origin_required_for_auth_and_session_mutations(auth_client):
     assert client.post("/api/v1/auth/logout").status_code == 403
     assert client.get("/api/v1/auth/me").status_code == 200
 
-def test_doctor_role_cannot_be_self_assigned(auth_client):
+def test_any_verified_email_can_register_as_doctor(auth_client):
     client, codes = auth_client
-    assert client.post("/api/v1/auth/request-code", json={"email":"outsider@example.test", "role":"doctor"}).status_code == 403
-    assert sign_in(client, codes, "outsider@example.test")["role"] == "patient"
-    assert client.post("/api/v1/auth/verify", json={"email":"outsider@example.test", "role":"doctor", "code":codes["outsider@example.test"]}).status_code == 403
+    assert sign_in(client, codes, "outsider@gmail.com", "doctor")["role"] == "doctor"
+    assert client.get("/api/v1/auth/me").json()["user"]["role"] == "doctor"
 
-def test_clinician_allowlist_revocation_ends_access(auth_client, monkeypatch):
+def test_registered_role_is_permanent_and_independent_of_legacy_allowlist(auth_client, monkeypatch):
     client, codes = auth_client
     sign_in(client, codes, "doctor@example.test", "doctor")
     monkeypatch.setenv("DOCTOR_EMAILS", "second@example.test")
-    assert client.get("/api/v1/auth/me").status_code == 403
+    assert client.get("/api/v1/auth/me").status_code == 200
+    result = client.post("/api/v1/auth/request-code", json={"email":"  DOCTOR@example.test ", "role":"patient"})
+    assert result.status_code == 409
+    assert "different account role" in result.json()["detail"]
+    assert client.post("/api/v1/auth/verify", json={"email":"doctor@example.test", "role":"patient", "code":codes["doctor@example.test"]}).status_code == 409
+
+def test_patient_email_cannot_register_doctor_role(auth_client):
+    client, codes = auth_client
+    sign_in(client, codes, "person@yahoo.com")
+    assert client.post("/api/v1/auth/request-code", json={"email":"PERSON@yahoo.com", "role":"doctor"}).status_code == 409
+
+def test_first_verified_role_wins_competing_challenges(auth_client):
+    client, codes = auth_client
+    email = "new@example.test"
+    assert client.post("/api/v1/auth/request-code", json={"email": email, "role": "patient"}).status_code == 200
+    patient_code = codes[email]
+    with get_connection() as conn:
+        conn.execute("DELETE FROM rate_limits")
+    assert client.post("/api/v1/auth/request-code", json={"email": email, "role": "doctor"}).status_code == 200
+    assert client.post("/api/v1/auth/verify", json={"email": email, "role": "patient", "code": patient_code}).status_code == 200
+    assert client.post("/api/v1/auth/verify", json={"email": email, "role": "doctor", "code": codes[email]}).status_code == 409
+    with get_connection() as conn:
+        assert conn.execute("SELECT role FROM account_roles").fetchone()[0] == "patient"
+        assert conn.execute("SELECT COUNT(*) FROM otp_challenges").fetchone()[0] == 0
+
+def test_legacy_roles_migrate_once_preserving_patient_records(product_env, monkeypatch):
+    with get_connection() as conn:
+        conn.execute("DROP TABLE account_roles")
+        conn.executemany("INSERT INTO users VALUES (?, ?, '', '2025-01-01')", [
+            ("mixed", "mixed@example.test"), ("doctor", "doctor@example.test"), ("first", "first@example.test")])
+        conn.executemany("INSERT INTO sessions VALUES (?, ?, ?, ?, ?)", [
+            ("mixed-doctor", "mixed", "doctor", time.time() + 1000, "2025-01-01"),
+            ("mixed-patient", "mixed", "patient", time.time() + 1000, "2025-02-01"),
+            ("first-doctor", "first", "doctor", time.time() + 1000, "2025-01-01"),
+            ("first-patient", "first", "patient", time.time() + 1000, "2025-02-01")])
+        conn.execute("INSERT INTO intakes VALUES ('kept', 'mixed', 1, '{}', '2025-02-01')")
+    init_db()
+    monkeypatch.setenv("DOCTOR_EMAILS", "")
+    init_db()
+    with get_connection() as conn:
+        roles = {row["user_id"]: row["role"] for row in conn.execute("SELECT * FROM account_roles")}
+        assert roles == {"mixed": "patient", "doctor": "doctor", "first": "doctor"}
+        assert conn.execute("SELECT COUNT(*) FROM intakes").fetchone()[0] == 1
+        assert {row[0] for row in conn.execute("SELECT token_hash FROM sessions")} == {"mixed-patient", "first-doctor"}
+
+def test_registered_doctors_excludes_unregistered_allowlist_entries(auth_client):
+    from app.product.database import registered_doctors
+    client, codes = auth_client
+    assert registered_doctors() == []
+    sign_in(client, codes, "newdoctor@gmail.com", "doctor")
+    client.patch("/api/v1/auth/me", json={"name": "Dr Green"})
+    assert registered_doctors() == [{"email": "newdoctor@gmail.com", "name": "Dr Green"}]
 
 def test_role_specific_otp_cannot_switch_role(auth_client):
     client, codes = auth_client
@@ -169,3 +219,52 @@ def test_resend_adapter_requires_delivery_receipt(product_env, monkeypatch):
     with pytest.raises(HTTPException) as error:
         REAL_SEND_VERIFICATION_EMAIL("patient@example.test", "123456")
     assert error.value.status_code == 502
+
+
+def test_patient_background_is_durable_isolated_and_editable(auth_client):
+    from app.product.profiles import load_profile, snapshot_for_intake, prefill_answers
+    client, codes = auth_client
+    user = sign_in(client, codes)
+    initial = client.get("/api/v1/auth/profile")
+    assert initial.status_code == 200
+    assert initial.json()["profile"]["updated_at"] is None
+    values = {"date_of_birth": "1990-04-25", "sex_at_birth": "female", "blood_group": "O+", "medical_history": "Childhood asthma", "surgical_history": "Appendectomy in 2005", "family_history": "Father has diabetes", "accessibility_needs": "Large text"}
+    response = client.put("/api/v1/auth/profile", json=values)
+    assert response.status_code == 200, response.text
+    saved = response.json()["profile"]
+    assert saved["date_of_birth"] == values["date_of_birth"]
+    assert saved["updated_at"] and set(saved["field_updated_at"]) == set(values)
+    snapshot = snapshot_for_intake(user["id"])
+    assert load_profile(user["id"]) == saved
+    assert prefill_answers(user["id"]) == [{"concern_id": "session", "key": "relevant_history", "value": "Medical history: Childhood asthma\nSurgical history: Appendectomy in 2005\nFamily history: Father has diabetes", "status": "FILLED"}]
+    assert client.put("/api/v1/auth/profile", json=values).json()["profile"] == saved
+    edited = client.put("/api/v1/auth/profile", json={**values, "medical_history": ""}).json()["profile"]
+    assert edited["medical_history"] == ""
+    assert edited["field_updated_at"]["date_of_birth"] == saved["field_updated_at"]["date_of_birth"]
+    assert snapshot["medical_history"] == "Childhood asthma"
+    client.post("/api/v1/auth/logout")
+    sign_in(client, codes, "another@example.test")
+    assert client.get("/api/v1/auth/profile").json()["profile"]["medical_history"] == ""
+    assert load_profile(user["id"])["date_of_birth"] == "1990-04-25"
+
+
+@pytest.mark.parametrize("field", ["current_medications", "allergies", "weight", "blood_pressure", "pregnancy_status", "symptoms"])
+def test_profile_rejects_expiry_prone_fields(auth_client, field):
+    client, codes = auth_client
+    sign_in(client, codes)
+    assert client.put("/api/v1/auth/profile", json={field: "Must not carry forward"}).status_code == 422
+    assert client.get("/api/v1/auth/profile").json()["profile"]["updated_at"] is None
+
+
+def test_profile_validates_dates_requires_patient_and_csrf(auth_client):
+    client, codes = auth_client
+    sign_in(client, codes)
+    for value in ("2024-02-30", "9999-01-01", "not a date"):
+        assert client.put("/api/v1/auth/profile", json={"date_of_birth": value}).status_code == 422
+    assert client.put("/api/v1/auth/profile", json={"sex_at_birth": "invalid"}).status_code == 422
+    assert client.put("/api/v1/auth/profile", json={"medical_history": "a" * 3000, "surgical_history": "b" * 3000}).status_code == 422
+    assert client.put("/api/v1/auth/profile", json={"medical_history": "Changed"}, headers={"Origin": "https://evil.test"}).status_code == 403
+    client.post("/api/v1/auth/logout")
+    sign_in(client, codes, "doctor@outlook.com", "doctor")
+    assert client.get("/api/v1/auth/profile").status_code == 403
+    assert client.put("/api/v1/auth/profile", json={}).status_code == 403

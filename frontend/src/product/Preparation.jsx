@@ -5,17 +5,26 @@ import { Button, ErrorNotice, Loading, Modal } from "./UI.jsx";
 import { registerNavigationGuard } from "./navigation.js";
 import GuidedField from "./GuidedField.jsx";
 import { bodyOptionsFor } from "./lowerBodyModel.js";
-import { appendGuidedDetails } from "./answerValues.js";
+import {
+  appendGuidedDetails,
+  parseGuidedAnswer,
+  serializeGuidedAnswer,
+} from "./answerValues.js";
+import VoiceComposer from "./VoiceComposer.jsx";
+import { useLocale } from "./i18n.jsx";
+import { topicVisual } from "./topics.js";
+import { recordTitle, recordLabel, recordedValue, slotStatusLabel } from "./recordLocale.js";
 
 const stages = [
   "Your concerns",
   "Health information",
-  "AI follow-up",
+  "AI analysis & follow-up",
   "Review & share",
 ];
 export function JourneyNavigation({ current = 0, onSelect, completed = 0 }) {
+  const { t } = useLocale();
   return (
-    <nav className="journey-navigation" aria-label="Consultation stages">
+    <nav className="journey-navigation" aria-label={t("Consultation stages")}>
       <ol>
         {stages.map((label, index) => (
           <li
@@ -38,7 +47,7 @@ export function JourneyNavigation({ current = 0, onSelect, completed = 0 }) {
               <span>
                 {index < current ? <Icon name="check" size={17} /> : index + 1}
               </span>
-              <strong>{label}</strong>
+              <strong>{t(label)}</strong>
             </button>
           </li>
         ))}
@@ -67,21 +76,19 @@ export function BaselineForm({
   session,
   onUpdate,
   refresh,
-  VoiceInput,
   Attachments,
   onContinue,
 }) {
+  const { t, locale } = useLocale();
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [review, setReview] = useState(false);
   const [form, setForm] = useState(null);
   const [answers, setAnswers] = useState({});
-  const [open, setOpen] = useState({});
   const [activeField, setActiveField] = useState("");
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState("");
   const [operation, setOperation] = useState("");
   const [saveState, setSaveState] = useState("Saved");
-  const [capture, setCapture] = useState(null);
-  const [capturedText, setCapturedText] = useState("");
-  const [captureTarget, setCaptureTarget] = useState("");
   const [revision, setRevision] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const latest = useRef({});
@@ -114,18 +121,19 @@ export function BaselineForm({
       setSaveState("Saved");
       setAnswers(values);
       setForm(result);
-      setOpen(
-        Object.fromEntries(
-          result.groups.slice(0, 2).map((group) => [group.id, true]),
-        ),
-      );
-      const first = result.groups
-        .flatMap((group) => group.fields)
-        .find((field) => !field.requires_permission);
-      if (first) {
-        setActiveField(fieldId(first));
-        setCaptureTarget(fieldId(first));
-      }
+      const ordered = [
+        ...result.groups.filter((g) => g.id !== "shared"),
+        ...result.groups.filter((g) => g.id === "shared"),
+      ].flatMap((g) => g.fields);
+      const first =
+        ordered.find(
+          (field) =>
+            !field.requires_permission &&
+            !field.review_only &&
+            !field.profile_reused &&
+            field.status === "MISSING",
+        ) || ordered[0];
+      if (first) setActiveField(fieldId(first));
     } catch (err) {
       if (mounted.current) setLoadError(err.message);
     }
@@ -212,12 +220,13 @@ export function BaselineForm({
       }));
       setOperation(complete ? "continuing" : "saving");
       setError("");
-      setSaveState(complete ? "Preparing relevant follow-up…" : "Saving…");
+      setSaveState(complete ? "Preparing analysis and follow-up…" : "Saving…");
       const task = (async () => {
         try {
           const updated = await request(`/intakes/${session.id}/baseline`, {
             method: "PUT",
             body: {
+              locale,
               answers: snapshot,
               complete,
               revision: serverRevision.current,
@@ -247,7 +256,7 @@ export function BaselineForm({
       saving.current = task;
       return task;
     },
-    [session.id, onContinue],
+    [session.id, onContinue, locale],
   );
   useEffect(() => {
     if (!dirty.current || operation || saveFailed.current) return;
@@ -258,6 +267,10 @@ export function BaselineForm({
   useEffect(
     () =>
       registerNavigationGuard(async () => {
+        if (voiceBusy) {
+          setError(t("Finish or cancel voice input before leaving."));
+          return false;
+        }
         if (flushing.current) return flushing.current;
         if (!dirty.current && !saving.current) return true;
         setLeaving(true);
@@ -276,7 +289,7 @@ export function BaselineForm({
         flushing.current = task;
         return task;
       }),
-    [save],
+    [save, voiceBusy, t],
   );
 
   if (!form)
@@ -285,398 +298,443 @@ export function BaselineForm({
         <ErrorNotice>{loadError}</ErrorNotice>
         {loadError ? (
           <Button className="secondary" onClick={loadForm}>
-            Retry loading questions
+            {t("Retry loading questions")}
           </Button>
         ) : (
           <Loading label="Preparing your health information form…" />
         )}
       </div>
     );
-  const fields = form.groups.flatMap((group) => group.fields);
-  const availableFields = fields.filter(
-    (field) => permitted(field) && field.input_type !== "permission",
-  );
-  const resolved = fields.filter(
+  const fields = [
+    ...form.groups.filter((g) => g.id !== "shared"),
+    ...form.groups.filter((g) => g.id === "shared"),
+  ].flatMap((group) => group.fields);
+  const availableFields = fields.filter((field) => permitted(field));
+  const stepFields = availableFields.filter((field) => !field.review_only);
+  const current =
+    availableFields.find((field) => fieldId(field) === activeField) ||
+    stepFields.find(
+      (field) =>
+        answers[fieldId(field)]?.status === "MISSING" && !field.profile_reused,
+    ) ||
+    stepFields[0];
+  if (!current)
+    return (
+      <Button className="primary" onClick={() => save(true)}>
+        {t("Continue to AI analysis & follow-up")}
+      </Button>
+    );
+  const key = fieldId(current);
+  const index = stepFields.indexOf(current);
+  const answer = answers[key] || initialAnswer(current);
+  const group = form.groups.find((item) => item.fields.includes(current));
+  const inputId = `answer-${current.concern_id}-${current.key}`;
+  const options = bodyOptionsFor(current.presentation);
+  const guided =
+    ["choices", "body_map", "scale"].includes(current.presentation?.kind) &&
+    options?.length > 0;
+  const parsed = parseGuidedAnswer(answer.value, options);
+  const resolved = stepFields.filter(
     (field) => answers[fieldId(field)]?.status !== "MISSING",
   ).length;
   const disabled = operation === "continuing" || leaving;
-  function reviewCapture(text, kind) {
-    setCapture(kind);
-    setCapturedText(text);
-    setCaptureTarget(
-      availableFields.some((field) => fieldId(field) === activeField)
-        ? activeField
-        : fieldId(availableFields[0] || {}),
-    );
+  const navigationDisabled = disabled || voiceBusy;
+  const savedFields = fields.filter((field) => field.profile_reused);
+  const previousAnswer = form.previous_answers?.[current.key];
+  const priorDetails = availableFields.filter(
+    (field) => field.review_only && answers[fieldId(field)]?.value,
+  );
+  const icon = current.key.includes("medication")
+    ? "medicine"
+    : current.key.includes("allerg")
+      ? "shield"
+      : current.key.includes("history")
+        ? "file"
+        : group?.workflow_id
+          ? topicVisual({ id: group.workflow_id }).icon
+          : "heart";
+  function goTo(field) {
+    if (!field || navigationDisabled) return;
+    setActiveField(fieldId(field));
+    setTimeout(() => document.getElementById("wizard-question")?.focus(), 0);
   }
-  function insertCapture() {
-    const field = fields.find((item) => fieldId(item) === captureTarget);
-    if (!field || !permitted(field)) return;
-    const previous = latest.current[captureTarget]?.value || "";
-    const combined = appendGuidedDetails(
-      previous,
-      capturedText.trim(),
-      bodyOptionsFor(field.presentation),
-    );
-    if (combined.length > 6000) {
-      setError(
-        "The combined answer is longer than 6,000 characters. Shorten the reviewed text before adding it.",
-      );
+  function next() {
+    if (current.review_only) {
+      setReview(true);
       return;
     }
-    change(field, { value: combined });
-    setOpen((value) => ({
-      ...value,
-      [form.groups.find((group) =>
-        group.fields.some((item) => fieldId(item) === captureTarget),
-      )?.id]: true,
-    }));
-    setCapture(null);
+    const nextField = stepFields
+      .slice(index + 1)
+      .find(
+        (field) =>
+          !field.profile_reused ||
+          answers[fieldId(field)]?.status === "MISSING",
+      );
+    if (nextField) goTo(nextField);
+    else setReview(true);
+  }
+  function appendText(text) {
+    const combined = appendGuidedDetails(answer.value, text, options);
+    if (combined.length > 6000) {
+      setError(t("This answer is too long. Shorten it and try again."));
+      return;
+    }
+    change(current, { value: combined });
   }
   return (
-    <div className="baseline-layout">
-      <section className="baseline-main">
-        <div className="baseline-intro">
-          <span className="section-kicker">
-            STEP 2 · YOUR HEALTH INFORMATION
+    <div className="intake-wizard">
+      <div className="wizard-toolbar">
+        <span>
+          <Icon name="shield" size={16} />
+          {t("YOUR PRIVATE PREPARATION")}
+        </span>
+        <span className="wizard-save" role="status">
+          <Icon
+            name={operation ? "clock" : dirty.current ? "file" : "check"}
+            size={16}
+          />
+          {t(saveState)}
+        </span>
+      </div>
+      <div
+        className="wizard-progress"
+        role="progressbar"
+        aria-label={t("Preparation progress")}
+        aria-valuenow={resolved}
+        aria-valuemin={0}
+        aria-valuemax={stepFields.length}
+      >
+        <span
+          style={{ width: `${(100 * resolved) / Math.max(1, stepFields.length)}%` }}
+        />
+      </div>
+      <ErrorNotice>{error}</ErrorNotice>
+      {savedFields.length > 0 && (
+        <div className="profile-prefilled">
+          <Icon name="check" size={16} />
+          <span>
+            {t("Your saved background is filled in. No need to repeat it.")}
           </span>
-          <h2>The essentials, all in one place.</h2>
-          <p>
-            Choose answers, tap a body map, or use your own words. Complete what
-            matters to you; you can leave a question unanswered, mark it
-            unknown, or choose not to share. Your draft saves automatically.
-          </p>
-          <div className="baseline-save-status" role="status">
-            <Icon
-              name={operation ? "clock" : dirty.current ? "file" : "check"}
-              size={17}
-            />
-            <span>{saveState}</span>
-            <span>
-              {resolved} of {fields.length} questions addressed
-            </span>
-          </div>
+          <button
+            className="text-button"
+            disabled={navigationDisabled}
+            onClick={() => {
+              setReview(false);
+              goTo(savedFields[0]);
+            }}
+          >
+            {t("Review saved details")}
+          </button>
         </div>
-        <ErrorNotice>{error}</ErrorNotice>
-        <div className="baseline-groups">
-          {form.groups.map((group, groupIndex) => {
-            const count = group.fields.filter(
-              (field) => answers[fieldId(field)]?.status !== "MISSING",
-            ).length;
-            return (
-              <section
-                className={`baseline-group ${open[group.id] ? "expanded" : ""}`}
-                key={group.id}
-              >
+      )}
+      {review ? (
+        <section className="wizard-review wizard-enter">
+          <div className="wizard-emblem">
+            <Icon name="check" size={38} />
+          </div>
+          <span className="overline">{t("LOOKING GOOD")}</span>
+          <h2>{t("The essentials, in your own words.")}</h2>
+          <p>
+            {t(
+              "Take a quick look. You can change any answer or continue with what you’ve shared.",
+            )}
+          </p>
+          <div className="wizard-review-list">
+            {availableFields.filter((field) => !field.review_only || answers[fieldId(field)]?.status !== "MISSING").map((field) => {
+              const item = answers[fieldId(field)];
+              return (
                 <button
-                  className="baseline-group-toggle"
-                  type="button"
-                  aria-expanded={!!open[group.id]}
-                  aria-controls={`group-${group.id}`}
-                  onClick={() =>
-                    setOpen((value) => ({
-                      ...value,
-                      [group.id]: !value[group.id],
-                    }))
-                  }
+                  key={fieldId(field)}
+                  disabled={disabled}
+                  onClick={() => {
+                    setReview(false);
+                    goTo(field);
+                  }}
                 >
-                  <span className="group-number">
-                    {String(groupIndex + 1).padStart(2, "0")}
-                  </span>
+                  <Icon
+                    name={item?.status === "FILLED" ? "check" : "file"}
+                    size={18}
+                  />
                   <span>
-                    <strong>{group.title}</strong>
+                    <strong>{t(field.label)}</strong>
                     <small>
-                      {group.description ||
-                        `${group.fields.length} questions for your consultation`}
+                      {item?.status === "SKIPPED"
+                        ? t("Prefer not to answer")
+                        : item?.status === "UNCERTAIN"
+                          ? t("I’m not sure")
+                          : item?.value ? recordedValue(item.value, t) : t("Not answered yet")}
                     </small>
                   </span>
-                  <span className="group-count">
-                    {count}/{group.fields.length}
-                  </span>
-                  <Icon name="chevron" size={19} />
+                  <Icon name="edit" size={17} />
                 </button>
-                <div
-                  id={`group-${group.id}`}
-                  hidden={!open[group.id]}
-                  className="baseline-fields"
-                >
-                  {group.fields.map((field) => {
-                    const key = fieldId(field);
-                    const answer = answers[key] || initialAnswer(field);
-                    if (!permitted(field)) return null;
-                    const inputId = `answer-${field.concern_id}-${field.key}`;
-                    const permission = field.input_type === "permission";
-                    return (
-                      <div className="baseline-field" key={key}>
-                        <label htmlFor={inputId} id={`${inputId}-question`}>
-                          {field.question || field.label}
-                        </label>
-                        {field.label && field.label !== field.question && (
-                          <span className="baseline-field-caption">
-                            {field.label}
-                          </span>
-                        )}
-                        {permission ? (
-                          <select
-                            id={inputId}
-                            data-testid={`baseline-${field.concern_id}-${field.key}`}
-                            className="select full"
-                            value={answer.value}
-                            onChange={(event) =>
-                              change(field, {
-                                value: event.target.value,
-                                status: event.target.value
-                                  ? "FILLED"
-                                  : "MISSING",
-                              })
-                            }
-                            disabled={disabled}
-                          >
-                            <option value="">
-                              Choose whether to include this information
-                            </option>
-                            <option value="Yes">
-                              Yes, I want to include these details
-                            </option>
-                            <option value="No">
-                              No, I prefer not to include these details
-                            </option>
-                          </select>
-                        ) : (
-                          <>
-                            {answer.status !== "SKIPPED" && (
-                              <GuidedField
-                                field={field}
-                                inputId={inputId}
-                                answer={answer}
-                                onFocus={() => setActiveField(key)}
-                                onChange={(value) =>
-                                  change(field, {
-                                    value,
-                                    ...(answer.status === "UNCERTAIN"
-                                      ? { status: "UNCERTAIN" }
-                                      : {}),
-                                  })
-                                }
-                                disabled={disabled}
-                              />
-                            )}
-                            <div className="field-answer-controls">
-                              <label htmlFor={`status-${inputId}`}>
-                                Answer status
-                              </label>
-                              <select
-                                id={`status-${inputId}`}
-                                data-testid={`baseline-status-${field.concern_id}-${field.key}`}
-                                className="select answer-status"
-                                value={answer.status}
-                                onChange={(event) =>
-                                  change(field, { status: event.target.value })
-                                }
-                                disabled={disabled}
-                              >
-                                <option value="MISSING">
-                                  Not answered yet
-                                </option>
-                                <option value="FILLED">Answer provided</option>
-                                <option value="UNCERTAIN">I’m not sure</option>
-                                <option value="SKIPPED">
-                                  Prefer not to answer
-                                </option>
-                              </select>
-                              {answer.status === "SKIPPED" && (
-                                <span className="private-answer-note">
-                                  <Icon name="lock" size={14} />
-                                  No answer will be shared
-                                </span>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <button
-                    className="text-button group-next"
-                    type="button"
-                    onClick={() => {
-                      const next = form.groups[groupIndex + 1];
-                      if (next) {
-                        setOpen((value) => ({ ...value, [next.id]: true }));
-                        setTimeout(
-                          () =>
-                            document
-                              .getElementById(`group-${next.id}`)
-                              ?.parentElement?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                              }),
-                          30,
-                        );
-                      } else
-                        document
-                          .getElementById("baseline-continue")
-                          ?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "center",
-                          });
-                    }}
-                  >
-                    {groupIndex < form.groups.length - 1
-                      ? "Next section"
-                      : "Continue when ready"}
-                    <Icon name="arrow" size={17} />
-                  </button>
-                </div>
-              </section>
-            );
-          })}
-        </div>
-        <div className="baseline-continue" id="baseline-continue">
-          <div>
-            <h3>Ready for the next step?</h3>
-            <p>
-              The assistant will consider your answers and ask only relevant
-              additional questions. Unanswered items remain clearly marked.
-            </p>
+              );
+            })}
           </div>
-          <div className="baseline-continue-actions">
+          <div className="wizard-actions">
             <Button
               className="secondary"
-              busy={operation === "saving"}
-              disabled={disabled || !dirty.current}
-              onClick={() => save(false)}
+              disabled={disabled}
+              onClick={() => setReview(false)}
             >
-              Save draft
+              {t("Go back")}
             </Button>
             <Button
               className="primary"
               busy={disabled}
               onClick={() => save(true)}
             >
-              Continue to AI follow-up
+              {t("Continue to AI analysis & follow-up")}
+              <Icon name="arrow" size={18} />
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <section className="wizard-question-card wizard-enter" key={key}>
+          <div className="wizard-question-top">
+            <span>{t(group?.title || "Your consultation")}</span>
+            <span>
+              {current.review_only ? t("Saved details") : `${index + 1} / ${stepFields.length}`}
+            </span>
+          </div>
+          <div className="wizard-emblem">
+            <Icon name={icon} size={36} />
+            <span className="emblem-spark">
+              <Icon name="sparkle" size={13} />
+            </span>
+          </div>
+          <h2 id="wizard-question" tabIndex={-1}>
+            {t(current.question || current.label)}
+          </h2>
+          <p className="wizard-question-hint">
+            {t(
+              current.hint || (current.input_type === "permission"
+                ? "You decide what you’re comfortable sharing."
+                : guided ? "Choose what fits, or tell us in your own words." : "Tell us in your own words. You can type or use your voice."),
+            )}
+          </p>
+          {current.input_type === "permission" ? (
+            <div className="permission-choices">
+              {[
+                ["Yes", "Yes, I want to include these details"],
+                ["No", "No, I prefer not to include these details"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={answer.value === value}
+                  disabled={disabled}
+                  className={answer.value === value ? "selected" : ""}
+                  onClick={() => change(current, { value, status: "FILLED" })}
+                >
+                  <Icon name={value === "Yes" ? "heart" : "lock"} size={23} />
+                  <span>{t(label)}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              {answer.status !== "SKIPPED" && (
+                <VoiceComposer
+                  key={`voice-${key}`}
+                  id={inputId}
+                  value={guided ? parsed.details : answer.value}
+                  onChange={(value) =>
+                    change(current, {
+                      value: guided
+                        ? serializeGuidedAnswer({ ...parsed, details: value })
+                        : value,
+                    })
+                  }
+                  onError={setError}
+                  onActivity={setVoiceBusy}
+                  disabled={disabled}
+                  placeholder={t(
+                    guided
+                      ? "Anything else you’d like to add?"
+                      : "Type or tell us in your own words…",
+                  )}
+                />
+              )}
+              {guided && answer.status !== "SKIPPED" && (
+                <GuidedField
+                  key={key}
+                  field={current}
+                  inputId={inputId}
+                  answer={answer}
+                  hideDetails
+                  onFocus={() => {}}
+                  onChange={(value) => change(current, { value })}
+                  disabled={disabled || voiceBusy}
+                />
+              )}
+              {previousAnswer && (
+                <aside className="previous-answer-card">
+                  <div className="previous-answer-heading">
+                    <Icon name="clock" size={18} />
+                    <strong>{t("Your previous answer")}</strong>
+                    <time dateTime={previousAnswer.recorded_at}>{dateLabel(previousAnswer.recorded_at)}</time>
+                  </div>
+                  <p className="previous-answer-value">{previousAnswer.value}</p>
+                  <p className="field-hint">{t("Check whether this is still accurate for this visit. Nothing is filled in until you choose it.")}</p>
+                  <Button
+                    className="secondary"
+                    disabled={navigationDisabled || answer.value === previousAnswer.value}
+                    onClick={() => change(current, { value: previousAnswer.value, status: "FILLED" })}
+                  >
+                    <Icon name="check" size={16} />{t("Use this answer for this visit")}
+                  </Button>
+                </aside>
+              )}
+              {current.key === "additional_information" && priorDetails.length > 0 && (
+                <details className="remembered-details">
+                  <summary><Icon name="file" size={18} />{t("Already recorded — no need to repeat")}</summary>
+                  {priorDetails.map((field) => (
+                    <div key={fieldId(field)}>
+                      <strong>{t(field.label)}</strong>
+                      <p>{answers[fieldId(field)].value}</p>
+                      <button type="button" className="text-button" disabled={navigationDisabled} onClick={() => goTo(field)}>{t("Edit")}</button>
+                    </div>
+                  ))}
+                </details>
+              )}
+              <div className="wizard-answer-status">
+                <button
+                  type="button"
+                  aria-pressed={answer.status === "UNCERTAIN"}
+                  disabled={navigationDisabled}
+                  className={answer.status === "UNCERTAIN" ? "selected" : ""}
+                  onClick={() =>
+                    change(current, {
+                      status:
+                        answer.status === "UNCERTAIN"
+                          ? answer.value
+                            ? "FILLED"
+                            : "MISSING"
+                          : "UNCERTAIN",
+                    })
+                  }
+                >
+                  {t("I’m not sure")}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={answer.status === "SKIPPED"}
+                  disabled={navigationDisabled}
+                  className={answer.status === "SKIPPED" ? "selected" : ""}
+                  onClick={() =>
+                    change(current, {
+                      status:
+                        answer.status === "SKIPPED" ? "MISSING" : "SKIPPED",
+                    })
+                  }
+                >
+                  <Icon name="lock" size={13} />
+                  {t("Prefer not to answer")}
+                </button>
+              </div>
+            </>
+          )}
+          <div className="wizard-actions">
+            <Button
+              className="secondary"
+              disabled={navigationDisabled || index <= 0}
+              onClick={() => goTo(stepFields[index - 1])}
+            >
+              <Icon name="back" size={17} />
+              {t("Go back")}
+            </Button>
+            <button
+              type="button"
+              className="text-button"
+              disabled={navigationDisabled}
+              onClick={() => setReview(true)}
+            >
+              {t("Review answers")}
+            </button>
+            <Button
+              className="primary"
+              disabled={navigationDisabled}
+              onClick={next}
+            >
+              {t(
+                current.review_only || index === stepFields.length - 1
+                  ? "Review answers"
+                  : "Continue",
+              )}
               <Icon name="arrow" size={17} />
             </Button>
           </div>
-        </div>
-      </section>
-      <aside className="baseline-aside">
-        <div className="baseline-help-card">
-          <span className="assist-icon">
-            <Icon name="sparkle" size={23} />
-          </span>
-          <h3>Choose, say it, or add a document.</h3>
-          <p>
-            Use your own words. You’ll review any transcript or extracted text
-            before it is added to an answer.
-          </p>
-          <label className="field-label" htmlFor="voice-target">
-            Voice answer for
-          </label>
-          <select
-            id="voice-target"
-            className="select full"
-            value={activeField}
-            onChange={(event) => setActiveField(event.target.value)}
-            disabled={disabled}
-          >
+        </section>
+      )}
+      <details className="wizard-support">
+        <summary>
+          <Icon name="file" size={17} />
+          {t("Add a document or revisit a question")}
+          <Icon name="chevron" size={15} />
+        </summary>
+        <div className="wizard-support-grid">
+          <div>
+            <h3>{t("Your questions")}</h3>
             {availableFields.map((field) => (
-              <option key={fieldId(field)} value={fieldId(field)}>
-                {
-                  form.groups.find((group) => group.fields.includes(field))
-                    ?.title
-                }{" "}
-                · {field.label || field.question}
-              </option>
+              <button
+                className="wizard-jump"
+                key={fieldId(field)}
+                disabled={navigationDisabled}
+                onClick={() => {
+                  setReview(false);
+                  goTo(field);
+                }}
+              >
+                <Icon
+                  name={
+                    answers[fieldId(field)]?.status === "MISSING"
+                      ? "file"
+                      : "check"
+                  }
+                  size={15}
+                />
+                <span>{t(field.label)}</span>
+              </button>
             ))}
-          </select>
-          <VoiceInput
-            disabled={disabled || !availableFields.length}
-            onTranscript={(text) => reviewCapture(text, "Voice transcript")}
+          </div>
+          <Attachments
+            session={session}
+            onRefresh={refresh}
+            onText={(text) => {
+              appendText(text);
+              setError(
+                t(
+                  "Document text was added to this answer. Review it before continuing.",
+                ),
+              );
+            }}
             onError={setError}
           />
         </div>
-        <Attachments
-          session={session}
-          onRefresh={refresh}
-          onText={(text) => reviewCapture(text, "Extracted document details")}
-          onError={setError}
-        />
-        <div className="baseline-privacy">
-          <Icon name="shield" size={21} />
-          <p>
-            This is your private draft. Nothing is shared with your doctor until
-            you review the summary and approve it.
-          </p>
-        </div>
-      </aside>
-      {capture && (
-        <Modal
-          title={`Review ${capture.toLowerCase()}`}
-          onClose={() => setCapture(null)}
-          wide
-        >
-          <p className="modal-copy">
-            Check the wording and choose the answer this belongs to. Nothing is
-            added until you confirm.
-          </p>
-          <label className="field-label" htmlFor="captured-answer">
-            Reviewed text
-          </label>
-          <textarea
-            id="captured-answer"
-            rows={8}
-            value={capturedText}
-            onChange={(event) => setCapturedText(event.target.value)}
-            maxLength={6000}
-          />
-          <label className="field-label" htmlFor="capture-target">
-            Add this to
-          </label>
-          <select
-            id="capture-target"
-            className="select full"
-            value={captureTarget}
-            onChange={(event) => setCaptureTarget(event.target.value)}
-          >
-            {availableFields.map((field) => (
-              <option value={fieldId(field)} key={fieldId(field)}>
-                {
-                  form.groups.find((group) => group.fields.includes(field))
-                    ?.title
-                }{" "}
-                · {field.label || field.question}
-              </option>
-            ))}
-          </select>
-          <div className="modal-actions">
-            <Button className="secondary" onClick={() => setCapture(null)}>
-              Discard
-            </Button>
-            <Button
-              className="primary"
-              onClick={insertCapture}
-              disabled={!capturedText.trim() || !captureTarget}
-            >
-              Add reviewed text
-            </Button>
-          </div>
-        </Modal>
-      )}
+      </details>
+      <p className="wizard-privacy">
+        <Icon name="lock" size={14} />
+        {t("Private until you review and share.")}
+      </p>
     </div>
   );
 }
 
 export function SynthesisSummary({
   synthesis,
+  patientLocale,
+  preserveApproved = false,
   doctor = false,
   onGenerate,
   busy,
   readOnly = false,
 }) {
+  const { t, locale } = useLocale();
   const [view, setView] = useState(doctor ? "clinician" : "patient");
   const [selectedSources, setSelectedSources] = useState(null);
-  const live = synthesis?.status === "live";
+  const outdated = synthesis?.status === "live" &&
+    (synthesis.localization_outdated || !synthesis.locale || synthesis.locale !== (patientLocale || locale));
+  const live = synthesis?.status === "live" && (!outdated || preserveApproved);
   const sources = synthesis?.sources || [];
   function citations(ids) {
     return ids?.length ? (
@@ -684,10 +742,10 @@ export function SynthesisSummary({
         className="source-link"
         type="button"
         onClick={() => setSelectedSources(ids)}
-        aria-label={`View ${ids.length} supporting source${ids.length === 1 ? "" : "s"}`}
+        aria-label={t("View {count} supporting sources", { count: ids.length })}
       >
         <Icon name="file" size={13} />
-        {ids.length} source{ids.length === 1 ? "" : "s"}
+        {t("{count} sources", { count: ids.length })}
       </button>
     ) : null;
   }
@@ -712,17 +770,19 @@ export function SynthesisSummary({
         <div>
           <h3>
             {synthesis
-              ? "AI summary is currently unavailable"
-              : "This record contains structured notes"}
+              ? t("AI summary is currently unavailable")
+              : t("This record contains structured notes")}
           </h3>
           <p>
-            {synthesis?.message ||
-              "Generate a concise AI summary from the information you’ve provided. Every statement is linked to the underlying facts."}
+            {t(outdated
+              ? "Prepare the summary again to use your selected language. Your recorded answers remain saved."
+              : synthesis?.message || "Generate a concise AI summary from the information you’ve provided. Every statement is linked to the underlying facts.")}
           </p>
           {readOnly ? (
             <p className="field-hint">
-              The approved version is shown exactly as shared. Its content
-              cannot be changed here.
+              {t(
+                "The approved version is shown exactly as shared. Its content cannot be changed here.",
+              )}
             </p>
           ) : (
             <Button
@@ -731,7 +791,7 @@ export function SynthesisSummary({
               busy={busy}
               onClick={onGenerate}
             >
-              Generate AI summary
+              {t("Generate AI summary")}
             </Button>
           )}
         </div>
@@ -742,17 +802,18 @@ export function SynthesisSummary({
     : [];
   return (
     <section className="synthesis-summary">
+      {outdated && preserveApproved && <p className="notice notice-info" role="status">{t("This shared report keeps the language approved by the patient. Withdraw sharing before preparing a new version in another language.")}</p>}
       <div className="synthesis-heading">
         <div className="synthesis-label">
           <Icon name="sparkle" size={19} />
-          <strong>AI consultation summary</strong>
+          <strong>{t("AI consultation summary")}</strong>
         </div>
-        <span>Based on your recorded information</span>
+        <span>{t("Based on your recorded information")}</span>
       </div>
       <div
         className="summary-view-switch"
         role="group"
-        aria-label="Summary perspective"
+        aria-label={t("Summary perspective")}
       >
         <button
           type="button"
@@ -761,7 +822,7 @@ export function SynthesisSummary({
           onClick={() => setView("patient")}
         >
           <Icon name="person" size={17} />
-          Patient overview
+          {t("Patient overview")}
         </button>
         <button
           type="button"
@@ -770,14 +831,14 @@ export function SynthesisSummary({
           onClick={() => setView("clinician")}
         >
           <Icon name="file" size={17} />
-          Clinician brief
+          {t("Clinician brief")}
         </button>
       </div>
       <div className="synthesis-section">
         <h3>
           {view === "patient"
-            ? "Your situation, in plain language"
-            : "Pre-consultation brief"}
+            ? t("Your situation, in plain language")
+            : t("Pre-consultation brief")}
         </h3>
         {prose(
           view === "patient"
@@ -787,11 +848,11 @@ export function SynthesisSummary({
       </div>
       {synthesis.concern_summaries?.length > 0 && (
         <div className="synthesis-section">
-          <h3>By concern</h3>
+          <h3>{t("By concern")}</h3>
           <div className="synthesis-concerns">
             {synthesis.concern_summaries.map((concern, i) => (
               <article key={concern.concern_id || i}>
-                <h4>{concern.title}</h4>
+                <h4>{recordTitle(concern.title, t)}</h4>
                 <p>
                   {concern.summary}
                   {citations(concern.source_ids)}
@@ -804,7 +865,8 @@ export function SynthesisSummary({
       {synthesis.appointment_agenda?.length > 0 && (
         <div className="synthesis-section agenda-section">
           <h3>
-            <Icon name="check" size={19} /> Your appointment agenda
+            <Icon name="check" size={19} />
+            {t("Your appointment agenda")}
           </h3>
           <ol>
             {synthesis.appointment_agenda.map((item, i) => (
@@ -819,7 +881,8 @@ export function SynthesisSummary({
       {synthesis.uncertainties?.length > 0 && (
         <div className="synthesis-section uncertainty-section">
           <h3>
-            <Icon name="info" size={19} /> Points to clarify
+            <Icon name="info" size={19} />
+            {t("Points to clarify")}
           </h3>
           {prose(synthesis.uncertainties)}
         </div>
@@ -827,27 +890,25 @@ export function SynthesisSummary({
       <details className="synthesis-sources">
         <summary>
           <Icon name="file" size={17} />
-          <span>Source information ({sources.length})</span>
+          <span>
+            {t("Source information ({count})", { count: sources.length })}
+          </span>
           <Icon name="chevron" size={17} />
         </summary>
         <p>
-          These are the current patient-provided facts used in the summary.
-          Original wording is preserved here, including any original-language
-          details.
+          {t(
+            "These are the current patient-provided facts used in the summary. Original wording is preserved here, including any original-language details.",
+          )}
         </p>
         <dl>
           {sources.map((source) => (
             <div key={source.id}>
               <dt>
-                {source.label}
-                <span>{source.status?.toLowerCase().replace(/_/g, " ")}</span>
+                {recordLabel(source.label, t)}
+                <span>{slotStatusLabel(source.status, t)}</span>
               </dt>
               <dd>
-                {typeof source.value === "string"
-                  ? source.value
-                  : source.value == null
-                    ? "Not provided"
-                    : JSON.stringify(source.value)}
+                {recordedValue(source.value, t)}
               </dd>
             </div>
           ))}
@@ -859,36 +920,37 @@ export function SynthesisSummary({
       </div>
       {!doctor && (
         <p className="summary-translation-note">
-          Please check that this English summary accurately reflects your own
-          words, including any translated details, before approving it.
+          {t(
+            "Please check that this summary accurately reflects your own words, including any translated details, before approving it.",
+          )}
         </p>
       )}
       {selectedSources && (
         <Modal
-          title="Supporting information"
+          title={t("Supporting information")}
           onClose={() => setSelectedSources(null)}
         >
           <p className="modal-copy">
-            This statement is based on the following information you provided.
+            {t(
+              "This statement is based on the following information you provided.",
+            )}
           </p>
           <dl className="source-modal-list">
             {selected.map((source) => (
               <div key={source.id}>
-                <dt>{source.label}</dt>
+                <dt>{recordLabel(source.label, t)}</dt>
                 <dd>
-                  {typeof source.value === "string"
-                    ? source.value
-                    : source.value == null
-                      ? "Not provided"
-                      : JSON.stringify(source.value)}
-                  <small>{source.status?.toLowerCase().replace(/_/g, " ")}</small>
+                  {recordedValue(source.value, t)}
+                  <small>
+                    {slotStatusLabel(source.status, t)}
+                  </small>
                 </dd>
               </div>
             ))}
           </dl>
           {!selected.length && (
             <p className="modal-copy">
-              No matching source is available in this version.
+              {t("No matching source is available in this version.")}
             </p>
           )}
           <div className="modal-actions">
@@ -896,7 +958,7 @@ export function SynthesisSummary({
               className="primary"
               onClick={() => setSelectedSources(null)}
             >
-              Done
+              {t("Done")}
             </Button>
           </div>
         </Modal>

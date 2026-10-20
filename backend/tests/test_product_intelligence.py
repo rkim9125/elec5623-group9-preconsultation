@@ -62,7 +62,7 @@ def test_baseline_questions_are_never_exposed_to_planner_even_when_deferred():
     assert s['stage']=='followup' and s['assistant']['mode']=='live'
     assert all((q['concern_id'],q['key']) not in excluded for q in model.plans[0]['targets'])
     assert all(q['key'] not in {'main_concern','topic_clarification','agenda_items','preparation_focus'} for q in model.plans[0]['targets'])
-    assert s['current_question']['why'] and s['assistant']['question_count']==1
+    assert s['current_question'] is None and s['followup_batch']['questions'][0]['why'] and s['assistant']['question_count']==1
     assert s['followup_started_at']<=s['messages'][-1]['created_at']
     assert [x['operation'] for x in s['ai_activity']]==['baseline_extraction','planning']
 
@@ -74,25 +74,25 @@ def test_baseline_alias_onset_duration_is_excluded_even_if_missing():
     assert (c['id'],'symptom_onset') in excluded and (c['id'],'symptom_duration') in excluded
     assert all(q['key'] not in {'symptom_onset','symptom_duration'} for q in pipeline.eligible_followups(s))
 
-def test_retry_preserves_budget_and_does_not_repeat_successful_baseline_extraction():
+def test_retry_preserves_batch_and_does_not_repeat_successful_baseline_extraction():
     s=baseline();ex=Extractor();model=Smart();pipeline.start_followup(s,intelligence=model,extraction=ex)
-    question=deepcopy(s['current_question']);pipeline.start_followup(s,intelligence=model,extraction=ex)
-    assert s['current_question']==question and len(ex.calls)==1 and len(model.plans)==1
-    pipeline.process_message(s,'','skip',intelligence=DownSmart(),extraction=ex)
+    batch=deepcopy(s['followup_batch']);pipeline.start_followup(s,intelligence=model,extraction=ex)
+    assert s['followup_batch']==batch and len(ex.calls)==1 and len(model.plans)==1
+    pipeline.answer_followup_batch(s,batch['id'],[{'question_id':q['id'],'status':'SKIPPED'} for q in batch['questions']],extraction=ex)
     assert s['current_question'] is None and s['assistant']['question_count']==1
     pipeline.start_followup(s,intelligence=model,extraction=ex)
-    assert len(ex.calls)==1 and s['assistant']['question_count']==2
+    assert len(ex.calls)==1 and s['assistant']['question_count']==1 and len(model.plans)==1
 
-def test_skip_unknown_and_six_question_budget_never_repeat_a_target():
+
+def test_skip_unknown_batch_never_repeats_a_target():
     s=baseline();model=Smart();ex=Extractor();pipeline.start_followup(s,intelligence=model,extraction=ex)
-    seen=[]
-    while s['current_question']:
-        q=s['current_question'];owner=q.get('concern_id','session');seen.append((owner,q['key']))
-        pipeline.process_message(s,'','unknown' if len(seen)%2 else 'skip',intelligence=model,extraction=ex)
-    assert len(seen)==len(set(seen)) and len(seen)<=6
+    batch=s['followup_batch'];seen=[(q['concern_id'],q['key']) for q in batch['questions']]
+    pipeline.answer_followup_batch(s,batch['id'],[{'question_id':q['id'],'status':'UNCERTAIN' if i%2 else 'SKIPPED'} for i,q in enumerate(batch['questions'])],extraction=ex)
+    assert len(seen)==len(set(seen)) and len(seen)<=5
     assert s['assistant']['question_count']==len(seen) and s['stage']=='followup'
     assert all(engine._owner_slots(s,o)[k]['status'] in {'UNCERTAIN','SKIPPED'} for o,k in seen)
     assert len(ex.calls)==1  # controls never fabricate additional extraction operations
+
 
 def test_no_eligible_targets_uses_no_planning_call():
     s=baseline()
@@ -255,7 +255,7 @@ def test_real_request_shape_bilingual_prompt_and_scaled_budget(monkeypatch):
     monkeypatch.setattr(ai,'get_settings',lambda:settings)
     def post(url,**kwargs):
         captured.append({'url':url,**kwargs})
-        return httpx.Response(200,json={'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':'{}'}]}]})
+        return httpx.Response(200,json={'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':json.dumps(valid_synthesis([], []))}]}]})
     monkeypatch.setattr(ai.httpx,'post',post)
     ai.OpenAIIntelligence().synthesize(model='gpt-6-sol',sources=[],concerns=[{'id':str(i),'title':'concern'} for i in range(12)])
     payload=captured[0]['json'];assert payload['store'] is False and payload['model']=='gpt-6-sol'
@@ -350,7 +350,7 @@ def test_invalid_optional_overview_is_hidden_but_valid_followup_is_retained(over
         def plan(self,**kwargs):
             data=super().plan(**kwargs);data['overview']=overview;return data
     pipeline.start_followup(s,intelligence=InvalidOverview(),extraction=Extractor())
-    assert s['assistant']['mode']=='live' and s['current_question'] is not None
+    assert s['assistant']['mode']=='live' and s['followup_batch']['status']=='pending'
     assert s['assistant']['overview']=='You can add optional detail or review your notes whenever you are ready.'
     assert overview['text'] not in json.dumps(s['assistant'])
     assert s['ai_activity'][-1]['status']=='completed' and 'optional overview' in s['ai_activity'][-1]['message']

@@ -40,7 +40,7 @@ elif action == 'start':
     env = dict(os.environ, PYTHONUNBUFFERED='1')
     env.pop('ENABLE_LEGACY_API', None)
     with (STATE / 'server.log').open('ab') as log:
-        process = subprocess.Popen([str(ROOT / '.venv/bin/python'), '-m', 'uvicorn', 'app.core.main:app', '--host', '127.0.0.1', '--port', '8000', '--no-access-log'],
+        process = subprocess.Popen([sys.executable, '-m', 'uvicorn', 'app.core.main:app', '--host', '127.0.0.1', '--port', '8000', '--no-access-log'],
             cwd=ROOT / 'backend', env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
     PID.write_text(str(process.pid))
     PID.chmod(0o600)

@@ -8,12 +8,14 @@ from __future__ import annotations
 from copy import deepcopy
 
 from . import engine, presentation
+from .locales import CHAT_OPENERS
 from .workflows import CORE_QUESTIONS, SHARED_QUESTIONS, get_workflow
 
 SHARED_FIELDS = (
-    "appointment_goal", "current_medications", "allergies", "relevant_history",
-    "patient_worry", "clinician_questions",
+    "appointment_goal", "current_medications", "allergies", "additional_information",
+    "relevant_history", "patient_worry", "clinician_questions",
 )
+REVIEW_ONLY_FIELDS = {"relevant_history", "patient_worry", "clinician_questions"}
 # These are alternate ways of asking for the agenda already captured by topic
 # selection, the individual descriptions and the shared appointment goal.
 AGENDA_ALIASES = ("main_concern", "agenda_items", "preparation_focus", "topic_clarification")
@@ -23,6 +25,7 @@ LABELS = {
     "relevant_history": "Relevant medical history", "patient_worry": "What matters most to you",
     "clinician_questions": "Questions for your clinician", "priority_concern": "Your first priority",
     "sensitive_permission": "Permission to include personal details",
+    "additional_information": "Anything else for your doctor",
 }
 
 
@@ -33,25 +36,53 @@ def _editable(session: dict) -> None:
         raise ValueError("This preparation cannot accept form changes in its current state.")
 
 
-def initialize(session: dict, custom_concerns: list[str] | None = None) -> dict:
-    """Start a new form-first session without an initial interview question."""
+def apply_profile(session: dict, answers: list[dict]) -> None:
+    """Reuse only durable patient-authored history, with its original provenance.
+
+    Profile data never answers current medicines, allergies, symptoms or readings.
+    It remains editable through the ordinary wizard answer endpoint.
+    """
+    for answer in answers:
+        if answer.get("concern_id") != "session" or answer.get("key") != "relevant_history":
+            continue
+        value = answer.get("value")
+        if answer.get("status") != "FILLED" or not isinstance(value, str) or not value.strip():
+            continue
+        slot = session["shared_slots"]["relevant_history"]
+        if slot.get("status") != "MISSING":
+            continue
+        evidence = {"source": "patient_profile", "span": value, "key": "relevant_history",
+                    "profile_updated_at": session.get("profile_snapshot", {}).get("updated_at")}
+        engine._update_slot(slot, value, "FILLED", evidence, correction=False)
+        slot["profile_reused"] = True
+
+
+def initialize(session: dict, custom_concerns: list[str] | None = None, *, mode: str = "wizard") -> dict:
+    """Start a guided preparation, or immediately open an unstructured conversation."""
     _editable(session)
     for title in dict.fromkeys(custom_concerns or []):
         engine._add_concern(session, "GENERAL", title,
                             {"source": "patient_selection", "title": title})
-    if not session["concerns"]:
+    if not session["concerns"] and mode != "chat":
         engine._add_concern(session, "GENERAL", "Something else / my own concern",
                             {"source": "patient_selection", "workflow_id": "GENERAL"})
-    session.update(experience_version=2, stage="baseline", baseline={"completed": False})
+    session.update(experience_version=3, mode=mode, stage="followup" if mode == "chat" else "baseline",
+                   baseline={"completed": mode == "chat", "entry_mode": mode})
     session["agenda_mode"] = session.get("agenda_mode", False) or len(session["concerns"]) > 1
     session["messages"] = []
     session["current_question"] = None
     session["plan"]["next_target"] = None
-    session["assistant"] = {"mode": "ready", "overview": "Complete the preparation form in your own time.",
+    session["assistant"] = {"mode": "ready", "overview": "Take one step at a time. You can skip any question and return later.",
                             "focus": "Your appointment", "rationale": "AI will check for useful follow-up details after your form.",
                             "suggested_topics": [], "questions_remaining": 0, "question_count": 0}
     engine._apply_conditions(session)
     engine._metrics(session)
+    if mode == "chat":
+        opener = CHAT_OPENERS.get(session.get("locale", "en"), CHAT_OPENERS["en"])
+        session["assistant"].update(overview=opener, rationale="", questions_remaining=6)
+        session["current_question"] = {"key": "main_concern", "question": opener}
+        session["plan"]["next_target"] = deepcopy(session["current_question"])
+        engine._message(session, "assistant", opener)
     # A custom topic is patient text and passes the same pre-extraction gate.
     for title in custom_concerns or []:
         if engine.check_safety(title).triggered or engine._WITHDRAW.search(title):
@@ -68,6 +99,19 @@ def _field(owner: str, key: str, slot: dict, definition: dict | None = None, *, 
     question = definition.get("question", slot.get("question", ""))
     if guidance:
         question = guidance.pop("question", question)
+    hint = None
+    if key == "concern_description":
+        question = "What would you like to discuss about this topic?"
+        hint = "A sentence or two is enough. We will guide you through the details next."
+        workflow = get_workflow(workflow_id) if workflow_id else None
+        if workflow and workflow.get("category") == "Symptoms":
+            question = "What symptoms or changes have you noticed?"
+            hint = "Briefly describe where you feel it and what it feels like. We will ask about timing and daily activities next."
+        if workflow_id == "WF-01":
+            question = "Please briefly describe your leg discomfort."
+            hint = "For example: My left calf aches when I walk. A sentence or two is enough."
+    elif key == "additional_information":
+        hint = "Add any worries, questions for your doctor, or background that is not already in your profile. You can leave this blank."
     field = {"concern_id": owner, "key": key,
             "label": LABELS.get(key, definition.get("label", slot["label"])),
             "question": question,
@@ -76,6 +120,12 @@ def _field(owner: str, key: str, slot: dict, definition: dict | None = None, *, 
             "required": key in {"concern_description", "appointment_goal", "current_medications", "allergies"},
             "input_type": "permission" if key == "sensitive_permission" else "textarea",
             "requires_permission": permission}
+    if hint:
+        field["hint"] = hint
+    if owner == "session" and key in REVIEW_ONLY_FIELDS:
+        field["review_only"] = True
+    if slot.get("profile_reused") and (slot.get("evidence") or {}).get("source") == "patient_profile":
+        field["profile_reused"] = True
     if guidance:
         field["presentation"] = guidance
     return field
@@ -83,6 +133,10 @@ def _field(owner: str, key: str, slot: dict, definition: dict | None = None, *, 
 
 def get_form(session: dict) -> dict:
     """Return a stable, concise form with shared background collected once."""
+    # Existing drafts retain their original fields and answers; only the wizard
+    # presentation merges the three repeated prompts into one optional step.
+    session["shared_slots"].setdefault("additional_information", engine._slot(
+        "additional_information", question=SHARED_QUESTIONS["additional_information"]))
     groups = []
     shared = list(SHARED_FIELDS)
     if len(session.get("concerns", [])) > 1 or session.get("agenda_mode"):
@@ -164,6 +218,14 @@ def _invalidate_derived(session: dict, changed: list[dict]) -> None:
     for item in list(session.get("items", [])):
         if stale(item.get("evidence")):
             slots = engine._owner_slots(session, item["concern_id"])
+            # Keep independent follow-up answers privately until the edited
+            # baseline confirms the same item identity again. Removed medicines
+            # never remain in current sources merely because an old dose exists.
+            session.setdefault("_superseded_baseline_items", []).append({
+                "item": deepcopy(item),
+                "slots": {key: deepcopy(slots[key]) for key in item.get("fields", {}).values() if key in slots},
+                "restore_revision": session.get("baseline", {}).get("revision", 0) + 1,
+            })
             for key in item.get("fields", {}).values():
                 slots.pop(key, None)
             session["items"].remove(item)
@@ -282,7 +344,7 @@ def apply_baseline(session: dict, answers: list[dict], *, complete: bool = False
     engine._apply_conditions(session)
     if session.get("summary"):
         session["_summary_version"] = max(session.get("_summary_version", 0), session["summary"].get("version", 0))
-    session.update(experience_version=2, status="active", stage="followup" if complete else "baseline",
+    session.update(experience_version=max(3, session.get("experience_version", 2)), status="active", stage="followup" if complete else "baseline",
                    summary=None, current_question=None)
     session["plan"]["next_target"] = None
     baseline = session.setdefault("baseline", {})
@@ -306,6 +368,8 @@ def apply_baseline(session: dict, answers: list[dict], *, complete: bool = False
         baseline["revision"] = baseline.get("revision", 0) + 1
         baseline.pop("extracted_at", None)
         baseline.pop("extraction_revision", None)
+        from .pipeline import invalidate_followup_for_baseline
+        invalidate_followup_for_baseline(session)
     engine._metrics(session)
     session.setdefault("audit", []).append({"event": "baseline_completed" if complete else "baseline_saved",
                                             "message_id": msg["id"] if msg else None, "changes": changes})

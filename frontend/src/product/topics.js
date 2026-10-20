@@ -1,4 +1,4 @@
-const descriptions = {
+export const descriptions = {
   "WF-01": "Where it hurts, what it feels like, and how it affects your day.",
   "WF-02": "The pattern of your back discomfort and changes you have noticed.",
   "WF-03": "Neck or shoulder symptoms, movement and everyday activities.",

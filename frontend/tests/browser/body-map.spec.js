@@ -5,7 +5,7 @@ const zone = (page, label) =>
   page.locator(".bm-zones").getByRole("button", { name: label, exact: true });
 const row = (page, label) =>
   page.locator(".bm-list").getByRole("button", { name: label, exact: true });
-test("single selection, view preservation, orientation, keyboard and clear", async ({
+test("multiple selections, view preservation, orientation, keyboard and clear", async ({
   page,
 }) => {
   await page.goto(fixture);
@@ -13,14 +13,16 @@ test("single selection, view preservation, orientation, keyboard and clear", asy
   await expect(
     page.getByRole("button", { name: "Clear", exact: true }),
   ).toBeDisabled();
-  const knee = zone(page, "Right knee, front");
+  const knee = zone(page, "Right Knee · Front");
   await knee.click();
   await expect(knee).toBeFocused();
-  await expect(row(page, "Right knee, front")).toHaveAttribute(
+  await expect(row(page, "Right Knee · Front")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  await expect(page.locator(".bm-result")).toContainText("Right knee · Front");
+  await expect(page.locator(".bm-result")).toContainText("Right Knee · Front");
+  await knee.press("Space");
+  await expect(knee).toHaveAttribute("aria-pressed", "false");
   await knee.press("Space");
   await expect(knee).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Back", exact: true }).click();
@@ -28,24 +30,31 @@ test("single selection, view preservation, orientation, keyboard and clear", asy
   await expect(
     page.locator(".bm-zones [aria-pressed=true], .bm-list [aria-pressed=true]"),
   ).toHaveCount(0);
-  await expect(page.locator(".bm-result")).toContainText("Right knee · Front");
+  await expect(page.locator(".bm-result")).toContainText("Right Knee · Front");
   await page.getByRole("button", { name: "Front", exact: true }).click();
   await expect(knee).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  const calf = row(page, "Left calf, back");
+  const calf = row(page, "Left Calf · Back");
   await calf.focus();
   await calf.press("Enter");
   await expect(calf).toBeFocused();
-  await expect(zone(page, "Left calf, back")).toHaveAttribute(
+  await expect(zone(page, "Left Calf · Back")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  expect((await zone(page, "Left calf, back").boundingBox()).x).toBeLessThan(
-    (await zone(page, "Right calf, back").boundingBox()).x,
+  expect((await zone(page, "Left Calf · Back").boundingBox()).x).toBeLessThan(
+    (await zone(page, "Right Calf · Back").boundingBox()).x,
   );
-  await expect(page.locator(".bm-result")).toContainText("Left calf · Back");
+  await expect(page.locator(".bm-result")).toContainText("Left Calf · Back");
+  await expect(page.locator(".bm-result")).toContainText("Right Knee · Front");
+  await expect(page.locator(".bm-selected-areas li")).toHaveCount(2);
   await calf.press("Tab");
-  await expect(row(page, "Right ankle, back")).toBeFocused();
+  await expect(row(page, "Right Ankle · Back")).toBeFocused();
+  await page
+    .getByRole("button", { name: "Remove Right Knee · Front", exact: true })
+    .click();
+  await expect(page.locator(".bm-selected-areas li")).toHaveCount(1);
+  await expect(page.locator(".bm-result")).toContainText("Left Calf · Back");
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Back", exact: true }),
@@ -60,14 +69,14 @@ for (const width of [320, 390, 768])
   test(`layout and reference capture ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1200 });
     await page.goto(fixture);
-    await zone(page, "Right knee, front").click();
+    await zone(page, "Right Knee · Front").click();
     await page.screenshot({
       path: `test-results/body-${width}.png`,
       fullPage: true,
       animations: "disabled",
     });
     await page.getByRole("button", { name: "Back", exact: true }).click();
-    await row(page, "Left back of knee, back").click();
+    await row(page, "Left Back of knee · Back").click();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -94,11 +103,17 @@ test("narrow parent, reduced motion and guided form integration", async ({
   await page.setViewportSize({ width: 768, height: 1200 });
   await page.goto(fixture + "?guided");
   await page.locator("#root").evaluate((el) => (el.style.width = "300px"));
-  await row(page, "Right knee, front").click();
+  await row(page, "Right Knee · Front").click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await row(page, "Left back of knee, back").click();
+  await row(page, "Left Back of knee · Back").click();
   await expect(page.locator(".bm-result")).toContainText(
-    "Left back of knee · Back",
+    "Left Back of knee · Back",
+  );
+  await expect(page.getByTestId("saved-answer")).toContainText(
+    "- Right knee · Front",
+  );
+  await expect(page.getByTestId("saved-answer")).toContainText(
+    "- Left back of knee · Back",
   );
   const map = await page.locator(".bm-map").boundingBox(),
     list = await page.locator(".bm-list").boundingBox();
@@ -110,7 +125,7 @@ test("narrow parent, reduced motion and guided form integration", async ({
   ).toBe(true);
   await page.emulateMedia({ reducedMotion: "reduce" });
   expect(
-    await row(page, "Left back of knee, back").evaluate(
+    await row(page, "Left Back of knee · Back").evaluate(
       (el) => getComputedStyle(el).transitionDuration,
     ),
   ).toBe("0s");
@@ -125,13 +140,62 @@ test("initial selection in uncontrolled use retains its original view", async ({
   page,
 }) => {
   await page.goto(fixture + "?initial");
-  await expect(page.locator(".bm-result")).toContainText("Left calf · Back");
+  await expect(page.locator(".bm-result")).toContainText("Left Calf · Back");
   await expect(page.locator(".bm-zones [aria-pressed=true]")).toHaveCount(0);
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await expect(zone(page, "Left calf, back")).toHaveAttribute(
+  await expect(zone(page, "Left Calf · Back")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  await row(page, "Right foot, back").click();
-  await expect(page.locator(".bm-result")).toContainText("Right foot · Back");
+  await row(page, "Right Foot · Back").click();
+  await expect(page.locator(".bm-result")).toContainText("Right Foot · Back");
+  await expect(page.locator(".bm-result")).toContainText("Left Calf · Back");
 });
+
+test("legacy locations and authored details survive adding multiple locations", async ({
+  page,
+}) => {
+  await page.goto(fixture + "?guided&legacy");
+  await row(page, "Right Knee · Front").click();
+  await row(page, "Left Knee · Front").click();
+  await expect(page.getByTestId("saved-answer")).toHaveText(
+    "Selected options:\n- Right knee · Front\n- Left knee · Front\n\nAdditional details:\nRight knee\nPatient’s original detail.",
+  );
+});
+
+for (const original of ["", "O", "AB-"])
+  test(`blood profile preserves known ABO and optional Rh: ${original || "empty"}`, async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/auth/profile", async (route) => {
+      const profile =
+        route.request().method() === "PUT"
+          ? route.request().postDataJSON()
+          : { blood_group: original };
+      await route.fulfill({ json: { profile } });
+    });
+    await page.goto(fixture + "?profile");
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    if (!original) {
+      await expect(
+        page.getByRole("group", { name: "Rh factor (optional)" }),
+      ).toHaveCount(0);
+      await page.getByRole("button", { name: "O", exact: true }).click();
+    }
+    const rh = page.getByRole("group", { name: "Rh factor (optional)" });
+    await expect(
+      rh.getByRole("button", {
+        name: original === "AB-" ? "Negative (−)" : "I don’t know",
+        exact: true,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    for (let step = 0; step < 5; step++)
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Save profile", exact: true })
+      .click();
+    await expect(page.locator("output")).toContainText(
+      `"blood_group":"${original || "O"}"`,
+    );
+  });

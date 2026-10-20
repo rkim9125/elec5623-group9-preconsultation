@@ -1,0 +1,235 @@
+{
+  "notice": "SYNTHETIC TEST DATA / 虚构测试数据 / 非真实医疗文件",
+  "purpose": "Application testing only. No real patient or clinician. No diagnostic interpretation or treatment advice.",
+  "case01": {
+    "id": "TC01",
+    "patient_name": "Alex Lin (TEST)",
+    "date_of_birth": "1988-04-12",
+    "sex": "Male",
+    "examination_date": "2026-10-20",
+    "onset_date": "2026-10-14",
+    "reported_symptoms": "Bilateral anterior knee ache after a long walk; discomfort on stairs; able to walk.",
+    "photo_date": "2026-10-19",
+    "photo_description": "Small, faint bruise on the right anterior knee.",
+    "vitals": {
+      "blood_pressure_mmhg": "122/78",
+      "pulse_bpm": 72,
+      "temperature_c": 36.7,
+      "height_cm": 178,
+      "weight_kg": 74
+    },
+    "examination": {
+      "right_knee": "Mild localized anterior tenderness; small fading bruise approximately 3 x 2 cm; motion 0-125 degrees.",
+      "left_knee": "Mild anterior tenderness; no bruise; motion 0-130 degrees.",
+      "shared_findings": "No visible effusion. Able to walk; discomfort on stairs."
+    },
+    "medications": [
+      {
+        "name": "Vitamin C",
+        "amount": "1 tablet per day",
+        "strength": "Unknown"
+      },
+      {
+        "name": "Paracetamol",
+        "amount": "500 mg, one dose on 2026-10-19",
+        "status": "Historical single dose; not daily"
+      }
+    ],
+    "allergies": "Rash after amoxicillin in 2015, patient reported and unconfirmed; no formal allergy testing.",
+    "investigations": "No X-ray or MRI in this test case. No laboratory tests ordered or available.",
+    "assessment": "Knee discomfort, patient reported; diagnosis not established in this synthetic record."
+  },
+  "case02": {
+    "id": "TC02",
+    "patient_name": "Maya Chen (TEST)",
+    "date_of_birth": "1971-09-08",
+    "sex": "Female",
+    "review_date": "2026-10-20",
+    "visit_reason": "Booked review; no new symptoms reported.",
+    "reported_history": [
+      "Hypertension, patient-reported prior diagnosis in 2021",
+      "Hyperlipidemia, patient-reported prior diagnosis in 2024"
+    ],
+    "medications": [
+      {
+        "name": "Amlodipine",
+        "amount": "5 mg daily at 07:30",
+        "adherence": "Missed only the 2026-10-16 dose"
+      },
+      {
+        "name": "Atorvastatin",
+        "amount": "10 mg nightly"
+      }
+    ],
+    "allergies": "No known drug or food allergies, patient reported.",
+    "last_clinic_review": {
+      "date": "2026-10-08",
+      "blood_pressure_mmhg": "146/90",
+      "pulse_bpm": 74
+    },
+    "blood_collection": {
+      "date": "2026-10-18",
+      "time": "08:10",
+      "fasting": true,
+      "results": [
+        {
+          "test": "Sodium",
+          "value": 140,
+          "unit": "mmol/L"
+        },
+        {
+          "test": "Potassium",
+          "value": 4.2,
+          "unit": "mmol/L"
+        },
+        {
+          "test": "Creatinine",
+          "value": 74,
+          "unit": "umol/L"
+        },
+        {
+          "test": "eGFR",
+          "value": 82,
+          "unit": "mL/min/1.73 m2"
+        },
+        {
+          "test": "Fasting glucose",
+          "value": 5.4,
+          "unit": "mmol/L"
+        },
+        {
+          "test": "Total cholesterol",
+          "value": 5.2,
+          "unit": "mmol/L"
+        },
+        {
+          "test": "LDL cholesterol",
+          "value": 3.0,
+          "unit": "mmol/L"
+        },
+        {
+          "test": "HDL cholesterol",
+          "value": 1.4,
+          "unit": "mmol/L"
+        },
+        {
+          "test": "Triglycerides",
+          "value": 1.7,
+          "unit": "mmol/L"
+        }
+      ]
+    },
+    "home_monitoring": {
+      "device": "Fictional upper-arm monitor",
+      "arm": "Left",
+      "preparation": "Seated, rested 5 minutes",
+      "readings_per_session": 1,
+      "readings": [
+        {
+          "date": "2026-10-14",
+          "time": "07:30",
+          "systolic_mmhg": 138,
+          "diastolic_mmhg": 86,
+          "pulse_bpm": 70
+        },
+        {
+          "date": "2026-10-14",
+          "time": "19:30",
+          "systolic_mmhg": 142,
+          "diastolic_mmhg": 88,
+          "pulse_bpm": 72
+        },
+        {
+          "date": "2026-10-15",
+          "time": "07:30",
+          "systolic_mmhg": 140,
+          "diastolic_mmhg": 87,
+          "pulse_bpm": 69
+        },
+        {
+          "date": "2026-10-15",
+          "time": "19:30",
+          "systolic_mmhg": 144,
+          "diastolic_mmhg": 89,
+          "pulse_bpm": 73
+        },
+        {
+          "date": "2026-10-16",
+          "time": "07:30",
+          "systolic_mmhg": 141,
+          "diastolic_mmhg": 88,
+          "pulse_bpm": 71
+        },
+        {
+          "date": "2026-10-16",
+          "time": "19:30",
+          "systolic_mmhg": 145,
+          "diastolic_mmhg": 90,
+          "pulse_bpm": 75
+        },
+        {
+          "date": "2026-10-17",
+          "time": "07:30",
+          "systolic_mmhg": 136,
+          "diastolic_mmhg": 84,
+          "pulse_bpm": 68
+        },
+        {
+          "date": "2026-10-17",
+          "time": "19:30",
+          "systolic_mmhg": 139,
+          "diastolic_mmhg": 86,
+          "pulse_bpm": 70
+        },
+        {
+          "date": "2026-10-18",
+          "time": "07:30",
+          "systolic_mmhg": 143,
+          "diastolic_mmhg": 89,
+          "pulse_bpm": 72
+        },
+        {
+          "date": "2026-10-18",
+          "time": "19:30",
+          "systolic_mmhg": 140,
+          "diastolic_mmhg": 87,
+          "pulse_bpm": 71
+        },
+        {
+          "date": "2026-10-19",
+          "time": "07:30",
+          "systolic_mmhg": 137,
+          "diastolic_mmhg": 85,
+          "pulse_bpm": 69
+        },
+        {
+          "date": "2026-10-19",
+          "time": "19:30",
+          "systolic_mmhg": 138,
+          "diastolic_mmhg": 86,
+          "pulse_bpm": 70
+        },
+        {
+          "date": "2026-10-20",
+          "time": "07:30",
+          "systolic_mmhg": 139,
+          "diastolic_mmhg": 87,
+          "pulse_bpm": 70
+        },
+        {
+          "date": "2026-10-20",
+          "time": "19:30",
+          "systolic_mmhg": 141,
+          "diastolic_mmhg": 88,
+          "pulse_bpm": 72
+        }
+      ],
+      "arithmetic_average": {
+        "systolic_mmhg": 140.2,
+        "diastolic_mmhg": 87.1,
+        "pulse_bpm": 70.9
+      },
+      "interpretation": "Descriptive arithmetic average of 14 synthetic readings only; not a diagnosis."
+    }
+  }
+}

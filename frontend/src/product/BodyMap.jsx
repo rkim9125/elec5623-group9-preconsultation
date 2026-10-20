@@ -1,5 +1,6 @@
 import React, { useId, useState } from "react";
 import { bodyMapViews, getBodyRegion } from "./bodyRegions.js";
+import { useLocale } from "./i18n.jsx";
 
 function Figure({ illustration, view }) {
   if (illustration === "legs")
@@ -103,6 +104,7 @@ export default function BodyMap({
   disabled,
   label,
 }) {
+  const { t } = useLocale();
   const titleId = useId();
   const availableViews = bodyMapViews(illustration);
   const [chosenView, setView] = useState(availableViews[0]);
@@ -113,9 +115,9 @@ export default function BodyMap({
   return (
     <div className="body-map-panel">
       <div className="body-map-toolbar">
-        <strong>{illustration === "head" ? "Head map" : "Body map"}</strong>
+        <strong>{t(illustration === "head" ? "Head map" : "Body map")}</strong>
         {availableViews.length > 1 ? (
-          <div className="body-map-views" aria-label="Diagram view">
+          <div className="body-map-views" aria-label={t("Diagram view")}>
             {availableViews.map((item) => (
               <button
                 type="button"
@@ -124,19 +126,19 @@ export default function BodyMap({
                 onClick={() => setView(item)}
                 disabled={disabled}
               >
-                {item === "front" ? "Front" : "Back"}
+                {t(item === "front" ? "Front" : "Back")}
               </button>
             ))}
           </div>
         ) : (
           <span className="body-map-view-label">
-            {onRear ? "Back view" : "Front view"}
+            {t(onRear ? "Back view" : "Front view")}
           </span>
         )}
       </div>
       <div className="body-map-orientation" aria-hidden="true">
-        <span>Your {onRear ? "left" : "right"}</span>
-        <span>Your {onRear ? "right" : "left"}</span>
+        <span>{t(onRear ? "Your left" : "Your right")}</span>
+        <span>{t(onRear ? "Your right" : "Your left")}</span>
       </div>
       <svg
         viewBox="0 0 300 360"
@@ -145,7 +147,10 @@ export default function BodyMap({
         aria-labelledby={titleId}
       >
         <title id={titleId}>
-          {label} — {view} view, left and right refer to your body
+          {t("{label} — {view}, left and right refer to your body", {
+            label: t(label),
+            view: t(onRear ? "Back view" : "Front view"),
+          })}
         </title>
         <g className="body-silhouette" aria-hidden="true">
           <Figure illustration={illustration} view={view} />
@@ -159,7 +164,7 @@ export default function BodyMap({
               key={option.value}
               className={`body-map-region ${pressed ? "selected" : ""}`}
               role="button"
-              aria-label={option.label}
+              aria-label={t(option.label)}
               aria-pressed={pressed}
               aria-disabled={disabled || undefined}
               tabIndex={disabled ? -1 : 0}
@@ -171,7 +176,7 @@ export default function BodyMap({
                 }
               }}
             >
-              <title>{option.label}</title>
+              <title>{t(option.label)}</title>
               <rect {...shape} />
               {pressed && (
                 <path
@@ -184,8 +189,9 @@ export default function BodyMap({
         })}
       </svg>
       <p className="body-map-caption">
-        Tap a highlighted area, or use the location buttons. Left and right
-        refer to your body.
+        {t(
+          "Tap a highlighted area, or use the location buttons. Left and right refer to your body.",
+        )}
       </p>
     </div>
   );

@@ -14,7 +14,7 @@ TEST.mkdir(parents=True, exist_ok=True, mode=0o700)
 # This harness always uses an isolated DB, never the real application data.
 os.environ.update(PRODUCT_DB_PATH=str(TEST / 'test.sqlite3'), UPLOAD_DIR=str(TEST / 'uploads'),
                   OPENAI_API_KEY='', RESEND_API_KEY='', RESEND_FROM_EMAIL='', APP_ENV='local',
-                  APP_BASE_URL='http://127.0.0.1:8001', DOCTOR_EMAILS='doctor@example.test', ENABLE_LEGACY_API='0')
+                  APP_BASE_URL='http://127.0.0.1:8001', DOCTOR_EMAILS='', ENABLE_LEGACY_API='0', OPENAI_MODEL='gpt-6-astra')
 sys.path.insert(0, str(ROOT / 'backend'))
 from app.product.database import init_db, get_connection, save_intake
 init_db()
@@ -23,9 +23,11 @@ with get_connection() as conn:
     conn.execute('DELETE FROM intakes')
     conn.execute('DELETE FROM sessions')
     conn.execute('DELETE FROM rate_limits')
+    conn.execute('DELETE FROM patient_profiles')
     for role, email, name in [('patient','patient@example.test','Alex Morgan'),('doctor','doctor@example.test','Jamie Taylor')]:
         uid = 'browser-test-' + role
         conn.execute('INSERT OR IGNORE INTO users (id,email,name,created_at) VALUES (?,?,?,?)', (uid,email,name,'2026-10-05T00:00:00Z'))
+        conn.execute('INSERT INTO account_roles (user_id,role,assigned_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET role=excluded.role', (uid,role,'2026-10-05T00:00:00Z'))
         token = secrets.token_urlsafe(48)
         conn.execute('INSERT INTO sessions VALUES (?,?,?,?,?)', (hashlib.sha256(token.encode()).hexdigest(),uid,role,time.time()+3600,time.time()))
         tokens[role] = token
@@ -79,6 +81,31 @@ if assessment_fixture.exists():
     if not public_report(seed):
         raise RuntimeError('Synthetic assessment is not current after fixture copying.')
     save_intake(seed)
+# A deterministic three-question batch exercises the real draft/answer API.
+# Its options are fixture data; no model, real patient, or external API is used.
+from app.product import engine, forms, pipeline
+batch_seed = forms.initialize(engine.new_intake(
+    {'id': 'browser-test-patient', 'email': 'patient@example.test', 'name': 'Alex Morgan'},
+    'gpt-6-astra', ['WF-01'], title='Synthetic grouped follow-up'))
+batch_seed['id'] = 'browser-followup-batch'
+batch_seed['locale'] = 'en'
+batch_concern = batch_seed['concerns'][0]
+forms.apply_baseline(batch_seed, [{'concern_id': batch_concern['id'], 'key': 'concern_description',
+                                 'value': 'A dull leg ache after long walks.'}], complete=True)
+batch_questions = []
+for key, choices in [('symptom_course', ['Improving overall', 'About the same', 'Worsening overall']),
+                     ('severity', ['Mild', 'Moderate', 'Strong']),
+                     ('functional_impact', [])]:
+    slot = batch_concern['slots'][key]
+    slot['status'] = 'MISSING'
+    batch_questions.append({
+        'target': {'target_id': pipeline._target_id(batch_concern['id'], key),
+                   'concern_id': batch_concern['id'], 'key': key, 'question': slot['question']},
+        'rationale': '',
+        'options': [{'id': chr(65 + i), 'label': label, 'value': label} for i, label in enumerate(choices)],
+    })
+pipeline._publish_batch(batch_seed, batch_questions, '')
+save_intake(batch_seed)
 from app.core.main import create_app
 import uvicorn
 uvicorn.run(create_app(enable_legacy=False), host='127.0.0.1', port=8001, access_log=False)

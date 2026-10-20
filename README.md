@@ -2,7 +2,9 @@
 
 ## Integrated local product
 
-The complete patient and clinician integration is on `codex/integration`. Start with `bash scripts/start-local.sh`, then open http://127.0.0.1:8000. See [local product setup, email configuration and deployment guide](docs/local-product.md). The historical project documentation follows below.
+The complete patient and clinician integration is based on the latest `integration` branch. Start with `bash scripts/start-local.sh`, then open http://127.0.0.1:8000. See [local product setup, email configuration and deployment guide](docs/local-product.md). The historical project documentation follows below.
+
+The v3 patient experience offers a one-question wizard for all 30 topics, a custom conversation entry, prominent voice recording with editable transcription, reusable patient background, and English/简体中文/繁體中文/한국어/日本語. The default assistant is `gpt-6-astra`, adjustable in advanced options. Any valid email can register as patient or doctor, with a distinct email required for each role. See the [v3 experience and API contract](docs/product-v3-contract.md).
 
 The current integration includes a separate **AI diagnosis & consultation guidance** assessment for patient and clinician review, plus complete PDF export with uploaded images and every page of uploaded PDFs. AI diagnostic possibilities remain preliminary and require clinical confirmation. See the [assessment and export contract](docs/assessment-report.md).
 

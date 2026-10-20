@@ -13,15 +13,15 @@ This integration builds on the complete upstream repository at `36a10c4` on loca
 
 The startup script builds the React bundle and serves both web interfaces and the API on one localhost address. SQLite starts inside the application. Docker, a separate database service, and Aliyun OSS are not needed for this local deployment. The server binds only to the Mac's loopback interface. Keep the Mac awake while using it; restart after reboot. Use separate browser profiles or an incognito window to test patient and doctor sessions simultaneously. Microphone access requires browser permission. Localhost is a browser secure context; remote microphone use requires HTTPS.
 
-Patient and doctor portals share one browser session. Opening the other portal keeps the requested URL and shows an explicit identity-switch screen; it never silently redirects to the current role or grants another role. Choose **Sign out and continue to doctor sign-in** (or the patient equivalent), then verify the appropriate email. The doctor email still requires administrator authorization. Returning to a tab rechecks the server identity and clears the old workspace when the server reports an identity change. Each portal's home logo stays within that portal.
+Patient and doctor portals share one browser session. Opening the other portal keeps the requested URL and shows an explicit identity-switch screen; it never silently redirects to the current role or grants another role. Choose **Sign out and continue to doctor sign-in** (or the patient equivalent), then verify the appropriate email. Patient and doctor accounts use separate emails; every verified email can register either role once. Returning to a tab rechecks the server identity and clears the old workspace when the server reports an identity change. Each portal's home logo stays within that portal.
 
 ## Finish email setup
 
-The application has no password login, fixed verification code, or demo authentication bypass. It sends a single-use six-digit code through Resend, valid for ten minutes. Doctor emails must be explicitly configured; selecting the doctor portal does not grant doctor access.
+The application has no password login, fixed verification code, or demo authentication bypass. It sends a single-use six-digit code through Resend, valid for ten minutes. A verified email registers one permanent role. Doctor registration is open to all valid email addresses, but clinicians only see patient-approved records assigned to their account.
 
 1. Set `RESEND_FROM_EMAIL` to a sender on a domain verified in your Resend account.
-2. Set `DOCTOR_EMAILS` to the clinician login address(es), comma separated.
-3. Restart the server.
+2. Restart the server.
+3. Register a clinician through the doctor portal with an email different from the patient account.
 
 Run `.venv/bin/python scripts/configure-email.py` for an interactive setup. Resend's test sender `onboarding@resend.dev` is suitable only where the account's testing restrictions permit the recipient; use a verified domain for general patient sign-in. A sending-only API key cannot query sending domains, so a rejected domain-list request does not prove sending is broken.
 
@@ -30,12 +30,12 @@ Run `.venv/bin/python scripts/configure-email.py` for an interactive setup. Rese
 ## Patient and clinician workflow
 
 1. Sign in to the patient portal using an email code. Enter your preferred name if desired.
-2. Select any combination of the 30 preparation topics, add custom concerns, or continue without a predefined category. Consent to AI processing is explicit.
-3. Complete the grouped baseline form in one pass. Select illustrated body areas or answer cards where available, and add your own details. Common medicines, allergies, background and goals are collected once; each concern has its own fixed workflow questions. Save a draft, answer unknown, or choose not to answer. You may continue with an incomplete form.
+2. Choose a current symptom from the 30 preparation topics, or choose the first custom option to start a conversation directly. Consent to AI processing is explicit.
+3. Move through one illustrated question at a time. Use the prominent voice composer, body areas or answer cards, and add your own details. Durable profile background fills itself in and remains editable; current medicines, allergies and symptoms are collected for this visit. Save a draft, answer unknown, choose not to answer, or continue with incomplete answers.
 4. The AI checks the recorded information and asks bounded, relevant additional questions. Baseline questions are not repeated in chat. Each extra question explains its purpose; finish at any time. Voice transcription and optional document reading return editable text for patient confirmation. PDF/JPEG/PNG/WebP uploads remain private until approved sharing.
 5. Generate the factual summary and a separate **AI diagnosis & consultation guidance** report. The assessment considers current recorded information and every uploaded attachment. It presents preliminary diagnostic possibilities, supporting evidence, uncertainty, consultation timing, next steps and warning symptoms. Expand source references to compare the wording with the current recorded facts. Correct or remove details before approving. A failed AI operation is explicitly labelled; structured fallback notes remain available.
-6. Explicit approval shares exactly that reviewed version with the selected configured clinician.
-7. The clinician signs in to the doctor portal using their allowlisted email and reads approved assigned summaries, the AI assessment and attachments. Existing records can generate an assessment without changing their approved factual summary. Both portals offer **Download complete PDF** with the report, full images and all pages of uploaded PDFs. Marking a record reviewed does not confirm an AI diagnosis.
+6. Explicit approval shares exactly that reviewed version with the selected registered clinician.
+7. The clinician signs in to the doctor portal using their registered email and reads approved assigned summaries, the AI assessment and attachments. Existing records can generate an assessment without changing their approved factual summary. Both portals offer **Download complete PDF** with the report, full images and all pages of uploaded PDFs. Marking a record reviewed does not confirm an AI diagnosis.
 8. Withdrawing sharing immediately removes doctor access. Deleting a preparation removes its local record and uploaded files. Downloads/printouts already made by a clinician cannot be recalled.
 
 ## Illustrated questions
@@ -48,7 +48,7 @@ Choices and optional detail are saved as human-readable patient-authored text th
 
 ## Models and data flow
 
-Default: `gpt-6-sol`. Alternate: `gpt-5.6-sol`. Speech: `gpt-4o-mini-transcribe`. These IDs were verified against official OpenAI documentation and the configured account's model listing during integration. Separate bounded Responses operations extract facts and activation signals, choose useful extra questions from backend-eligible targets, and synthesize the final patient/clinician summary. The backend controls applicability, stopping, source IDs, corrections and approval. Actual operation/model/latency records support the university demonstration; they are not clinical quality scores. A provider error is visible, not silently represented as live AI. The baseline form remains usable during an API outage.
+Default: `gpt-6-astra`, configurable through `OPENAI_MODEL`; advanced alternatives include `gpt-6-sol` and `gpt-5.6-sol`. The model ID matches the official catalogue; access still depends on the configured provider account. No model is silently substituted. Speech: `gpt-4o-mini-transcribe`. Separate bounded Responses operations extract facts and activation signals, choose useful extra questions from backend-eligible targets, and synthesize the final patient/clinician summary. The backend controls applicability, stopping, source IDs, corrections and approval. Actual operation/model/latency records support the university demonstration; they are not clinical quality scores. A provider error is visible, not silently represented as live AI. The wizard remains usable during an API outage. See [the v3 API contract](product-v3-contract.md) for direct chat, reusable background and language support.
 
 Text submitted to the agent goes to OpenAI. Voice audio goes to OpenAI for transcription and is not retained by this app. Uploaded documents are kept locally; clicking document reading sends the selected file to OpenAI. Generating the AI assessment sends all current uploaded images and PDFs with the current shareable preparation information. Private conversation history and superseded or removed facts are excluded. Responses requests use `store:false`, which is not a guarantee of zero provider-side retention. Email addresses go to Resend solely to deliver sign-in codes. Review provider data-processing settings before using real patient data.
 

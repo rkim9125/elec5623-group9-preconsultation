@@ -3,6 +3,29 @@
   --guided-soft: var(--accent-soft, #eaf7f2);
   margin-top: 12px;
 }
+.profile-wizard .profile-blood-group {
+  width: 100%;
+  display: grid;
+  gap: 22px;
+}
+.profile-wizard .profile-blood-group fieldset {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin: 0;
+}
+.profile-wizard .profile-blood-group legend {
+  padding: 0 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.profile-wizard .profile-blood-group p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
 .guided-field-helper {
   margin: 0 0 14px;
   color: var(--muted);

@@ -19,6 +19,13 @@ import { topicDescription, topicVisual } from "./topics.js";
 import AssessmentReport, { ReportDownloadCard } from "./AssessmentReport.jsx";
 import { shouldGenerateAssessment } from "./reportState.js";
 import "./portal-theme.css";
+import "./wizard.css";
+import VoiceComposer from "./VoiceComposer.jsx";
+import ProfileWizard, { hasProfile } from "./ProfileWizard.jsx";
+import { LocaleProvider, useLocale, LanguageSwitcher } from "./i18n.jsx";
+import FollowupPanel from "./FollowupPanel.jsx";
+import { bloodGroupLabel } from "./bloodGroup.js";
+import { recordTitle, recordLabel, recordedValue, slotStatusLabel } from "./recordLocale.js";
 
 const setRoute = (path) => {
   return navigateWithGuard(() => {
@@ -75,11 +82,12 @@ function useHash() {
 const roleFromRoute = (route) =>
   route.startsWith("/doctor") ? "doctor" : "patient";
 function Brand({ light = false, role = "patient" }) {
+  const { t } = useLocale();
   return (
     <a
       className={`brand ${light ? "brand-light" : ""}`}
       href={`#/${role}`}
-      aria-label="PreConsult home"
+      aria-label={t("PreConsult home")}
     >
       <span className="brand-symbol">
         <span />
@@ -95,6 +103,7 @@ function Brand({ light = false, role = "patient" }) {
 }
 
 function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
@@ -168,16 +177,18 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
         <Brand light role={role} />
         <div className="story-copy">
           <span className="eyebrow">
-            <span className="tiny-dot" /> A BETTER START TO YOUR CONSULTATION
+            <span className="tiny-dot" />
+            {t("A BETTER START TO YOUR CONSULTATION")}
           </span>
           <h1>
-            More understanding.
+            {t("More understanding.")}
             <br />
-            <em>Better conversations.</em>
+            <em>{t("Better conversations.")}</em>
           </h1>
           <p>
-            A little preparation makes room for what matters. Bring your health
-            story together before you meet your doctor.
+            {t(
+              "A little preparation makes room for what matters. Bring your health story together before you meet your doctor.",
+            )}
           </p>
           <div className="story-illustration" aria-hidden="true">
             <div className="illustration-orbit orbit-one" />
@@ -196,87 +207,88 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
             </div>
             <div className="illustration-note">
               <Icon name="sparkle" size={18} />
-              <span>Your story, thoughtfully organised</span>
+              <span>{t("Your story, thoughtfully organised")}</span>
             </div>
           </div>
           <div className="story-points">
             <span>
-              <Icon name="shield" size={18} /> You control what you share
+              <Icon name="shield" size={18} />
+              {t("You control what you share")}
             </span>
             <span>
-              <Icon name="clock" size={18} /> Prepare at your own pace
+              <Icon name="clock" size={18} />
+              {t("Prepare at your own pace")}
             </span>
           </div>
         </div>
         <div className="auth-story-footer">
-          Pre-consultation preparation · For non-emergency care
+          {t("Pre-consultation preparation · For non-emergency care")}
         </div>
       </div>
       <div className="auth-form-side">
-        <nav className="portal-switch" aria-label="Choose your portal">
+        <nav className="portal-switch" aria-label={t("Choose your portal")}>
           <a href="#/patient" className={role === "patient" ? "active" : ""}>
-            Patient portal
+            {t("Patient portal")}
           </a>
           <a href="#/doctor" className={role === "doctor" ? "active" : ""}>
-            Doctor portal
+            {t("Doctor portal")}
           </a>
         </nav>
         <div className="auth-form-wrap">
           <span className="overline">
             {role === "doctor"
-              ? "CLINICIAN WORKSPACE"
-              : "YOUR HEALTH, IN YOUR WORDS"}
+              ? t("CLINICIAN WORKSPACE")
+              : t("YOUR HEALTH, IN YOUR WORDS")}
           </span>
           <h2>
             {currentUser
-              ? `Switch to the ${role} portal?`
+              ? t("Switch to the {role} portal?", {
+                  role: t(role === "doctor" ? "Doctor" : "Patient"),
+                })
               : sent
-                ? "Check your inbox."
+                ? t("Check your inbox.")
                 : role === "doctor"
-                  ? "Welcome, doctor."
-                  : "Let’s start with you."}
+                  ? t("Welcome, doctor.")
+                  : t("Let’s start with you.")}
           </h2>
           <p className="auth-intro">
             {currentUser ? (
               <>
-                You’re signed in to the {currentUser.role} portal as{" "}
-                <strong>{currentUser.email}</strong>. This browser uses one
-                account and portal at a time.
+                {t("You’re signed in to the {role} portal as {email}.", {
+                  role: t(currentUser.role === "doctor" ? "Doctor" : "Patient"),
+                  email: currentUser.email,
+                })}{" "}
+                {t("This browser uses one account and portal at a time.")}
               </>
             ) : sent ? (
               <>
-                Enter the verification code sent to <strong>{email}</strong>.
+                {t("Enter the verification code sent to {email}.", { email })}
               </>
             ) : role === "doctor" ? (
-              "Sign in to review patient-approved consultation summaries."
+              t("Sign in to review patient-approved consultation summaries.")
             ) : (
-              "Sign in or create your account with an email verification code. No password to remember."
+              t(
+                "Sign in or create your account with an email verification code. No password to remember.",
+              )
             )}
           </p>
           <ErrorNotice>{error || switchError}</ErrorNotice>
-          {role === "doctor" && config?.doctor_configured === false && (
-            <div className="notice warning" role="status">
-              <Icon name="info" />
-              <span>
-                Doctor access is not set up yet. Ask the service administrator
-                to register your clinician email before signing in.
-              </span>
-            </div>
-          )}
           {config && (!config.auth_configured || !config.mail_configured) && (
             <div className="notice warning">
               <Icon name="info" />
               <span>
-                Email sign-in is not configured yet. The service administrator
-                needs to finish email delivery setup.
+                {t(
+                  "Email sign-in is not configured yet. The service administrator needs to finish email delivery setup.",
+                )}
               </span>
             </div>
           )}
           {currentUser ? (
             <div className="portal-session-switch">
               <p>
-                To continue, sign out and verify your email in the {role}{" "}
-                portal. Your saved consultations will remain available.
+                {t(
+                  "Sign out and verify another email to switch portals. Your saved consultations will remain available.",
+                )}
               </p>
               <Button
                 className="primary full"
@@ -290,23 +302,28 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
                   }
                 }}
               >
-                Sign out and continue to {role} sign-in
+                {t("Sign out and continue to {role} sign-in", {
+                  role: t(role === "doctor" ? "Doctor" : "Patient"),
+                })}
               </Button>
               <a
                 className="button secondary full"
                 href={`#/${currentUser.role}`}
               >
-                Return to {currentUser.role} portal
+                {t("Return to {role} portal", {
+                  role: t(currentUser.role === "doctor" ? "Doctor" : "Patient"),
+                })}
               </a>
               <p className="field-hint">
-                To use both portals at the same time, open one in a private
-                window or another browser profile.
+                {t(
+                  "To use both portals at the same time, open one in a private window or another browser profile.",
+                )}
               </p>
             </div>
           ) : sent ? (
             <form onSubmit={verify}>
               <label className="field-label" htmlFor="auth-code">
-                Verification code
+                {t("Verification code")}
               </label>
               <input
                 id="auth-code"
@@ -317,7 +334,7 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
                 }
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                placeholder="Enter your code"
+                placeholder={t("Enter your code")}
                 required
                 autoFocus
               />
@@ -330,7 +347,7 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
                 busy={busy}
                 disabled={code.length < 6}
               >
-                Verify & continue
+                {t("Verify & continue")}
                 <Icon name="arrow" size={18} />
               </Button>
               <div className="auth-resend">
@@ -340,7 +357,9 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
                   disabled={busy || seconds > 0}
                   onClick={send}
                 >
-                  {seconds > 0 ? `Resend code in ${seconds}s` : "Resend code"}
+                  {seconds > 0
+                    ? t("Resend code in {seconds}s", { seconds })
+                    : t("Resend code")}
                 </button>
                 <button
                   type="button"
@@ -352,14 +371,14 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
                     setError("");
                   }}
                 >
-                  Use another email
+                  {t("Use another email")}
                 </button>
               </div>
             </form>
           ) : (
             <form onSubmit={send}>
               <label className="field-label" htmlFor="auth-email">
-                Email address
+                {t("Email address")}
               </label>
               <div className="input-icon">
                 <Icon name="mail" />
@@ -370,20 +389,15 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   placeholder={
-                    role === "doctor" ? "you@yourclinic.com" : "you@example.com"
+                    role === "doctor"
+                      ? t("you@yourclinic.com")
+                      : t("you@example.com")
                   }
                   required
                 />
               </div>
-              <Button
-                type="submit"
-                className="primary full"
-                busy={busy}
-                disabled={
-                  role === "doctor" && config?.doctor_configured === false
-                }
-              >
-                Continue with email
+              <Button type="submit" className="primary full" busy={busy}>
+                {t("Continue with email")}
                 <Icon name="arrow" size={18} />
               </Button>
             </form>
@@ -391,20 +405,22 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
           <div className="auth-assurance">
             <Icon name="lock" size={17} />
             <p>
-              Your intake is shared with a doctor only after you review and
-              approve it.
+              {t(
+                "Your intake is shared with a doctor only after you review and approve it.",
+              )}
             </p>
           </div>
           {role === "doctor" && (
             <p className="field-hint">
-              Doctor access is limited to clinicians authorised by the service
-              administrator.
+              {t(
+                "Register with any email. Use a different email for your patient account.",
+              )}
             </p>
           )}
         </div>
         <footer className="auth-footer">
-          <span>English</span>
-          <span>Built for a more informed visit</span>
+          <LanguageSwitcher />
+          <span>{t("Built for a more informed visit")}</span>
         </footer>
       </div>
     </div>
@@ -412,12 +428,16 @@ function Login({ role, config, onLogin, currentUser, onSwitch, switchError }) {
 }
 
 function Shell({ user, route, onLogout, children }) {
+  const { t } = useLocale();
   const [menu, setMenu] = useState(false);
   const doctor = user.role === "doctor";
   const base = doctor ? "/doctor" : "/patient";
   useEffect(() => setMenu(false), [route]);
   return (
-    <div className={`app-shell ${menu ? "menu-open" : ""}`} data-portal={user.role}>
+    <div
+      className={`app-shell ${menu ? "menu-open" : ""}`}
+      data-portal={user.role}
+    >
       <a
         className="skip-link"
         href="#main-content"
@@ -426,17 +446,17 @@ function Shell({ user, route, onLogout, children }) {
           document.getElementById("main-content")?.focus();
         }}
       >
-        Skip to content
+        {t("Skip to content")}
       </a>
       <aside className="sidebar">
         <Brand role={user.role} />
         <div className="workspace-label">
-          {doctor ? "CLINICIAN WORKSPACE" : "PATIENT WORKSPACE"}
+          {doctor ? t("CLINICIAN WORKSPACE") : t("PATIENT WORKSPACE")}
         </div>
-        <nav className="side-nav" aria-label="Main navigation">
+        <nav className="side-nav" aria-label={t("Main navigation")}>
           <a href={`#${base}`} className={route === base ? "active" : ""}>
             <Icon name="grid" />
-            <span>{doctor ? "Patient overview" : "Overview"}</span>
+            <span>{doctor ? t("Patient overview") : t("Overview")}</span>
           </a>
           {!doctor && (
             <a
@@ -444,7 +464,7 @@ function Shell({ user, route, onLogout, children }) {
               className={route === "/patient/new" ? "active" : ""}
             >
               <Icon name="plus" />
-              <span>New consultation</span>
+              <span>{t("New consultation")}</span>
             </a>
           )}
           <a
@@ -452,14 +472,16 @@ function Shell({ user, route, onLogout, children }) {
             className={route.endsWith("/history") ? "active" : ""}
           >
             <Icon name="clock" />
-            <span>{doctor ? "All submissions" : "Consultation history"}</span>
+            <span>
+              {doctor ? t("All submissions") : t("Consultation history")}
+            </span>
           </a>
           <a
             href={`#${base}/account`}
             className={route.endsWith("/account") ? "active" : ""}
           >
             <Icon name="person" />
-            <span>My account</span>
+            <span>{t("My account")}</span>
           </a>
         </nav>
         <div className="side-note">
@@ -467,12 +489,14 @@ function Shell({ user, route, onLogout, children }) {
             <Icon name={doctor ? "shield" : "heart"} size={21} />
           </span>
           <h4>
-            {doctor ? "Patient-led sharing" : "Make space for your story."}
+            {doctor
+              ? t("Patient-led sharing")
+              : t("Make space for your story.")}
           </h4>
           <p>
             {doctor
-              ? "You see only approved summaries shared with your account."
-              : "Pause anytime. Your progress is saved as you go."}
+              ? t("You see only approved summaries shared with your account.")
+              : t("Pause anytime. Your progress is saved as you go.")}
           </p>
         </div>
         <div className="sidebar-bottom">
@@ -487,7 +511,7 @@ function Shell({ user, route, onLogout, children }) {
           </div>
           <button
             className="icon-button"
-            aria-label="Sign out"
+            aria-label={t("Sign out")}
             onClick={onLogout}
           >
             <Icon name="logout" size={19} />
@@ -497,7 +521,7 @@ function Shell({ user, route, onLogout, children }) {
       {menu && (
         <button
           className="sidebar-scrim"
-          aria-label="Close navigation"
+          aria-label={t("Close navigation")}
           onClick={() => setMenu(false)}
         />
       )}
@@ -505,28 +529,30 @@ function Shell({ user, route, onLogout, children }) {
         <header className="topbar">
           <button
             className="icon-button mobile-menu"
-            aria-label="Open navigation"
+            aria-label={t("Open navigation")}
             onClick={() => setMenu(!menu)}
           >
             <Icon name="menu" />
           </button>
           <div className="breadcrumb">
-            {doctor ? "Doctor portal" : "Patient portal"}
+            {doctor ? t("Doctor portal") : t("Patient portal")}
             <span>/</span>
             <strong>
               {route.endsWith("/account")
-                ? "My account"
+                ? t("My account")
                 : route.endsWith("/new")
-                  ? "New consultation"
+                  ? t("New consultation")
                   : route.includes("/intake/")
-                    ? "Consultation"
+                    ? t("Consultation")
                     : route.endsWith("/history")
-                      ? "History"
-                      : "Overview"}
+                      ? t("History")
+                      : t("Overview")}
             </strong>
           </div>
+          <LanguageSwitcher />
           <span className="connection-tag">
-            <i /> Private workspace
+            <i />
+            {t("Private workspace")}
           </span>
         </header>
         <main id="main-content" tabIndex="-1">
@@ -535,7 +561,7 @@ function Shell({ user, route, onLogout, children }) {
         <footer className="workspace-footer">
           <span>PreConsult · ELEC5623 Group 9</span>
           <span>
-            Preparation for care. Not a diagnosis or emergency service.
+            {t("Preparation for care. Not a diagnosis or emergency service.")}
           </span>
         </footer>
       </div>
@@ -550,11 +576,12 @@ function Consultations({
   refresh,
   busy,
 }) {
+  const { t } = useLocale();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const filtered = sessions.filter(
     (s) =>
-      `${s.title || ""} ${s.patient_name || ""} ${s.patient_email || ""} ${(s.concerns || []).map((c) => c.title).join(" ")}`
+      `${s.title || ""} ${recordTitle(s.title, t)} ${s.patient_name || ""} ${s.patient_email || ""} ${(s.concerns || []).map((c) => `${c.title} ${recordTitle(c.title, t)}`).join(" ")}`
         .toLowerCase()
         .includes(query.toLowerCase()) &&
       (filter === "all" ||
@@ -570,54 +597,54 @@ function Consultations({
         <div>
           <h2>
             {doctor
-              ? "Patient submissions"
+              ? t("Patient submissions")
               : history
-                ? "Your consultations"
-                : "Recent consultations"}
+                ? t("Your consultations")
+                : t("Recent consultations")}
           </h2>
           <p>
             {doctor
-              ? "Patient-approved information, ready for your review."
-              : "Everything you’ve prepared, in one place."}
+              ? t("Patient-approved information, ready for your review.")
+              : t("Everything you’ve prepared, in one place.")}
           </p>
         </div>
         <Button className="subtle" icon="clock" busy={busy} onClick={refresh}>
-          Refresh
+          {t("Refresh")}
         </Button>
       </div>
       <div className="list-controls">
         <div className="search-field">
           <Icon name="search" size={18} />
           <input
-            aria-label="Search consultations"
+            aria-label={t("Search consultations")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={
               doctor
-                ? "Search patient or concern…"
-                : "Search your consultations…"
+                ? t("Search patient or concern…")
+                : t("Search your consultations…")
             }
           />
         </div>
         <select
           className="select"
-          aria-label="Filter consultations"
+          aria-label={t("Filter consultations")}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         >
-          <option value="all">All statuses</option>
+          <option value="all">{t("All statuses")}</option>
           {doctor ? (
             <>
-              <option value="pending">Needs review</option>
-              <option value="reviewed">Reviewed</option>
+              <option value="pending">{t("Needs review")}</option>
+              <option value="reviewed">{t("Reviewed")}</option>
             </>
           ) : (
             <>
-              <option value="active">In progress</option>
-              <option value="review">Ready for review</option>
-              <option value="approved">Shared with doctor</option>
-              <option value="withdrawn">Sharing withdrawn</option>
-              <option value="interrupted">Safety pause</option>
+              <option value="active">{t("In progress")}</option>
+              <option value="review">{t("Ready for review")}</option>
+              <option value="approved">{t("Shared with doctor")}</option>
+              <option value="withdrawn">{t("Sharing withdrawn")}</option>
+              <option value="interrupted">{t("Safety pause")}</option>
             </>
           )}
         </select>
@@ -626,8 +653,8 @@ function Consultations({
         <Empty
           title={
             doctor
-              ? "Your workspace is ready"
-              : "Your first consultation starts here"
+              ? t("Your workspace is ready")
+              : t("Your first consultation starts here")
           }
           icon={doctor ? "shield" : "file"}
           action={
@@ -637,25 +664,29 @@ function Consultations({
                 icon="plus"
                 onClick={() => setRoute("/patient/new")}
               >
-                Prepare a consultation
+                {t("Prepare a consultation")}
               </Button>
             )
           }
         >
           {doctor
-            ? "When a patient approves a summary and shares it with your email, it will appear here."
-            : "Tell us what’s on your mind. We’ll help organise the details for your doctor."}
+            ? t(
+                "When a patient approves a summary and shares it with your email, it will appear here.",
+              )
+            : t(
+                "Tell us what’s on your mind. We’ll help organise the details for your doctor.",
+              )}
         </Empty>
       ) : !filtered.length ? (
-        <Empty title="No consultations found" icon="search">
-          Try a different search or status filter.
+        <Empty title={t("No consultations found")} icon="search">
+          {t("Try a different search or status filter.")}
         </Empty>
       ) : (
         <div className="consultation-list">
           <div className="list-header">
-            <span>{doctor ? "PATIENT & CONCERN" : "CONSULTATION"}</span>
-            <span>LAST UPDATED</span>
-            <span>STATUS</span>
+            <span>{doctor ? t("PATIENT & CONCERN") : t("CONSULTATION")}</span>
+            <span>{t("LAST UPDATED")}</span>
+            <span>{t("STATUS")}</span>
             <span />
           </div>
           {(history || doctor ? filtered : filtered.slice(0, 5)).map((s) => (
@@ -671,16 +702,16 @@ function Consultations({
                 <span>
                   <strong>
                     {doctor
-                      ? s.patient_name || s.patient_email || "Patient"
-                      : s.title || "Consultation preparation"}
+                      ? s.patient_name || s.patient_email || t("Patient")
+                      : recordTitle(s.title, t, "Consultation preparation")}
                   </strong>
                   <small>
                     {doctor
-                      ? s.title ||
-                        (s.concerns || []).map((c) => c.title).join(", ") ||
-                        "Consultation preparation"
-                      : (s.concerns || []).map((c) => c.title).join(" · ") ||
-                        "Getting to know your concerns"}
+                      ? recordTitle(s.title, t, "") ||
+                        (s.concerns || []).map((c) => recordTitle(c.title, t)).join(" · ") ||
+                        t("Consultation preparation")
+                      : (s.concerns || []).map((c) => recordTitle(c.title, t)).join(" · ") ||
+                        t("Getting to know your concerns")}
                   </small>
                 </span>
               </span>
@@ -689,7 +720,7 @@ function Consultations({
                 {doctor && s.reviewed_at ? (
                   <span className="status status-reviewed">
                     <i />
-                    Reviewed
+                    {t("Reviewed")}
                   </span>
                 ) : (
                   <Status status={s.status} />
@@ -702,7 +733,8 @@ function Consultations({
       )}
       {!history && !doctor && sessions.length > 5 && (
         <a className="view-all" href="#/patient/history">
-          View all consultations <Icon name="arrow" size={16} />
+          {t("View all consultations")}
+          <Icon name="arrow" size={16} />
         </a>
       )}
     </section>
@@ -710,6 +742,7 @@ function Consultations({
 }
 
 function Dashboard({ user, sessions, busy, error, refresh, history }) {
+  const { t } = useLocale();
   const doctor = user.role === "doctor";
   const awaiting = sessions.filter((s) =>
     doctor ? !s.reviewed_at : ["active", "review"].includes(s.status),
@@ -723,24 +756,30 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
         <div>
           <span className="overline">
             {history
-              ? "YOUR WORKSPACE"
+              ? t("YOUR WORKSPACE")
               : doctor
-                ? "CARE STARTS WITH UNDERSTANDING"
-                : "A LITTLE PREPARATION. A BETTER VISIT."}
+                ? t("CARE STARTS WITH UNDERSTANDING")
+                : t("A LITTLE PREPARATION. A BETTER VISIT.")}
           </span>
           <h1>
             {history
-              ? "Consultation history"
+              ? t("Consultation history")
               : doctor
-                ? `Welcome${user.name ? `, Dr ${user.name.replace(/^Dr\.?\s*/i, "")}` : " back"}.`
-                : `Welcome${user.name ? `, ${user.name.split(" ")[0]}` : " back"}.`}
+                ? user.name
+                  ? t("Welcome, {name}.", { name: user.name })
+                  : t("Welcome back.")
+                : user.name
+                  ? t("Welcome, {name}.", { name: user.name.split(" ")[0] })
+                  : t("Welcome back.")}
           </h1>
           <p>
             {history
-              ? "Find, revisit and manage your consultation records."
+              ? t("Find, revisit and manage your consultation records.")
               : doctor
-                ? "A clearer picture of your patients, before the conversation begins."
-                : "Let’s help your doctor see the whole picture."}
+                ? t(
+                    "A clearer picture of your patients, before the conversation begins.",
+                  )
+                : t("Let’s help your doctor see the whole picture.")}
           </p>
         </div>
         <div className="date-chip">
@@ -754,48 +793,52 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
           {!doctor && (
             <section className="welcome-card">
               <div>
-                <span className="eyebrow">YOUR NEXT STEP</span>
+                <span className="eyebrow">{t("YOUR NEXT STEP")}</span>
                 <h2>
-                  Good care starts
+                  {t("Good care starts")}
                   <br />
-                  with your story.
+                  {t("with your story.")}
                 </h2>
                 <p>
-                  Share your concerns, add relevant documents, and create a
-                  summary you can review before sharing.
+                  {t(
+                    "Share your concerns, add relevant documents, and create a summary you can review before sharing.",
+                  )}
                 </p>
                 <Button
                   className="cream"
                   onClick={() => setRoute("/patient/new")}
                 >
-                  Prepare a consultation
+                  {t("Prepare a consultation")}
                   <Icon name="arrow" size={18} />
                 </Button>
                 <span className="welcome-footnote">
-                  At your pace · Saved as you go
+                  {t("At your pace · Saved as you go")}
                 </span>
               </div>
               <div className="welcome-visual" aria-hidden="true">
                 <div className="visual-circle" />
                 <div className="visual-document">
                   <span className="document-cross">+</span>
-                  <span className="document-title">Your visit, prepared.</span>
+                  <span className="document-title">
+                    {t("Your visit, prepared.")}
+                  </span>
                   <span className="document-rule" />
                   <span className="document-rule short" />
                   <span className="document-item">
                     <i />
-                    Your concerns
+                    {t("Your concerns")}
                   </span>
                   <span className="document-item">
                     <i />
-                    Your health context
+                    {t("Your health context")}
                   </span>
                   <span className="document-item">
                     <i />
-                    Your questions
+                    {t("Your questions")}
                   </span>
                   <span className="document-complete">
-                    <Icon name="check" size={14} /> Reviewed by you
+                    <Icon name="check" size={14} />
+                    {t("Reviewed by you")}
                   </span>
                 </div>
                 <div className="visual-heart">
@@ -811,7 +854,7 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
               </span>
               <div>
                 <span>
-                  {doctor ? "Shared submissions" : "Total consultations"}
+                  {doctor ? t("Shared submissions") : t("Total consultations")}
                 </span>
                 <strong>{sessions.length.toString().padStart(2, "0")}</strong>
               </div>
@@ -822,7 +865,7 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
               </span>
               <div>
                 <span>
-                  {doctor ? "Awaiting your review" : "In preparation"}
+                  {doctor ? t("Awaiting your review") : t("In preparation")}
                 </span>
                 <strong>{awaiting.toString().padStart(2, "0")}</strong>
               </div>
@@ -832,7 +875,7 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
                 <Icon name="check" />
               </span>
               <div>
-                <span>{doctor ? "Reviewed" : "Shared with doctor"}</span>
+                <span>{doctor ? t("Reviewed") : t("Shared with doctor")}</span>
                 <strong>{shared.toString().padStart(2, "0")}</strong>
               </div>
             </div>
@@ -848,23 +891,25 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
       />
       {!history && !doctor && (
         <div className="how-it-works">
-          <h3>Your preparation, step by step</h3>
+          <h3>{t("Your preparation, step by step")}</h3>
           <div>
             <p>
               <span>01</span>
-              <strong>Choose your concerns</strong>
-              <small>Select topics or describe your own.</small>
+              <strong>{t("Choose your concerns")}</strong>
+              <small>{t("Select topics or describe your own.")}</small>
             </p>
             <p>
               <span>02</span>
-              <strong>Complete the essentials</strong>
-              <small>A grouped form, followed by relevant AI questions.</small>
+              <strong>{t("Complete the essentials")}</strong>
+              <small>
+                {t("A grouped form, followed by relevant AI questions.")}
+              </small>
             </p>
             <p>
               <span>03</span>
-              <strong>Review and share</strong>
+              <strong>{t("Review and share")}</strong>
               <small>
-                Check the AI summary, then approve it for your doctor.
+                {t("Check the AI summary, then approve it for your doctor.")}
               </small>
             </p>
           </div>
@@ -875,41 +920,79 @@ function Dashboard({ user, sessions, busy, error, refresh, history }) {
 }
 
 function NewIntake({ workflows, config, onCreated }) {
-  const [selected, setSelected] = useState([]);
-  const [customConcerns, setCustomConcerns] = useState([]);
-  const [customConcern, setCustomConcern] = useState("");
+  const { t, locale } = useLocale();
+  const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All concerns");
-  const [model, setModel] = useState(config?.default_model || "gpt-6-sol");
+  const [model, setModel] = useState(config?.default_model || "gpt-6-astra");
   const [consent, setConsent] = useState(false);
-  const [title, setTitle] = useState("");
+  const [text, setText] = useState("");
+  const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState("");
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [useProfile, setUseProfile] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const pendingSession = useRef(null);
+  const heading = useRef(null);
+  useEffect(() => {
+    let alive = true;
+    request("/auth/profile")
+      .then((data) => {
+        if (alive) setProfile(data.profile);
+      })
+      .catch((err) => {
+        if (alive) setProfileError(err.message);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (selected) heading.current?.focus();
+  }, [selected]);
   const categories = [
     "All concerns",
-    ...new Set(workflows.map((w) => w.category).filter(Boolean)),
+    ...new Set(workflows.map((w) => topicVisual(w).area)),
   ];
   const shown = workflows.filter(
     (w) =>
-      (category === "All concerns" || w.category === category) &&
-      `${w.title} ${w.description} ${w.category}`
+      (category === "All concerns" || topicVisual(w).area === category) &&
+      `${t(w.title)} ${t(topicDescription(w))} ${t(topicVisual(w).area)} ${w.title}`
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
+  const custom = selected === "custom";
+  const current = workflows.find((w) => w.id === selected);
+  const remembered = hasProfile(profile);
   async function create() {
+    if (!consent || (custom && !text.trim()) || busy || voiceBusy) return;
     setBusy(true);
     setError("");
     try {
-      const session = await request("/intakes", {
-        method: "POST",
-        body: {
-          consent,
-          model,
-          workflow_ids: selected,
-          custom_concerns: customConcerns,
-          title: title.trim() || undefined,
-        },
-      });
+      let session = pendingSession.current;
+      if (!session) {
+        session = await request("/intakes", {
+          method: "POST",
+          body: {
+            consent,
+            model,
+            workflow_ids: custom ? [] : [selected],
+            mode: custom ? "chat" : "wizard",
+            locale,
+            use_profile: useProfile,
+            title: current?.title,
+          },
+        });
+        pendingSession.current = session;
+      }
+      if (custom)
+        session = await request(`/intakes/${session.id}/messages`, {
+          method: "POST",
+          body: { text: text.trim(), action: "answer", locale },
+        });
+      pendingSession.current = null;
       onCreated(session);
     } catch (err) {
       setError(err.message);
@@ -917,292 +1000,285 @@ function NewIntake({ workflows, config, onCreated }) {
       setBusy(false);
     }
   }
-  return (
-    <div className="page new-page">
-      <a className="back-link" href="#/patient">
-        <Icon name="back" size={16} /> Back to overview
-      </a>
-      <div className="page-heading">
-        <div>
-          <span className="overline">LET’S GET READY FOR YOUR VISIT</span>
-          <h1>What brings you here?</h1>
-          <p>
-            Choose several topics, add concerns in your own words, or continue
-            without a category. Your consultation can include all of them.
-          </p>
-        </div>
+  const profileCard = (
+    <div className="remembered-card">
+      <span className="remembered-icon">
+        <Icon name={remembered ? "check" : "person"} size={22} />
+      </span>
+      <div>
+        <strong>
+          {t(
+            remembered
+              ? "Your background is already here"
+              : "A little about you, remembered",
+          )}
+        </strong>
+        <p>
+          {t(
+            remembered
+              ? "Saved details fill themselves in. You can edit them anytime."
+              : "Add lasting details once to make future visits easier.",
+          )}
+        </p>
       </div>
+      <button
+        className="text-button"
+        type="button"
+        disabled={busy || !!pendingSession.current}
+        onClick={() => setEditingProfile(true)}
+      >
+        {t(remembered ? "Edit profile" : "Add profile")}
+      </button>
+      {remembered && (
+        <label className="remember-toggle">
+          <input
+            type="checkbox"
+            checked={useProfile}
+            disabled={busy || !!pendingSession.current}
+            onChange={(e) => setUseProfile(e.target.checked)}
+          />
+          {t("Use saved details for this visit")}
+        </label>
+      )}
+      {profileError && (
+        <p role="alert">
+          {t("Saved profile is unavailable. You can still start without it.")}
+        </p>
+      )}
+    </div>
+  );
+  const consentControl = (
+    <label className="checkbox-label wizard-consent">
+      <input
+        type="checkbox"
+        checked={consent}
+        disabled={busy || voiceBusy || !!pendingSession.current}
+        onChange={(e) => setConsent(e.target.checked)}
+      />
+      <span>
+        {t(
+          "I agree to AI processing of my answers and uploads to prepare my summary and preliminary assessment. I review it and choose what to share with my doctor.",
+        )}
+      </span>
+    </label>
+  );
+  return (
+    <div className="page new-page wizard-new">
+      <a className="back-link" href="#/patient">
+        <Icon name="back" size={16} />
+        {t("Back to overview")}
+      </a>
       <JourneyNavigation current={0} />
-      <div className="new-layout">
-        <section>
+      {!selected ? (
+        <>
+          <header className="wizard-hero">
+            <div className="wizard-emblem hero-emblem">
+              <Icon name="heart" size={34} />
+              <span className="emblem-spark">
+                <Icon name="sparkle" size={15} />
+              </span>
+            </div>
+            <span className="overline">
+              {t("A LITTLE PREPARATION. A BETTER VISIT.")}
+            </span>
+            <h1>{t("How are you feeling today?")}</h1>
+            <p>
+              {t(
+                "Start with one thing on your mind. We’ll take it one step at a time.",
+              )}
+            </p>
+          </header>
           <button
-            className={`auto-route-card ${selected.length === 0 && customConcerns.length === 0 ? "selected" : ""}`}
-            onClick={() => {
-              setSelected([]);
-              setCustomConcerns([]);
-            }}
+            className="custom-chat-card"
+            onClick={() => setSelected("custom")}
           >
-            <span className="auto-icon">
-              <Icon name="sparkle" size={25} />
+            <span className="custom-chat-icon">
+              <Icon name="message" size={29} />
             </span>
             <span>
-              <strong>Start without a category</strong>
+              <span className="mini-label">{t("IN YOUR OWN WORDS")}</span>
+              <strong>{t("Something else? Let’s talk.")}</strong>
               <small>
-                Use a general health information form and describe what matters
-                to you.
+                {t(
+                  "No category needed. Just type or speak, and we’ll take it from there.",
+                )}
               </small>
             </span>
-            <span className="selection-mark">
-              {!selected.length && !customConcerns.length && (
-                <Icon name="check" size={14} />
-              )}
+            <span className="custom-voice-decoration" aria-hidden="true">
+              {[10, 20, 30, 17, 24].map((h, i) => (
+                <i key={i} style={{ height: h }} />
+              ))}
             </span>
+            <Icon name="arrow" size={22} />
           </button>
-          <section className="custom-concerns-card">
-            <div>
-              <h2>Add your own concern</h2>
-              <p>
-                Not on the list? Describe it in a short phrase. You can add up
-                to 10.
-              </p>
-            </div>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                const value = customConcern.trim();
-                if (
-                  value &&
-                  customConcerns.length < 10 &&
-                  !customConcerns.some(
-                    (item) => item.toLowerCase() === value.toLowerCase(),
-                  )
-                ) {
-                  setCustomConcerns((items) => [...items, value]);
-                  setCustomConcern("");
-                }
-              }}
-            >
-              <label className="sr-only" htmlFor="custom-concern">
-                Your own concern
-              </label>
-              <input
-                id="custom-concern"
-                className="input"
-                value={customConcern}
-                onChange={(event) => setCustomConcern(event.target.value)}
-                placeholder="e.g. Questions about a recent health change"
-                maxLength={150}
-              />
-              <Button
-                className="secondary"
-                type="submit"
-                icon="plus"
-                disabled={!customConcern.trim() || customConcerns.length >= 10}
-              >
-                Add concern
-              </Button>
-            </form>
-            {customConcerns.length > 0 && (
-              <div className="tag-list custom-concern-list">
-                {customConcerns.map((concern) => (
-                  <button
-                    className="tag removable"
-                    key={concern}
-                    aria-label={`Remove custom concern: ${concern}`}
-                    onClick={() =>
-                      setCustomConcerns((items) =>
-                        items.filter((item) => item !== concern),
-                      )
-                    }
-                  >
-                    {concern}
-                    <Icon name="close" size={14} />
-                  </button>
-                ))}
+          <div className="topic-browser">
+            <div className="workflow-heading">
+              <div>
+                <h2>{t("Or choose a symptom or topic")}</h2>
+                <p>{t("30 guided paths, shaped around you.")}</p>
               </div>
+              <div className="search-field">
+                <Icon name="search" size={18} />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-label={t("Search care pathways")}
+                  placeholder={t("Search symptoms or concerns…")}
+                />
+              </div>
+            </div>
+            <div className="topic-filters" aria-label={t("Concern category")}>
+              {categories.map((item) => (
+                <button
+                  type="button"
+                  aria-pressed={category === item}
+                  className={category === item ? "active" : ""}
+                  key={item}
+                  onClick={() => setCategory(item)}
+                >
+                  {t(item)}
+                </button>
+              ))}
+            </div>
+            <div className="workflow-grid">
+              {shown.map((w) => (
+                <button
+                  key={w.id}
+                  className={`workflow-card topic-${topicVisual(w).tone}`}
+                  data-topic-id={w.id}
+                  onClick={() => setSelected(w.id)}
+                >
+                  <div className="workflow-card-top">
+                    <span className="pathway-icon">
+                      <Icon name={topicVisual(w).icon} size={29} />
+                    </span>
+                    <Icon name="arrow" size={16} />
+                  </div>
+                  <strong>{t(w.title)}</strong>
+                  <p>{t(topicDescription(w))}</p>
+                  <small>{t(topicVisual(w).area)}</small>
+                </button>
+              ))}
+            </div>
+            {!shown.length && (
+              <Empty title={t("No matching pathways")} icon="search">
+                {t("Try another search or tell us in your own words.")}
+              </Empty>
             )}
-          </section>
-          <div className="workflow-heading">
-            <div>
-              <h2>Browse consultation topics</h2>
-              <p>Choose all that matter to you.</p>
-            </div>
-            <span>{workflows.length} topics</span>
           </div>
-          <div className="list-controls">
-            <div className="search-field">
-              <Icon name="search" size={18} />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="Search care pathways"
-                placeholder="Search symptoms or concerns…"
+          {profileCard}
+        </>
+      ) : (
+        <div className="start-visit wizard-enter">
+          <button
+            className="text-button"
+            disabled={busy || voiceBusy || !!pendingSession.current}
+            onClick={() => {
+              setSelected(null);
+              setError("");
+            }}
+          >
+            <Icon name="back" size={16} />
+            {t("Change topic")}
+          </button>
+          <div className="wizard-emblem">
+            <Icon
+              name={custom ? "message" : topicVisual(current || {}).icon}
+              size={38}
+            />
+          </div>
+          <span className="overline">
+            {t(custom ? "YOUR SPACE TO TALK" : "LET’S TAKE IT STEP BY STEP")}
+          </span>
+          <h1 ref={heading} tabIndex={-1}>
+            {custom
+              ? t("Tell us what’s on your mind.")
+              : t(current?.title || "Your consultation")}
+          </h1>
+          <p>
+            {t(
+              custom
+                ? "You don’t need the right words. Start wherever feels comfortable."
+                : "A few simple questions, with room for your own words. You’re in control.",
+            )}
+          </p>
+          {custom && (
+            <>
+              {consentControl}
+              <VoiceComposer
+                value={text}
+                onChange={setText}
+                onSend={consent ? create : undefined}
+                onError={setError}
+                disabled={busy}
+                voiceEnabled={consent}
+                onActivity={setVoiceBusy}
+                maxLength={12000}
+                placeholder={t("What would you like your doctor to know?")}
               />
-            </div>
+            </>
+          )}
+          {profileCard}
+          <details className="advanced-options">
+            <summary>
+              <Icon name="sparkle" size={16} />
+              {t("Advanced options")}
+            </summary>
+            <label className="field-label" htmlFor="model">
+              {t("Assistant model")}
+            </label>
             <select
-              className="select"
-              aria-label="Concern category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              id="model"
+              className="select full"
+              value={model}
+              disabled={busy || !!pendingSession.current}
+              onChange={(e) => setModel(e.target.value)}
             >
-              {categories.map((c) => (
-                <option key={c}>{c}</option>
+              {(
+                config?.models || [{ id: "gpt-6-astra", label: "gpt-6-astra" }]
+              ).map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
               ))}
             </select>
-          </div>
-          <div className="workflow-grid">
-            {shown.map((w) => (
-              <button
-                key={w.id}
-                className={`workflow-card topic-${topicVisual(w).tone} ${selected.includes(w.id) ? "selected" : ""}`}
-                data-topic-id={w.id}
-                aria-pressed={selected.includes(w.id)}
-                onClick={() =>
-                  setSelected((previous) =>
-                    previous.includes(w.id)
-                      ? previous.filter((id) => id !== w.id)
-                      : [...previous, w.id],
-                  )
-                }
-              >
-                <div className="workflow-card-top">
-                  <span className="pathway-icon">
-                    <Icon name={topicVisual(w).icon} size={30} />
-                  </span>
-                  <span className="selection-mark">
-                    {selected.includes(w.id) && <Icon name="check" size={14} />}
-                  </span>
-                </div>
-                <strong>{w.title}</strong>
-                <p>{topicDescription(w)}</p>
-                <small>{topicVisual(w).area}</small>
-              </button>
-            ))}
-          </div>
-          {!shown.length && (
-            <Empty title="No matching pathways" icon="search">
-              Try another search, add your own concern, or start without a
-              category.
-            </Empty>
-          )}
-        </section>
-        <aside className="preparation-card">
-          <span className="overline">YOUR CONSULTATION</span>
-          <h2>A few things before we begin.</h2>
-          <div className="selected-concerns">
-            {selected.length + customConcerns.length > 0 ? (
-              <>
-                <span className="field-label">
-                  {selected.length + customConcerns.length} concern
-                  {selected.length + customConcerns.length !== 1
-                    ? "s"
-                    : ""}{" "}
-                  selected
-                </span>
-                <div className="tag-list">
-                  {customConcerns.map((concern) => (
-                    <button
-                      key={`custom-${concern}`}
-                      className="tag removable"
-                      onClick={() =>
-                        setCustomConcerns((items) =>
-                          items.filter((item) => item !== concern),
-                        )
-                      }
-                    >
-                      {concern}
-                      <Icon name="close" size={13} />
-                    </button>
-                  ))}
-                  {selected.map((id) => (
-                    <button
-                      key={id}
-                      className="tag removable"
-                      onClick={() =>
-                        setSelected(selected.filter((x) => x !== id))
-                      }
-                    >
-                      {workflows.find((w) => w.id === id)?.title || id}
-                      <Icon name="close" size={12} />
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p>
-                <Icon name="file" size={16} /> General consultation
-              </p>
-            )}
-          </div>
-          <label className="field-label" htmlFor="intake-title">
-            Consultation title <span>(optional)</span>
-          </label>
-          <input
-            id="intake-title"
-            className="input"
-            value={title}
-            maxLength={120}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Preparing for my GP visit"
-          />
-          <label className="field-label" htmlFor="model">
-            Assistant model
-          </label>
-          <select
-            className="select full"
-            id="model"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          >
-            {(
-              config?.models || [
-                { id: "gpt-6-sol", label: "GPT-6 Sol" },
-                { id: "gpt-5.6-sol", label: "GPT-5.6 Sol" },
-              ]
-            ).map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-          <div className="consent-information">
-            <Icon name="shield" size={19} />
-            <p>
-              Your responses and all uploaded files are processed with AI to
-              prepare a factual summary and a preliminary assessment with
-              possible diagnoses and consultation guidance. AI can make
-              mistakes. Review the details before sharing; a clinician must
-              confirm any diagnosis and treatment.
-            </p>
-          </div>
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-            />
-            <span>
-              I consent to AI processing of my health information and uploaded
-              files for the summary and preliminary assessment. I understand
-              that I control sharing with my doctor.
-            </span>
-          </label>
+          </details>
+          {!custom && consentControl}
           <ErrorNotice>{error}</ErrorNotice>
-          <Button
-            className="primary full"
-            busy={busy}
-            disabled={!consent}
-            onClick={create}
-          >
-            Continue to health information
-            <Icon name="arrow" size={17} />
-          </Button>
-          <p className="emergency-note">
-            For severe or rapidly worsening symptoms, seek urgent medical help.
-            In Australia, call 000 in an emergency.
+          {!custom && (
+            <Button
+              className="primary wizard-start"
+              busy={busy}
+              disabled={!consent}
+              onClick={create}
+            >
+              {t("Let’s begin")}
+              <Icon name="arrow" size={18} />
+            </Button>
+          )}
+          {custom && (
+            <Button
+              className="primary full"
+              busy={busy}
+              disabled={!consent || !text.trim() || voiceBusy}
+              onClick={create}
+            >
+              {t("Start conversation")}
+              <Icon name="arrow" size={17} />
+            </Button>
+          )}
+          <p className="wizard-privacy">
+            <Icon name="lock" size={14} />
+            {t("Private until you review and share.")}
           </p>
-        </aside>
-      </div>
+        </div>
+      )}
+      {editingProfile && (
+        <ProfileWizard
+          onClose={() => setEditingProfile(false)}
+          onSaved={setProfile}
+        />
+      )}
     </div>
   );
 }
@@ -1217,8 +1293,11 @@ function readable(value) {
         JSON.stringify(value);
 }
 function SummaryText({ text }) {
+  const { t } = useLocale();
   if (!text)
-    return <p className="muted">A summary will appear after preparation.</p>;
+    return (
+      <p className="muted">{t("A summary will appear after preparation.")}</p>
+    );
   const lines = String(text).split("\n");
   const gapStart = lines.findIndex(
     (line) => line.trim() === "Unknown, skipped and uncollected information",
@@ -1260,135 +1339,13 @@ function SummaryText({ text }) {
       {primary.map((line, i) => render(line, i, primary))}
       {gaps.length > 0 && (
         <details>
-          <summary>Unknown, skipped and uncollected information</summary>
+          <summary>{t("Unknown, skipped and uncollected information")}</summary>
           {gaps.map((line, i) => render(line, i + 1, gaps))}
         </details>
       )}
       {gapEnd > 0 &&
         lines.slice(gapEnd).map((line, i, list) => render(line, i, list))}
     </div>
-  );
-}
-
-function VoiceInput({ onTranscript, disabled, onError }) {
-  const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const recorder = useRef(null);
-  const stream = useRef(null);
-  const alive = useRef(true);
-  useEffect(() => {
-    alive.current = true;
-    return () => {
-      alive.current = false;
-      if (recorder.current?.state === "recording") recorder.current.stop();
-      stream.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
-  useEffect(() => {
-    if (!recording) return;
-    const timer = setInterval(
-      () =>
-        setDuration((value) => {
-          if (value >= 119) {
-            recorder.current?.stop();
-            return 120;
-          }
-          return value + 1;
-        }),
-      1000,
-    );
-    return () => clearInterval(timer);
-  }, [recording]);
-  async function start() {
-    onError("");
-    try {
-      if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder)
-        throw new Error(
-          "Voice input is not available in this browser. Use a recent browser on localhost or HTTPS, or type your response.",
-        );
-      stream.current = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-      });
-      const mimeType = [
-        "audio/webm;codecs=opus",
-        "audio/mp4",
-        "audio/webm",
-      ].find((t) => MediaRecorder.isTypeSupported(t));
-      const media = new MediaRecorder(
-        stream.current,
-        mimeType ? { mimeType } : undefined,
-      );
-      recorder.current = media;
-      const chunks = [];
-      media.ondataavailable = (event) => {
-        if (event.data.size) chunks.push(event.data);
-      };
-      media.onstop = async () => {
-        stream.current?.getTracks().forEach((t) => t.stop());
-        if (!alive.current) return;
-        setRecording(false);
-        setTranscribing(true);
-        const form = new FormData();
-        const type = media.mimeType || "audio/webm";
-        form.append(
-          "file",
-          new Blob(chunks, { type }),
-          `voice-note.${type.includes("mp4") ? "m4a" : "webm"}`,
-        );
-        try {
-          const result = await request("/transcriptions", {
-            method: "POST",
-            body: form,
-          });
-          if (alive.current) {
-            if (!result.text?.trim())
-              onError(
-                "No speech was detected. Please try again or type your response.",
-              );
-            else onTranscript(result.text);
-          }
-        } catch (err) {
-          if (alive.current) onError(err.message);
-        } finally {
-          if (alive.current) setTranscribing(false);
-        }
-      };
-      media.start();
-      setDuration(0);
-      setRecording(true);
-    } catch (err) {
-      stream.current?.getTracks().forEach((t) => t.stop());
-      onError(
-        err.name === "NotAllowedError"
-          ? "Microphone access was denied. Allow access in your browser settings or type your response."
-          : err.message,
-      );
-    }
-  }
-  return (
-    <button
-      type="button"
-      className={`voice-button ${recording ? "recording" : ""}`}
-      disabled={disabled || transcribing}
-      onClick={() => (recording ? recorder.current?.stop() : start())}
-      aria-label={
-        recording ? "Stop recording and transcribe" : "Record a voice response"
-      }
-    >
-      {transcribing ? (
-        <span className="spinner" />
-      ) : (
-        <Icon name={recording ? "stop" : "mic"} size={18} />
-      )}
-      <span>
-        {recording
-          ? `Stop · ${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}`
-          : transcribing
-            ? "Transcribing…"
-            : "Use my voice"}
-      </span>
-    </button>
   );
 }
 
@@ -1399,6 +1356,7 @@ function Attachments({
   onText,
   onError,
 }) {
+  const { t } = useLocale();
   const [busy, setBusy] = useState(false);
   const [analyzing, setAnalyzing] = useState("");
   const [drag, setDrag] = useState(false);
@@ -1475,7 +1433,7 @@ function Attachments({
   return (
     <section className="attachments-panel">
       <div className="small-heading">
-        <h3>Supporting documents</h3>
+        <h3>{t("Supporting documents")}</h3>
         <span>{(session.attachments || []).length}</span>
       </div>
       {canEdit && (
@@ -1486,7 +1444,7 @@ function Attachments({
             accept="application/pdf,image/jpeg,image/png,image/webp"
             multiple
             hidden
-            aria-label="Upload supporting documents"
+            aria-label={t("Upload supporting documents")}
             onChange={(e) => upload(Array.from(e.target.files))}
           />
           <button
@@ -1508,19 +1466,20 @@ function Attachments({
             ) : (
               <Icon name="upload" size={22} />
             )}
-            <strong>{busy ? "Uploading…" : "Drop a file or browse"}</strong>
-            <span>PDF, JPG, PNG or WebP · Up to 10 MB</span>
+            <strong>
+              {busy ? t("Uploading…") : t("Drop a file or browse")}
+            </strong>
+            <span>{t("PDF, JPG, PNG or WebP · Up to 10 MB")}</span>
           </button>
           <p className="file-help">
-            Files are shared with your approved summary. Use “Extract details”
-            to review AI-read content before adding it to your story. The final
-            AI assessment considers all uploaded files, and the complete PDF
-            includes every image and uploaded PDF page.
+            {t(
+              "Files are shared with your approved summary. Use “Extract details” to review AI-read content before adding it to your story. The final AI assessment considers all uploaded files, and the complete PDF includes every image and uploaded PDF page.",
+            )}
           </p>
         </>
       )}
       {!session.attachments?.length && !canEdit && (
-        <p className="muted small">No supporting documents attached.</p>
+        <p className="muted small">{t("No supporting documents attached.")}</p>
       )}
       <div className="attachment-list">
         {(session.attachments || []).map((file) => (
@@ -1545,7 +1504,7 @@ function Attachments({
                 <strong>{file.filename || file.name || "Document"}</strong>
                 <small>
                   {fileSize(file.size_bytes || file.size)} ·{" "}
-                  <span>Open file</span>
+                  <span>{t("Open file")}</span>
                 </small>
               </span>
             </a>
@@ -1558,11 +1517,11 @@ function Attachments({
                     onClick={() => analyze(file.id)}
                   >
                     {analyzing === file.id ? (
-                      "Reading…"
+                      t("Reading…")
                     ) : (
                       <>
                         <Icon name="sparkle" size={13} />
-                        Extract details
+                        {t("Extract details")}
                       </>
                     )}
                   </button>
@@ -1585,21 +1544,22 @@ function Attachments({
 }
 
 function CarePlan({ session }) {
+  const { t } = useLocale();
   const progress = progressFor(session);
   return (
     <section className="care-plan">
       <div className="small-heading">
-        <h3>Your preparation plan</h3>
+        <h3>{t("Your preparation plan")}</h3>
         <Icon name="sparkle" size={17} />
       </div>
       <div className="progress-heading">
-        <span>Questions addressed</span>
+        <span>{t("Questions addressed")}</span>
         <strong>{progress.percent}%</strong>
       </div>
       <div
         className="progress-track"
         role="progressbar"
-        aria-label="Preparation progress"
+        aria-label={t("Preparation progress")}
         aria-valuenow={progress.percent}
         aria-valuemin={0}
         aria-valuemax={100}
@@ -1608,8 +1568,8 @@ function CarePlan({ session }) {
       </div>
       <p className="progress-hint">
         {progress.total
-          ? `${progress.completed} of ${progress.total} questions addressed. Includes unknown and skipped answers.`
-          : "Your plan develops as you share."}
+          ? t("{completed} of {total} questions addressed. Includes unknown and skipped answers.", { completed: progress.completed, total: progress.total })
+          : t("Your plan develops as you share.")}
       </p>
       {session.concerns?.length ? (
         <div className="concern-plan-list">
@@ -1631,11 +1591,11 @@ function CarePlan({ session }) {
                   )}
                 </span>
                 <div>
-                  <strong>{concern.title}</strong>
+                  <strong>{recordTitle(concern.title, t)}</strong>
                   <small>
                     {slots.length
-                      ? `${done} of ${slots.length} topics addressed`
-                      : "Details being gathered"}
+                      ? t("{completed} of {total} topics addressed", { completed: done, total: slots.length })
+                      : t("Details being gathered")}
                   </small>
                 </div>
               </div>
@@ -1644,32 +1604,220 @@ function CarePlan({ session }) {
         </div>
       ) : (
         <p className="muted small">
-          Start with what’s on your mind. The assistant will build a plan around
-          your concerns.
+          {t(
+            "Start with what’s on your mind. The assistant will build a plan around your concerns.",
+          )}
         </p>
       )}
       {session.plan?.rationale && (
         <details className="plan-details">
-          <summary>How this plan was chosen</summary>
+          <summary>{t("How this plan was chosen")}</summary>
           <p>{readable(session.plan.rationale)}</p>
         </details>
       )}
       <div className="plan-footer">
         <Icon name="info" size={15} />
         <p>
-          You can say “I don’t know”, skip a question, or review at any time.
+          {t(
+            "You can say “I don’t know”, skip a question, or review at any time.",
+          )}
         </p>
       </div>
     </section>
   );
 }
 
-function IntakeChat({ session, onUpdate, refresh, config, onEditBaseline }) {
+function IntakeChat(props) {
+  const { t } = useLocale();
+  const { session, onUpdate, refresh, config, onEditBaseline } = props;
+  if (!session.followup_batch) {
+    const hasStory = (session.messages || []).some(
+      (message) => message.role === "patient",
+    );
+    return session.baseline?.completed || hasStory ? (
+      <FollowupEntry {...props} />
+    ) : (
+      <IntakeConversation {...props} />
+    );
+  }
+  return (
+    <FollowupPanel
+      key={`${session.followup_batch.id}:${session.followup_batch.locale || session.locale || "en"}`}
+      session={session}
+      onUpdate={onUpdate}
+      renderContext={({ blocked, onError }) => (
+        <aside className="chat-context">
+          <details className="chat-context-panel">
+            <summary>
+              <Icon name="file" size={18} />
+              {t("Your consultation details")}
+              <Icon name="chevron" size={16} />
+            </summary>
+            <CarePlan session={session} />
+            {session.mode !== "chat" && (
+              <Button
+                className="secondary full"
+                disabled={blocked}
+                onClick={() => navigateWithGuard(onEditBaseline)}
+              >
+                {t("Edit health information")}
+              </Button>
+            )}
+            <p className="model-caption">
+              {config?.models?.find((model) => model.id === session.model)
+                ?.label || session.model}
+            </p>
+          </details>
+          <Attachments
+            session={session}
+            readonly={blocked}
+            onRefresh={refresh}
+            onError={onError}
+          />
+        </aside>
+      )}
+    />
+  );
+}
+
+function FollowupEntry({ session, onUpdate, refresh, onEditBaseline }) {
+  const { t, locale } = useLocale();
+  const [action, setAction] = useState("");
+  const [error, setError] = useState("");
+  const ready =
+    session.assistant?.mode === "ready" || session.status === "review";
+  const unavailable = session.assistant?.mode === "unavailable";
+  async function perform(kind) {
+    if (kind === "review" && session.status === "review") {
+      onUpdate(session);
+      return;
+    }
+    setAction(kind);
+    setError("");
+    try {
+      const next = await request(`/intakes/${session.id}/${kind}`, {
+        method: "POST",
+        body: { locale },
+      });
+      onUpdate(next);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAction("");
+    }
+  }
+  return (
+    <div className="conversation-workspace followup-workspace">
+      <section className="followup-main">
+        <header className="followup-intro">
+          <div className="wizard-emblem">
+            <Icon name="sparkle" size={30} />
+          </div>
+          <span className="overline">{t("AI analysis & follow-up")}</span>
+          <h2>
+            {t(
+              ready
+                ? "Your answers are ready."
+                : "Let’s bring the remaining questions together.",
+            )}
+          </h2>
+          <p>
+            {t(
+              ready
+                ? "There are no more questions in this set. You can review your summary now."
+                : "Your previous answers are saved. We’ll gather up to five useful questions into one set.",
+            )}
+          </p>
+        </header>
+        <ErrorNotice>{error}</ErrorNotice>
+        {unavailable && (
+          <p className="notice warning">
+            {t(
+              "AI analysis is temporarily unavailable. Your answers are saved; you can retry or review your summary.",
+            )}
+          </p>
+        )}
+        <div className="followup-footer">
+          {!ready && (
+            <Button
+              className="primary"
+              icon="sparkle"
+              busy={action === "followup"}
+              disabled={!!action}
+              onClick={() => perform("followup")}
+            >
+              {t(unavailable ? "Try again" : "Prepare follow-up questions")}
+            </Button>
+          )}
+          <Button
+            icon="arrow"
+            className={!ready ? "secondary" : "primary"}
+            busy={action === "review"}
+            disabled={!!action}
+            onClick={() => perform("review")}
+          >
+            {t("Review my summary")}
+          </Button>
+        </div>
+        {session.messages?.length > 0 && (
+          <details className="followup-history">
+            <summary>{t("Your saved conversation")}</summary>
+            {session.messages.map((message, index) => (
+              <div key={message.id || index}>
+                <strong>
+                  {t(
+                    message.role === "patient" ? "You" : "PreConsult assistant",
+                  )}
+                </strong>
+                <p>{message.text}</p>
+              </div>
+            ))}
+          </details>
+        )}
+        <p className="wizard-privacy">
+          <Icon name="lock" size={14} />
+          {t("Private until you review and share.")}
+        </p>
+      </section>
+      <aside className="chat-context">
+        {session.mode !== "chat" && (
+          <Button
+            className="secondary full"
+            disabled={!!action}
+            onClick={onEditBaseline}
+          >
+            {t("Edit health information")}
+          </Button>
+        )}
+        <Attachments
+          session={session}
+          readonly={!!action}
+          onRefresh={refresh}
+          onError={setError}
+        />
+      </aside>
+    </div>
+  );
+}
+
+function IntakeConversation({
+  session,
+  onUpdate,
+  refresh,
+  config,
+  onEditBaseline,
+}) {
+  const { t, locale } = useLocale();
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const [text, setText] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [busyAction, setBusyAction] = useState("");
   const composer = useRef(null);
+  const threadEnd = useRef(null);
+  useEffect(() => {
+    threadEnd.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [session.messages?.length]);
   const busy = !!busyAction;
   const assistant = session.assistant || {};
   const question = session.current_question;
@@ -1693,8 +1841,14 @@ function IntakeChat({ session, onUpdate, refresh, config, onEditBaseline }) {
       const next = await request(`/intakes/${session.id}/${path}`, {
         method: "POST",
         ...(["review", "retry"].includes(action)
-          ? {}
-          : { body: { text: action === "answer" ? text.trim() : "", action } }),
+          ? { body: { locale } }
+          : {
+              body: {
+                text: action === "answer" ? text.trim() : "",
+                action,
+                locale,
+              },
+            }),
       });
       onUpdate(next);
       if (action === "answer") setText("");
@@ -1713,294 +1867,221 @@ function IntakeChat({ session, onUpdate, refresh, config, onEditBaseline }) {
     composer.current?.focus();
   }
   return (
-    <div className="intake-layout followup-layout">
-      <section className="followup-main">
-        <div className="followup-intro">
-          <div className="assist-icon">
-            <Icon name="sparkle" size={25} />
+    <div className="conversation-workspace">
+      <section className="chat-main">
+        <div className="chat-intro">
+          <div className="wizard-emblem">
+            <Icon name="message" size={31} />
           </div>
-          <div>
-            <span className="section-kicker">
-              STEP 3 · OPTIONAL AI FOLLOW-UP
-            </span>
-            <h2>A few relevant follow-ups</h2>
-            <p>
-              Your basic information is already recorded. This step explores
-              only additional details that may help prepare your consultation.
-            </p>
-          </div>
+          <span className="overline">
+            {t(
+              session.mode === "chat"
+                ? "YOUR SPACE TO TALK"
+                : "A LITTLE MORE CONTEXT",
+            )}
+          </span>
+          <h2>
+            {t(
+              session.mode === "chat"
+                ? "Let’s put your story into words."
+                : "Anything else you’d like to share?",
+            )}
+          </h2>
+          <p>
+            {t(
+              "Take your time. Type or speak, and review your answers before sharing.",
+            )}
+          </p>
         </div>
         <ErrorNotice>{error}</ErrorNotice>
         <div
-          className={`assistant-overview ${assistant.mode === "unavailable" ? "unavailable" : ""}`}
+          className="chat-thread"
+          role="log"
+          aria-label={t("Preparation conversation")}
+          aria-live="polite"
         >
-          <div className="small-heading">
-            <h3>
-              {assistant.mode === "unavailable"
-                ? "AI follow-up is unavailable"
-                : "What the assistant is focusing on"}
-            </h3>
-            <span className="assistant-mode">
-              {assistant.mode === "live"
-                ? "AI connected"
-                : assistant.mode === "unavailable"
-                  ? "Unavailable"
-                  : "Ready"}
-            </span>
-          </div>
-          <p>
-            {assistant.overview ||
-              "Your information is saved. You can add any additional context or move on to your summary."}
-          </p>
-          {assistant.focus && (
-            <p className="assistant-focus">
-              <strong>Focus:</strong> {assistant.focus}
-            </p>
-          )}
-          {assistant.rationale && (
-            <p className="assistant-rationale">
-              <Icon name="info" size={17} />
-              {assistant.rationale}
-            </p>
-          )}
-          {assistant.mode === "unavailable" && (
-            <Button
-              className="secondary"
-              icon="sparkle"
-              busy={busyAction === "retry"}
-              disabled={busy}
-              onClick={() => perform("retry")}
-            >
-              Retry AI follow-up
-            </Button>
-          )}
-        </div>
-        {question ? (
-          <div className="followup-question">
-            <span className="section-kicker">
-              ADDITIONAL QUESTION {assistant.question_count || 1}
-              {assistant.questions_remaining != null
-                ? ` · ${assistant.questions_remaining} remaining`
-                : ""}
-            </span>
-            <h3>{question.question}</h3>
-            {question.why && (
-              <p>
-                <Icon name="info" size={18} />
-                <span>
-                  <strong>Why this helps:</strong> {question.why}
-                </span>
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="followup-ready">
-            <Icon name="check" size={25} />
-            <div>
-              <h3>
-                {assistant.mode === "unavailable"
-                  ? "You can still prepare your summary"
-                  : "Ready to bring your information together"}
-              </h3>
-              <p>
-                No further question is waiting. Add anything else below, or
-                generate your summary now.
-              </p>
-            </div>
-          </div>
-        )}
-        <section className="conversation-card followup-composer">
-          <div className="composer-area">
-            {notice && (
-              <div className="notice success" role="status">
-                <Icon name="check" size={18} />
-                <span>{notice}</span>
-              </div>
-            )}
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                perform("answer");
-              }}
-            >
-              <label className="field-label" htmlFor="response">
-                {question ? "Your response" : "Anything else to add?"}
-              </label>
-              <textarea
-                id="response"
-                ref={composer}
-                rows={4}
-                maxLength={12000}
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder={
-                  question
-                    ? "Answer in your own words…"
-                    : "Optional: add context or a question for your doctor…"
-                }
-                disabled={busy}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === "Enter" &&
-                    (event.metaKey || event.ctrlKey)
-                  ) {
-                    event.preventDefault();
-                    perform("answer");
-                  }
-                }}
-              />
-              <div className="composer-actions">
-                <VoiceInput
-                  disabled={busy}
-                  onTranscript={(value) =>
-                    addText(value, "Your voice transcript")
-                  }
-                  onError={setError}
-                />
-                <Button
-                  type="submit"
-                  className="primary"
-                  busy={busyAction === "answer"}
-                  disabled={busy || !text.trim()}
-                >
-                  Send response
-                  <Icon name="arrow" size={17} />
-                </Button>
-              </div>
-            </form>
-            {question && (
-              <div className="answer-shortcuts">
-                <Button
-                  className="subtle"
-                  disabled={busy}
-                  onClick={() => perform("unknown")}
-                >
-                  I don’t know
-                </Button>
-                <Button
-                  className="subtle"
-                  disabled={busy}
-                  onClick={() => perform("skip")}
-                >
-                  Skip this question
-                </Button>
-              </div>
-            )}
-          </div>
-        </section>
-        {messages.length > 0 && (
-          <details className="conversation-history">
-            <summary>
-              <Icon name="clock" size={18} />
-              <span>Conversation history ({messages.length})</span>
-              <Icon name="chevron" size={17} />
-            </summary>
+          {messages.map((message, i) => (
             <div
-              className="conversation"
-              tabIndex={0}
-              role="region"
-              aria-label="Preparation conversation"
+              className={`chat-message chat-${message.role}`}
+              key={message.id || i}
             >
-              {messages.map((message, i) => (
-                <div
-                  className={`message message-${message.role}`}
-                  key={message.id || i}
-                >
-                  <span className="message-author">
-                    {message.role === "patient"
-                      ? "You"
-                      : "PreConsult assistant"}
-                  </span>
-                  <div className="message-bubble">{message.text}</div>
-                </div>
-              ))}
+              {message.role !== "patient" && (
+                <span className="chat-assistant-icon">
+                  <Icon name="sparkle" size={17} />
+                </span>
+              )}
+              <div>
+                <span className="chat-author">
+                  {t(
+                    message.role === "patient" ? "You" : "PreConsult assistant",
+                  )}
+                </span>
+                <p>{message.text}</p>
+              </div>
             </div>
+          ))}
+          {!messages.length && (
+            <div className="chat-message chat-assistant">
+              <span className="chat-assistant-icon">
+                <Icon name="sparkle" size={17} />
+              </span>
+              <div>
+                <span className="chat-author">{t("PreConsult assistant")}</span>
+                <p>
+                  {question?.question ||
+                    t(
+                      "Tell me what you’d like your doctor to know. You can start anywhere.",
+                    )}
+                </p>
+              </div>
+            </div>
+          )}
+          {question &&
+            !messages.some(
+              (message) =>
+                message.role === "assistant" &&
+                message.text === question.question,
+            ) && (
+              <div className="chat-message chat-assistant">
+                <span className="chat-assistant-icon">
+                  <Icon name="sparkle" size={17} />
+                </span>
+                <div>
+                  <span className="chat-author">
+                    {t("PreConsult assistant")}
+                  </span>
+                  <p>{t(question.question)}</p>
+                </div>
+              </div>
+            )}
+          {busy && (
+            <div className="chat-thinking" role="status">
+              <span className="spinner" />
+              {t("Thinking about your answer…")}
+            </div>
+          )}
+          <div ref={threadEnd} />
+        </div>
+        {question?.why && (
+          <details className="question-why">
+            <summary>
+              <Icon name="info" size={14} />
+              {t("Why this question?")}
+            </summary>
+            <p>{t(question.why)}</p>
           </details>
         )}
-        <div className="followup-next">
+        {assistant.mode === "unavailable" && (
+          <div className="chat-unavailable">
+            <Icon name="info" size={17} />
+            <span>
+              {t("AI analysis & follow-up is unavailable. Your answers are saved.")}
+            </span>
+            <button
+              type="button"
+              className="text-button"
+              disabled={busy || voiceBusy}
+              onClick={() => perform("retry")}
+            >
+              {t("Try again")}
+            </button>
+          </div>
+        )}
+        {notice && (
+          <p className="notice success" role="status">
+            {notice}
+          </p>
+        )}
+        <VoiceComposer
+          value={text}
+          onChange={setText}
+          onSend={() => perform("answer")}
+          onError={setError}
+          disabled={busy}
+          inputRef={composer}
+          id="response"
+          maxLength={12000}
+          onActivity={setVoiceBusy}
+          placeholder={t("Answer in your own words…")}
+        />
+        <div className="chat-bottom-actions">
           <div>
-            <h3>You decide when to finish.</h3>
-            <p>
-              You can create a summary at any point. Missing and uncertain
-              information stays clearly marked. We’ll then prepare a preliminary
-              AI assessment using your recorded answers and all uploaded files.
-            </p>
+            {question && (
+              <>
+                <button
+                  className="text-button"
+                  disabled={busy || voiceBusy}
+                  onClick={() => perform("unknown")}
+                >
+                  {t("I don’t know")}
+                </button>
+                <button
+                  className="text-button"
+                  disabled={busy || voiceBusy}
+                  onClick={() => perform("skip")}
+                >
+                  {t("Skip this question")}
+                </button>
+              </>
+            )}
           </div>
           <Button
-            className="primary"
+            className="secondary"
             icon="sparkle"
             busy={busyAction === "review"}
-            disabled={busy || !!text.trim()}
+            disabled={busy || voiceBusy || !!text.trim()}
             onClick={() => perform("review")}
           >
-            Generate my summary
+            {t("Review my summary")}
           </Button>
-          {text.trim() && (
-            <p className="field-hint">
-              Send or clear your unsent response before generating the summary.
-            </p>
-          )}
         </div>
+        {!!text.trim() && (
+          <p className="field-hint">
+            {t(
+              "Send or clear your unsent response before generating the summary.",
+            )}
+          </p>
+        )}
+        <p className="wizard-privacy">
+          <Icon name="lock" size={14} />
+          {t("Private until you review and share.")}
+        </p>
       </section>
-      <aside className="intake-aside">
-        <CarePlan session={session} />
-        <div className="baseline-complete-card">
-          <Icon name="check" size={20} />
-          <div>
-            <h3>Health information saved</h3>
-            <p>
-              Your fixed questions are complete for this preparation. You can
-              return to correct or add details.
-            </p>
+      <aside className="chat-context">
+        <details className="chat-context-panel">
+          <summary>
+            <Icon name="file" size={18} />
+            {t("Your consultation details")}
+            <Icon name="chevron" size={16} />
+          </summary>
+          <CarePlan session={session} />
+          {session.mode !== "chat" && (
             <Button
               className="secondary full"
-              disabled={busy}
+              disabled={busy || voiceBusy}
               onClick={onEditBaseline}
             >
-              Edit health information
+              {t("Edit health information")}
             </Button>
-          </div>
-        </div>
-        <Attachments
-          session={session}
-          onRefresh={refresh}
-          onText={(value) => addText(value, "Extracted document details")}
-          onError={setError}
-        />
-        <div className="ai-activity">
-          <h3>Assistant activity</h3>
+          )}
           <p className="model-caption">
-            <Icon name="sparkle" size={16} />
             {config?.models?.find((model) => model.id === session.model)
               ?.label || session.model}
           </p>
-          {session.ai_activity?.length ? (
-            <ul>
-              {session.ai_activity
-                .slice(-4)
-                .reverse()
-                .map((activity, i) => (
-                  <li key={`${activity.created_at}-${i}`}>
-                    <span>{String(activity.operation).replace(/_/g, " ")}</span>
-                    <strong>
-                      {activity.status}
-                      {Number.isFinite(activity.duration_ms)
-                        ? ` · ${(activity.duration_ms / 1000).toFixed(1)}s`
-                        : ""}
-                    </strong>
-                  </li>
-                ))}
-            </ul>
-          ) : (
-            <p>No AI operations recorded yet.</p>
-          )}
-        </div>
+        </details>
+        <Attachments
+          session={session}
+          onRefresh={refresh}
+          onText={(value) => addText(value, t("Extracted document details"))}
+          onError={setError}
+        />
       </aside>
     </div>
   );
 }
 
 function SlotDetails({ session }) {
+  const { t } = useLocale();
   return (
     <div className="structured-details">
       {[
@@ -2017,28 +2098,26 @@ function SlotDetails({ session }) {
       ].map((concern) => (
         <details key={concern.id} className="concern-details">
           <summary>
-            <span>{concern.title}</span>
-            <span>{Object.keys(concern.slots || {}).length} topics</span>
+            <span>{recordTitle(concern.title, t)}</span>
+            <span>
+              {Object.keys(concern.slots || {}).length} {t("topics")}
+            </span>
             <Icon name="chevron" size={16} />
           </summary>
           <dl>
             {Object.entries(concern.slots || {}).map(([key, slot]) => (
               <div key={key}>
-                <dt>{slot.label || key.replace(/_/g, " ")}</dt>
+                <dt>{recordLabel(slot.label || key.replace(/_/g, " "), t)}</dt>
                 <dd>
                   {slot.value != null && slot.value !== "" ? (
-                    readable(slot.value)
+                    recordedValue(slot.value, t)
                   ) : (
-                    <span className="muted">Not provided</span>
+                    <span className="muted">{t("Not provided")}</span>
                   )}
                   <span
                     className={`slot-status slot-${slot.status?.toLowerCase()}`}
                   >
-                    {slot.status === "FILLED"
-                      ? "Reported"
-                      : (slot.status || "MISSING")
-                          .replace(/_/g, " ")
-                          .toLowerCase()}
+                    {slotStatusLabel(slot.status, t)}
                   </span>
                 </dd>
               </div>
@@ -2047,6 +2126,45 @@ function SlotDetails({ session }) {
         </details>
       ))}
     </div>
+  );
+}
+
+function ProfileSnapshot({ profile }) {
+  const { t } = useLocale();
+  if (!profile) return null;
+  const sex = {
+    female: "Female",
+    male: "Male",
+    intersex: "Intersex",
+    prefer_not_to_say: "Prefer not to say",
+  };
+  const rows = [
+    ["Date of birth", profile.date_of_birth],
+    [
+      "Age at this visit",
+      profile.age_years == null ? "" : String(profile.age_years),
+    ],
+    ["Sex recorded at birth", t(sex[profile.sex_at_birth] || "")],
+    ["Blood group", bloodGroupLabel(profile.blood_group, t)],
+    ["Accessibility needs", profile.accessibility_needs],
+  ].filter(([, value]) => value);
+  if (!rows.length) return null;
+  return (
+    <section className="profile-snapshot">
+      <h3>
+        <Icon name="person" size={18} />
+        {t("Background for this visit")}
+      </h3>
+      <p>{t("Your saved details at the start of this consultation.")}</p>
+      <dl>
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <dt>{t(label)}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -2060,24 +2178,37 @@ function Review({
   assessmentError,
   onGenerateAssessment,
 }) {
+  const { t, locale } = useLocale();
   const [correction, setCorrection] = useState("");
-  const [doctorEmail, setDoctorEmail] = useState(
-    session.doctor_email || config?.care_team?.[0]?.email || "",
-  );
+  const [doctorEmail, setDoctorEmail] = useState(session.doctor_email || "");
   const [confirmed, setConfirmed] = useState(false);
   const [actionBusy, setBusy] = useState(false);
   const busy = actionBusy || assessmentBusy;
   const [error, setError] = useState("");
+  const [approvalError, setApprovalError] = useState("");
+  const approvalErrorRef = useRef(null);
   const [notice, setNotice] = useState("");
   const [withdraw, setWithdraw] = useState(false);
   useEffect(
     () => setConfirmed(false),
     [
       session.summary?.version,
+      locale,
       session.attachments?.map((file) => file.id).join(","),
     ],
   );
   const canApprove = !doctor && session.status === "review";
+  const staleSummaryLanguage = session.summary?.synthesis?.status === "live" &&
+    (session.summary.synthesis.localization_outdated ||
+      session.summary.synthesis.locale !== locale);
+  const staleAssessmentLanguage = session.ai_report?.status === "ready" &&
+    (session.ai_report.localization_outdated || session.ai_report.locale !== locale);
+  const staleReportLanguage = staleSummaryLanguage || staleAssessmentLanguage;
+  useEffect(() => {
+    if (!approvalError) return;
+    approvalErrorRef.current?.focus({ preventScroll: true });
+    approvalErrorRef.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
+  }, [approvalError]);
   async function correct(event) {
     event.preventDefault();
     setBusy(true);
@@ -2085,7 +2216,7 @@ function Review({
     try {
       const updated = await request(`/intakes/${session.id}/review`, {
         method: "PATCH",
-        body: { text: correction },
+        body: { text: correction, locale },
       });
       onUpdate(updated);
       if (!updated.summary?.needs_reconciliation) setCorrection("");
@@ -2103,8 +2234,13 @@ function Review({
   }
   async function approve(event) {
     event.preventDefault();
+    if (staleReportLanguage) {
+      setApprovalError("Refresh the summary and assessment in your selected language before sharing.");
+      return;
+    }
     setBusy(true);
     setError("");
+    setApprovalError("");
     try {
       onUpdate(
         await request(`/intakes/${session.id}/approve`, {
@@ -2117,7 +2253,7 @@ function Review({
       );
       setNotice("Your approved summary has been shared with your doctor.");
     } catch (err) {
-      setError(err.message);
+      setApprovalError(err.message);
     } finally {
       setBusy(false);
     }
@@ -2132,7 +2268,10 @@ function Review({
           doctor
             ? `/clinician/intakes/${session.id}/reviewed`
             : `/intakes/${session.id}/${kind}`,
-          { method: "POST" },
+          {
+            method: "POST",
+            ...(!doctor && kind === "review" ? { body: { locale } } : {}),
+          },
         ),
       );
       setNotice(
@@ -2161,9 +2300,9 @@ function Review({
         <div className="notice warning">
           <Icon name="info" />
           <span>
-            A saved correction has not been reconciled with the summary. Sharing
-            is paused. Retry the correction in the form below when the AI
-            service is available, then review the revised summary.
+            {t(
+              "A saved correction has not been reconciled with the summary. Sharing is paused. Retry the correction in the form below when the AI service is available, then review the revised summary.",
+            )}
           </span>
         </div>
       )}
@@ -2173,10 +2312,12 @@ function Review({
             <Icon name="check" size={25} />
           </span>
           <div>
-            <h2>Your story is ready for your doctor.</h2>
+            <h2>{t("Your story is ready for your doctor.")}</h2>
             <p>
-              You approved version {session.summary?.version}. Shared with{" "}
-              {session.doctor_email || "your care team"}.
+              {t("You approved version {version}. Shared with {email}.", {
+                version: session.summary?.version,
+                email: session.doctor_email,
+              })}
             </p>
           </div>
         </div>
@@ -2185,8 +2326,9 @@ function Review({
         <div className="notice warning">
           <Icon name="shield" />
           <span>
-            You withdrew sharing. Your doctor can no longer access this record
-            in PreConsult.
+            {t(
+              "You withdrew sharing. Your doctor can no longer access this record in PreConsult.",
+            )}
           </span>
           {session.consent && (
             <Button
@@ -2194,7 +2336,7 @@ function Review({
               busy={busy}
               onClick={() => action("review")}
             >
-              Revise preparation
+              {t("Revise preparation")}
             </Button>
           )}
         </div>
@@ -2203,8 +2345,9 @@ function Review({
         <div className="notice error">
           <Icon name="info" />
           <span>
-            This preparation was paused for safety. Follow the safety guidance
-            below. For an emergency in Australia, call 000.
+            {t(
+              "This preparation was paused for safety. Follow the safety guidance below. For an emergency in Australia, call 000.",
+            )}
           </span>
         </div>
       )}
@@ -2214,18 +2357,18 @@ function Review({
             <div>
               <span className="overline">
                 {doctor
-                  ? "SHARED CONSULTATION RECORD"
+                  ? t("SHARED CONSULTATION RECORD")
                   : canApprove
-                    ? "YOUR DRAFT · FOR YOUR REVIEW"
-                    : "YOUR CONSULTATION SUMMARY"}
+                    ? t("YOUR DRAFT · FOR YOUR REVIEW")
+                    : t("YOUR CONSULTATION SUMMARY")}
               </span>
               <h2>
                 {doctor
                   ? session.patient_name || session.patient_email
-                  : "Your consultation report"}
+                  : t("Your consultation report")}
               </h2>
               <p>
-                {dateLabel(session.created_at)} <span>·</span> Version{" "}
+                {dateLabel(session.created_at)} <span>·</span> {t("Version")}{" "}
                 {session.summary?.version || 1}
                 {doctor && (
                   <>
@@ -2236,6 +2379,7 @@ function Review({
               </p>
             </div>
           </div>
+          <ProfileSnapshot profile={session.profile_snapshot} />
           <AssessmentReport
             session={session}
             busy={busy}
@@ -2245,23 +2389,31 @@ function Review({
             configured={config?.ai_configured !== false}
           />
           <div className="factual-summary-heading">
-            <span className="section-kicker">THE RECORDED INFORMATION</span>
-            <h2>Patient preparation summary</h2>
+            <span className="section-kicker">
+              {t("THE RECORDED INFORMATION")}
+            </span>
+            <h2>{t("Patient preparation summary")}</h2>
           </div>
           <div className="summary-disclaimer">
             <Icon name="info" size={17} />
             <p>
               {session.summary?.synthesis?.status === "live"
-                ? "AI-assisted, patient-reported information."
-                : "Structured, patient-reported information."}{" "}
+                ? t("AI-assisted, patient-reported information.")
+                : t("Structured, patient-reported information.")}{" "}
               {doctor
-                ? "Verify details with the patient. This is not a diagnosis or treatment recommendation."
-                : "Check for missing or incorrect details. This is not a diagnosis or treatment recommendation."}
+                ? t(
+                    "Verify details with the patient. This is not a diagnosis or treatment recommendation.",
+                  )
+                : t(
+                    "Check for missing or incorrect details. This is not a diagnosis or treatment recommendation.",
+                  )}
             </p>
           </div>
           {session.summary && (
             <SynthesisSummary
               synthesis={session.summary.synthesis}
+              patientLocale={session.locale || "en"}
+              preserveApproved={session.status === "approved"}
               doctor={doctor}
               busy={busy}
               readOnly={
@@ -2276,7 +2428,7 @@ function Review({
           >
             <summary>
               <Icon name="file" size={18} />
-              <span>Structured preparation record</span>
+              <span>{t("Structured preparation record")}</span>
               <Icon name="chevron" size={17} />
             </summary>
             <SummaryText
@@ -2297,7 +2449,9 @@ function Review({
                   <summary>
                     <Icon name="info" size={18} />
                     <span>
-                      Details still to clarify ({session.summary.gaps.length})
+                      {t("Details still to clarify ({count})", {
+                        count: session.summary.gaps.length,
+                      })}
                     </span>
                     <Icon name="chevron" size={16} />
                   </summary>
@@ -2309,8 +2463,8 @@ function Review({
                 </details>
               )}
             <div className="structured-heading">
-              <h3>Detailed health information</h3>
-              <p>Review the information gathered for each concern.</p>
+              <h3>{t("Detailed health information")}</h3>
+              <p>{t("Review the information gathered for each concern.")}</p>
             </div>
             <SlotDetails session={session} />
           </details>
@@ -2318,18 +2472,21 @@ function Review({
             <form className="correction-form" onSubmit={correct}>
               <label htmlFor="correction">
                 <Icon name="file" size={19} />
-                Anything to correct or add?
+                {t("Anything to correct or add?")}
               </label>
               <p>
-                Describe the change, and we’ll revise the summary for another
-                review.
+                {t(
+                  "Describe the change, and we’ll revise the summary for another review.",
+                )}
               </p>
               <textarea
                 id="correction"
                 value={correction}
                 onChange={(e) => setCorrection(e.target.value)}
                 rows={3}
-                placeholder="e.g. The pain started on Monday, not last week…"
+                placeholder={t(
+                  "e.g. The pain started on Monday, not last week…",
+                )}
                 required
                 maxLength={10000}
                 disabled={busy}
@@ -2340,7 +2497,7 @@ function Review({
                 disabled={!correction.trim() || busy}
                 busy={busy}
               >
-                Update my summary
+                {t("Update my summary")}
               </Button>
             </form>
           )}
@@ -2356,50 +2513,48 @@ function Review({
               <span className="approval-icon">
                 <Icon name="shield" size={25} />
               </span>
-              <h2>You’re in control.</h2>
+              <h2>{t("You’re in control.")}</h2>
               <p>
-                When you’re happy with the details, choose your doctor and
-                approve sharing.
+                {t(
+                  "When you’re happy with the details, choose your doctor and approve sharing.",
+                )}
               </p>
               <label className="field-label" htmlFor="doctor-email">
-                Doctor’s email address
+                {t("Doctor’s email address")}
               </label>
-              {config?.care_team?.length ? (
-                <select
-                  id="doctor-email"
-                  className="select full"
-                  value={doctorEmail}
-                  onChange={(e) => setDoctorEmail(e.target.value)}
-                  required
-                >
-                  <option value="">Choose your doctor</option>
-                  {config.care_team.map((person) => (
-                    <option value={person.email} key={person.email}>
-                      {person.name ? `${person.name} · ` : ""}
-                      {person.email}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  id="doctor-email"
-                  className="input"
-                  type="email"
-                  placeholder="doctor@clinic.com"
-                  value={doctorEmail}
-                  onChange={(e) => setDoctorEmail(e.target.value)}
-                  required
-                />
-              )}
+              <input
+                id="doctor-email"
+                className="input"
+                type="email"
+                list="registered-doctors"
+                placeholder={t("doctor@clinic.com")}
+                value={doctorEmail}
+                onChange={(e) => {
+                  setDoctorEmail(e.target.value);
+                  setApprovalError("");
+                }}
+                aria-describedby={approvalError ? "approval-error" : undefined}
+                required
+              />
+              <datalist id="registered-doctors">
+                {config?.care_team?.map((person) => (
+                  <option key={person.email} value={person.email}>
+                    {person.name || person.email}
+                  </option>
+                ))}
+              </datalist>
               <p className="field-hint">
-                Only this authorised clinician can access the shared record.
+                {t(
+                  "Only this authorised clinician can access the shared record.",
+                )}
               </p>
               {config?.doctor_configured === false && (
                 <div className="notice warning" role="status">
                   <Icon name="info" />
                   <span>
-                    Sharing is not available yet. Ask the service administrator
-                    to register your clinician’s email. Your draft is saved.
+                    {t(
+                      "Ask your doctor to create a doctor account, then enter their email. Your draft is saved.",
+                    )}
                   </span>
                 </div>
               )}
@@ -2407,36 +2562,43 @@ function Review({
                 <input
                   type="checkbox"
                   checked={confirmed}
+                  disabled={staleReportLanguage}
                   onChange={(e) => setConfirmed(e.target.checked)}
                 />
                 <span>
-                  I have reviewed this consultation record and approve sharing
-                  the summary, AI assessment and my attached files with this
-                  doctor.
+                  {t(
+                    "I have reviewed this consultation record and approve sharing the summary, AI assessment and my attached files with this doctor.",
+                  )}
                 </span>
               </label>
+              {approvalError && (
+                <div id="approval-error" ref={approvalErrorRef} tabIndex={-1}>
+                  <ErrorNotice>{approvalError}</ErrorNotice>
+                </div>
+              )}
               <Button
                 className="primary full"
                 type="submit"
                 disabled={
                   !confirmed ||
-                  config?.doctor_configured === false ||
                   !doctorEmail.trim() ||
                   busy ||
                   !!correction.trim() ||
-                  session.summary?.needs_reconciliation
+                  session.summary?.needs_reconciliation ||
+                  staleReportLanguage
                 }
                 busy={busy}
               >
-                Approve & share
+                {t("Approve & share")}
                 <Icon name="arrow" size={16} />
               </Button>
+              {staleReportLanguage && <p className="field-hint">{t("Refresh the summary and assessment in your selected language before sharing.")}</p>}
               {correction.trim() && (
                 <p className="field-hint">
-                  Apply or clear your correction before approving.
+                  {t("Apply or clear your correction before approving.")}
                 </p>
               )}
-              <small>You can withdraw sharing later.</small>
+              <small>{t("You can withdraw sharing later.")}</small>
             </form>
           )}
           {doctor && (
@@ -2446,13 +2608,15 @@ function Review({
               </span>
               <h2>
                 {session.reviewed_at
-                  ? "Review complete"
-                  : "Ready for your review"}
+                  ? t("Review complete")
+                  : t("Ready for your review")}
               </h2>
               <p>
                 {session.reviewed_at
                   ? `Marked as reviewed ${dateLabel(session.reviewed_at, true)}.`
-                  : "Review the patient’s summary, preliminary AI assessment and supporting documents before your consultation."}
+                  : t(
+                      "Review the patient’s summary, preliminary AI assessment and supporting documents before your consultation.",
+                    )}
               </p>
               {!session.reviewed_at && (
                 <Button
@@ -2461,12 +2625,13 @@ function Review({
                   icon="check"
                   onClick={() => action("reviewed")}
                 >
-                  Mark as reviewed
+                  {t("Mark as reviewed")}
                 </Button>
               )}
               <p className="field-hint">
-                Marking this record as reviewed does not confirm the AI’s
-                proposed diagnoses.
+                {t(
+                  "Marking this record as reviewed does not confirm the AI’s proposed diagnoses.",
+                )}
               </p>
             </div>
           )}
@@ -2478,9 +2643,9 @@ function Review({
           />
           {session.status === "approved" && !doctor && (
             <div className="sharing-control">
-              <h3>Sharing settings</h3>
+              <h3>{t("Sharing settings")}</h3>
               <p>
-                Your summary, AI assessment and files are visible to{" "}
+                {t("Your summary, AI assessment and files are visible to")}{" "}
                 <strong>{session.doctor_email}</strong>.
               </p>
               <Button
@@ -2488,11 +2653,12 @@ function Review({
                 busy={busy}
                 onClick={() => setWithdraw(true)}
               >
-                Withdraw sharing
+                {t("Withdraw sharing")}
               </Button>
               <p className="field-hint">
-                Withdrawal removes portal access. It cannot recall copies your
-                doctor has already saved.
+                {t(
+                  "Withdrawal removes portal access. It cannot recall copies your doctor has already saved.",
+                )}
               </p>
             </div>
           )}
@@ -2500,28 +2666,30 @@ function Review({
             <Icon name="lock" size={16} />
             <span>
               {doctor
-                ? "Patient approval is required for access."
-                : "Your information is private to your account until you approve sharing."}
+                ? t("Patient approval is required for access.")
+                : t(
+                    "Your information is private to your account until you approve sharing.",
+                  )}
             </span>
           </div>
         </aside>
       </div>
       {withdraw && (
         <Modal
-          title="Withdraw this shared summary?"
+          title={t("Withdraw this shared summary?")}
           onClose={() => setWithdraw(false)}
         >
           <p className="modal-copy">
-            Your doctor will no longer be able to access this summary or its
-            files in PreConsult. Copies already downloaded or added to clinical
-            records cannot be recalled.
+            {t(
+              "Your doctor will no longer be able to access this summary or its files in PreConsult. Copies already downloaded or added to clinical records cannot be recalled.",
+            )}
           </p>
           <div className="modal-actions">
             <Button className="secondary" onClick={() => setWithdraw(false)}>
-              Keep sharing
+              {t("Keep sharing")}
             </Button>
             <Button className="danger" onClick={() => action("withdraw")}>
-              Withdraw sharing
+              {t("Withdraw sharing")}
             </Button>
           </div>
         </Modal>
@@ -2531,6 +2699,7 @@ function Review({
 }
 
 function IntakePage({ id, user, config, onChanged }) {
+  const { t, locale } = useLocale();
   const [session, setSession] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -2542,7 +2711,45 @@ function IntakePage({ id, user, config, onChanged }) {
   const assessmentPending = useRef(false);
   const mounted = useRef(true);
   const readGeneration = useRef(0);
+  const [localizing, setLocalizing] = useState(false);
+  const [localeError, setLocaleError] = useState("");
+  const localePending = useRef(false);
+  const localeDesired = useRef(locale);
+  localeDesired.current = locale;
   const doctor = user.role === "doctor";
+  const languageNeedsUpdate = !!session && !doctor &&
+    ["active", "review"].includes(session.status) &&
+    ((session.locale || "en") !== locale ||
+      (session.followup_batch?.status === "pending" &&
+        session.followup_batch.locale !== locale));
+  async function updateLanguage() {
+    if (!languageNeedsUpdate || localePending.current) return;
+    localePending.current = true;
+    setLocalizing(true);
+    setLocaleError("");
+    const desired = locale;
+    try {
+      const data = await request(`/intakes/${id}/locale`, {
+        method: "POST",
+        body: { locale: desired, revision: session.revision },
+      });
+      if (!mounted.current) return;
+      readGeneration.current += 1;
+      setSession(data);
+    } catch {
+      if (mounted.current && localeDesired.current === desired)
+        setLocaleError("We could not update the consultation language. Your answers are saved. Please try again.");
+    } finally {
+      localePending.current = false;
+      if (mounted.current) setLocalizing(false);
+    }
+  }
+  useEffect(() => {
+    if (languageNeedsUpdate && !localeError && !localizing) updateLanguage();
+    // Reconcile the loaded record when the patient changes language. Drafts
+    // have already been saved by LanguageSwitcher's navigation boundary.
+  }, [id, locale, session?.locale, session?.status, session?.followup_batch?.locale, localizing, localeError]);
+  useEffect(() => setLocaleError(""), [id, locale]);
   const refresh = useCallback(async () => {
     const generation = ++readGeneration.current;
     try {
@@ -2576,7 +2783,10 @@ function IntakePage({ id, user, config, onChanged }) {
     setAssessmentBusy(true);
     setAssessmentError("");
     try {
-      await request(`/intakes/${id}/ai-report`, { method: "POST" });
+      await request(`/intakes/${id}/ai-report`, {
+        method: "POST",
+        body: { locale: doctor ? session.locale || "en" : locale },
+      });
       if (mounted.current) await refresh();
     } catch (err) {
       if (mounted.current) setAssessmentError(err.message);
@@ -2614,41 +2824,52 @@ function IntakePage({ id, user, config, onChanged }) {
       <div className="page">
         <a className="back-link" href={`#/${doctor ? "doctor" : "patient"}`}>
           <Icon name="back" size={16} />
-          Back to overview
+          {t("Back to overview")}
         </a>
         <ErrorNotice>
           {error || "This consultation could not be found."}
         </ErrorNotice>
         <Button className="secondary" onClick={refresh}>
-          Try again
+          {t("Try again")}
         </Button>
+      </div>
+    );
+  if (languageNeedsUpdate || localizing)
+    return (
+      <div className="page intake-page" aria-live="polite">
+        {localizing ? <Loading label="Updating your consultation language…" /> : null}
+        <p>{t("Your answers are saved. We are translating the questions and suggested answers into your selected language.")}</p>
+        <ErrorNotice>{localeError}</ErrorNotice>
+        {localeError && <Button className="primary" onClick={updateLanguage}>{t("Try again")}</Button>}
       </div>
     );
   return (
     <div className="page intake-page">
       <a className="back-link" href={`#/${doctor ? "doctor" : "patient"}`}>
         <Icon name="back" size={16} />
-        Back to overview
+        {t("Back to overview")}
       </a>
       <div className="page-heading intake-heading">
         <div>
           <span className="overline">
             {doctor
-              ? "CONSULTATION PREPARATION"
+              ? t("CONSULTATION PREPARATION")
               : session.status === "active"
-                ? "TELL YOUR STORY"
-                : "REVIEW & SHARE"}
+                ? t("TELL YOUR STORY")
+                : t("REVIEW & SHARE")}
           </span>
-          <h1>{session.title || "Your consultation"}</h1>
+          <h1>{recordTitle(session.title, t)}</h1>
           <div className="intake-metadata">
             <Status status={session.status} />
-            <span>Started {dateLabel(session.created_at)}</span>
+            <span>
+              {t("Started")} {dateLabel(session.created_at)}
+            </span>
           </div>
         </div>
         {!doctor && (
           <button
             className="icon-button delete-consultation"
-            aria-label="Delete consultation"
+            aria-label={t("Delete consultation")}
             disabled={assessmentBusy}
             onClick={() => setDeleteOpen(true)}
           >
@@ -2656,6 +2877,9 @@ function IntakePage({ id, user, config, onChanged }) {
           </button>
         )}
       </div>
+      {!doctor && ["approved", "withdrawn"].includes(session.status) && (session.locale || "en") !== locale && (
+        <div className="notice notice-info" role="status">{t("This shared report keeps the language approved by the patient. Withdraw sharing before preparing a new version in another language.")}</div>
+      )}
       {!doctor && (
         <JourneyNavigation
           current={
@@ -2701,7 +2925,6 @@ function IntakePage({ id, user, config, onChanged }) {
           session={session}
           onUpdate={update}
           refresh={refresh}
-          VoiceInput={VoiceInput}
           Attachments={Attachments}
           onContinue={() => setView(null)}
         />
@@ -2732,17 +2955,19 @@ function IntakePage({ id, user, config, onChanged }) {
       )}{" "}
       {deleteOpen && (
         <Modal
-          title="Delete this consultation?"
+          title={t("Delete this consultation?")}
           onClose={() => !deleting && setDeleteOpen(false)}
         >
           <p className="modal-copy">
-            This permanently deletes the consultation, its messages and uploaded
-            files from PreConsult. This action cannot be undone.
+            {t(
+              "This permanently deletes the consultation, its messages and uploaded files from PreConsult. This action cannot be undone.",
+            )}
           </p>
           {session.status === "approved" && (
             <p className="modal-copy">
-              It also removes your doctor’s access. Copies already saved by your
-              doctor cannot be recalled.
+              {t(
+                "It also removes your doctor’s access. Copies already saved by your doctor cannot be recalled.",
+              )}
             </p>
           )}
           <div className="modal-actions">
@@ -2751,10 +2976,10 @@ function IntakePage({ id, user, config, onChanged }) {
               disabled={deleting}
               onClick={() => setDeleteOpen(false)}
             >
-              Keep consultation
+              {t("Keep consultation")}
             </Button>
             <Button className="danger" busy={deleting} onClick={remove}>
-              Delete consultation
+              {t("Delete consultation")}
             </Button>
           </div>
         </Modal>
@@ -2764,6 +2989,8 @@ function IntakePage({ id, user, config, onChanged }) {
 }
 
 function Account({ user, onUpdated, onLogout }) {
+  const { t } = useLocale();
+  const [editingProfile, setEditingProfile] = useState(false);
   const [name, setName] = useState(user.name || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -2790,13 +3017,13 @@ function Account({ user, onUpdated, onLogout }) {
     <div className="page account-page">
       <div className="page-heading">
         <div>
-          <span className="overline">YOUR WORKSPACE</span>
-          <h1>My account</h1>
-          <p>A few details to make this space yours.</p>
+          <span className="overline">{t("YOUR WORKSPACE")}</span>
+          <h1>{t("My account")}</h1>
+          <p>{t("A few details to make this space yours.")}</p>
         </div>
       </div>
       <section className="account-card">
-        <h2>Personal details</h2>
+        <h2>{t("Personal details")}</h2>
         <ErrorNotice>{error}</ErrorNotice>
         {notice && (
           <div className="notice success" role="status">
@@ -2806,19 +3033,19 @@ function Account({ user, onUpdated, onLogout }) {
         )}
         <form onSubmit={save}>
           <label className="field-label" htmlFor="profile-name">
-            Your name
+            {t("Your name")}
           </label>
           <input
             id="profile-name"
             className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="How would you like to be addressed?"
+            placeholder={t("How would you like to be addressed?")}
             maxLength={100}
             autoComplete="name"
           />
           <label className="field-label" htmlFor="profile-email">
-            Email address
+            {t("Email address")}
           </label>
           <input
             id="profile-email"
@@ -2827,33 +3054,61 @@ function Account({ user, onUpdated, onLogout }) {
             readOnly
           />
           <p className="field-hint">
-            Your verified email is used to sign in and identify your account.
+            {t(
+              "Your verified email is used to sign in and identify your account.",
+            )}
           </p>
           <Button type="submit" className="primary" busy={busy}>
-            Save changes
+            {t("Save changes")}
           </Button>
         </form>
       </section>
+      {user.role === "patient" && (
+        <section className="account-card profile-account-card">
+          <span className="wizard-emblem">
+            <Icon name="heart" size={28} />
+          </span>
+          <h2>{t("Your remembered health profile")}</h2>
+          <p>{t("Add lasting details once to make future visits easier.")}</p>
+          <p>
+            {t(
+              "Current medicines, allergies, measurements and symptoms are asked again each visit.",
+            )}
+          </p>
+          <Button className="primary" onClick={() => setEditingProfile(true)}>
+            {t("Edit profile")}
+          </Button>
+          {editingProfile && (
+            <ProfileWizard onClose={() => setEditingProfile(false)} />
+          )}
+        </section>
+      )}
       <section className="account-card">
-        <h2>Privacy & access</h2>
+        <h2>{t("Privacy & access")}</h2>
         <p>
-          You sign in with a code delivered to your email. Keep access to your
-          email account secure.
+          {t(
+            "You sign in with a code delivered to your email. Keep access to your email account secure.",
+          )}
         </p>
         <p>
           {user.role === "doctor"
-            ? "You can access only approved consultation records explicitly shared with your authorised email."
-            : "You control sharing for each consultation. You can withdraw sharing or permanently delete a consultation from its detail page."}
+            ? t(
+                "You can access only approved consultation records explicitly shared with your authorised email.",
+              )
+            : t(
+                "You control sharing for each consultation. You can withdraw sharing or permanently delete a consultation from its detail page.",
+              )}
         </p>
         <Button className="secondary" icon="logout" onClick={onLogout}>
-          Sign out of this device
+          {t("Sign out of this device")}
         </Button>
       </section>
     </div>
   );
 }
 
-export default function ProductApp() {
+function ProductAppContent() {
+  const { t } = useLocale();
   const route = useHash();
   const [user, setUser] = useState(null);
   const [config, setConfig] = useState(null);
@@ -3054,8 +3309,8 @@ export default function ProductApp() {
       <div className="boot-screen">
         <Brand role={requestedRole} />
         <div className="connection-error">
-          <h1>Let’s reconnect.</h1>
-          <p>The PreConsult server could not be reached.</p>
+          <h1>{t("Let’s reconnect.")}</h1>
+          <p>{t("The PreConsult server could not be reached.")}</p>
           <ErrorNotice>{bootError}</ErrorNotice>
           <Button
             className="primary"
@@ -3065,7 +3320,7 @@ export default function ProductApp() {
               setEpoch((x) => x + 1);
             }}
           >
-            Try again
+            {t("Try again")}
           </Button>
         </div>
       </div>
@@ -3125,5 +3380,13 @@ export default function ProductApp() {
         />
       )}
     </Shell>
+  );
+}
+
+export default function ProductApp() {
+  return (
+    <LocaleProvider>
+      <ProductAppContent />
+    </LocaleProvider>
   );
 }

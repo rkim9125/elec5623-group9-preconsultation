@@ -1,5 +1,11 @@
 import React from "react";
 const paths = {
+  message: (
+    <>
+      <path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 10 10 0 0 1-4-.8L3 21l1.6-5A8.5 8.5 0 1 1 21 11.5Z" />
+      <path d="M8 10h8M8 14h5" />
+    </>
+  ),
   // Patient-facing topic illustrations use recognisable anatomy or care objects.
   leg: (
     <path d="M8 2.5 7.5 8l2 5-1 6c-.1 1.2.6 2 1.8 2H17c1.1 0 1.5-1.2.5-1.8L14 17l.8-5-1.3-5 .5-4.5M8.8 11.3l4.5-.8" />
@@ -262,6 +268,7 @@ const paths = {
     </>
   ),
   stop: <rect x="5" y="5" width="14" height="14" rx="2" />,
+  retry: <path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6" />,
   close: <path d="m6 6 12 12M6 18 18 6" />,
   info: (
     <>

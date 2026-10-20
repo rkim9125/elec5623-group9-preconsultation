@@ -54,6 +54,15 @@ def init_db() -> None:
                 id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE,
                 name TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS account_roles (
+                user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                role TEXT NOT NULL CHECK(role IN ('patient', 'doctor')),
+                assigned_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS patient_profiles (
+                user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                data TEXT NOT NULL, updated_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS otp_challenges (
                 id TEXT PRIMARY KEY, email TEXT NOT NULL, role TEXT NOT NULL,
                 salt TEXT NOT NULL, code_hash TEXT NOT NULL,
@@ -76,7 +85,34 @@ def init_db() -> None:
             );
             CREATE INDEX IF NOT EXISTS intake_owner ON intakes(patient_id);
         """)
+        _migrate_account_roles(conn)
     os.chmod(get_settings().db_path, 0o600)
+
+
+def _migrate_account_roles(conn: sqlite3.Connection) -> None:
+    """Assign each legacy identity one role without losing its patient records.
+
+    Owning an intake takes precedence. Otherwise retain the earliest verified
+    session role, with patient winning a timestamp tie. Only identities without
+    either kind of evidence use the legacy clinician configuration. Re-running
+    startup never reassigns a permanent role.
+    """
+    conn.execute("BEGIN IMMEDIATE")
+    legacy_doctors = set(get_settings().doctor_emails)
+    for user in conn.execute("SELECT u.id, u.email FROM users u LEFT JOIN account_roles r ON r.user_id = u.id WHERE r.user_id IS NULL").fetchall():
+        owns_intake = conn.execute("SELECT 1 FROM intakes WHERE patient_id = ? LIMIT 1", (user["id"],)).fetchone()
+        previous = conn.execute("SELECT role FROM sessions WHERE user_id = ? AND role IN ('patient', 'doctor') ORDER BY created_at, CASE role WHEN 'patient' THEN 0 ELSE 1 END, token_hash LIMIT 1", (user["id"],)).fetchone()
+        role = "patient" if owns_intake else previous["role"] if previous else "doctor" if user["email"].lower() in legacy_doctors else "patient"
+        conn.execute("INSERT INTO account_roles (user_id, role, assigned_at) VALUES (?, ?, ?)", (user["id"], role, utc_now()))
+    # Old dual-role sessions must not retain access to the discarded role.
+    conn.execute("DELETE FROM sessions WHERE EXISTS (SELECT 1 FROM account_roles r WHERE r.user_id = sessions.user_id AND r.role != sessions.role)")
+
+
+def registered_doctors() -> list[dict]:
+    """Verified clinician identities available for explicit patient sharing."""
+    with get_connection() as conn:
+        rows = conn.execute("SELECT u.email, u.name FROM users u JOIN account_roles r ON r.user_id = u.id WHERE r.role = 'doctor' ORDER BY lower(u.name), u.email").fetchall()
+    return [{"email": row["email"], "name": row["name"] or row["email"]} for row in rows]
 
 
 def load_intake(intake_id: str) -> dict | None:

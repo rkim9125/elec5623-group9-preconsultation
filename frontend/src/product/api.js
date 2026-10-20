@@ -1,3 +1,5 @@
+import { readProductLocale } from "./translations.js";
+
 export async function request(path, options = {}) {
   const { body, ...rest } = options;
   const multipart = body instanceof FormData;
@@ -7,6 +9,7 @@ export async function request(path, options = {}) {
       credentials: "same-origin",
       ...rest,
       headers: {
+        "Accept-Language": readProductLocale(),
         ...(body && !multipart ? { "Content-Type": "application/json" } : {}),
         ...rest.headers,
       },
@@ -67,7 +70,8 @@ export async function reportPdf(sessionId) {
 
 export function dateLabel(value, time = false) {
   if (!value || Number.isNaN(new Date(value).getTime())) return "—";
-  return new Intl.DateTimeFormat("en-AU", {
+  const locale = readProductLocale();
+  return new Intl.DateTimeFormat(locale === "en" ? "en-AU" : locale, {
     day: "numeric",
     month: "short",
     year: "numeric",

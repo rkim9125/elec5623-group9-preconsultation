@@ -2,10 +2,12 @@ import React, { useId, useState } from "react";
 import Icon from "./Icons.jsx";
 import BodyMap from "./BodyMap.jsx";
 import LowerBodyMap from "./LowerBodyMap.jsx";
+import { useLocale } from "./i18n.jsx";
 import {
   bodyOptionsFor,
-  areaFromAnswer,
+  areasFromAnswer,
   areaSummary,
+  normalizeLowerBodyAnswer,
 } from "./lowerBodyModel.js";
 import {
   normalizeOptions,
@@ -44,7 +46,9 @@ export default function GuidedField({
   disabled,
   onChange,
   onFocus,
+  hideDetails = false,
 }) {
+  const { t } = useLocale();
   const helperId = useId();
   const errorId = useId();
   const [showDetails, setShowDetails] = useState(false);
@@ -59,23 +63,14 @@ export default function GuidedField({
   const rawParsed = guided
     ? parseGuidedAnswer(answer.value, options)
     : { selected: [], details: answer.value };
-  const parsed =
-    isLowerBody &&
-    rawParsed.selected.length &&
-    !areaFromAnswer(rawParsed.selected)
-      ? {
-          ...rawParsed,
-          selected: [],
-          details: [...rawParsed.selected, rawParsed.details]
-            .filter(Boolean)
-            .join("\n"),
-        }
-      : rawParsed;
+  const parsed = isLowerBody ? normalizeLowerBodyAnswer(rawParsed) : rawParsed;
   const update = (next) => {
     const value = serializeGuidedAnswer(next);
     if (value.length > 6000) {
       setError(
-        "This answer is longer than 6,000 characters. Shorten your details before adding another selection.",
+        t(
+          "This answer is longer than 6,000 characters. Shorten your details before adding another selection.",
+        ),
       );
       return;
     }
@@ -88,7 +83,7 @@ export default function GuidedField({
       selected: toggleGuidedSelection(
         parsed.selected,
         value,
-        presentation.multiple === true,
+        isLowerBody || presentation.multiple === true,
       ),
     });
   const textarea = (
@@ -100,10 +95,12 @@ export default function GuidedField({
       maxLength={6000}
       placeholder={
         answer.status === "UNCERTAIN"
-          ? "Optional: add what you remember or what you’re unsure about…"
+          ? t("Optional: add what you remember or what you’re unsure about…")
           : guided
-            ? "Anything else, a different answer, or details in your own words…"
-            : "Your answer…"
+            ? t(
+                "Anything else, a different answer, or details in your own words…",
+              )
+            : t("Your answer…")
       }
       onFocus={onFocus}
       onChange={(event) =>
@@ -116,7 +113,7 @@ export default function GuidedField({
       disabled={disabled}
     />
   );
-  if (!guided) return textarea;
+  if (!guided) return hideDetails ? null : textarea;
   const expanded = showDetails || Boolean(parsed.details);
   return (
     <div
@@ -124,22 +121,24 @@ export default function GuidedField({
       onFocus={onFocus}
     >
       <p className="guided-field-helper" id={helperId}>
-        {(isLowerBody
-          ? "Choose one area. You can add details in your own words."
-          : presentation.helper) ||
-          (presentation.multiple
-            ? "Select all that fit. You can add details in your own words."
-            : "Choose one, or add your answer in your own words.")}
+        {t(
+          (isLowerBody
+            ? "Choose all affected areas, including both sides or views. You can add details in your own words."
+            : presentation.helper) ||
+            (presentation.multiple
+              ? "Select all that fit. You can add details in your own words."
+              : "Choose one, or add your answer in your own words."),
+        )}
       </p>
       <div
         className={`guided-options-layout ${presentation.kind === "body_map" && !isLowerBody ? "with-body-map" : ""}`}
       >
         {isLowerBody && (
           <LowerBodyMap
-            value={areaFromAnswer(parsed.selected)}
+            value={areasFromAnswer(parsed.selected)}
             disabled={disabled}
-            onChange={(area) =>
-              update({ ...parsed, selected: area ? [areaSummary(area)] : [] })
+            onChange={(areas) =>
+              update({ ...parsed, selected: areas.map(areaSummary) })
             }
           />
         )}
@@ -156,7 +155,9 @@ export default function GuidedField({
         {!isLowerBody && (
           <div className="guided-choice-panel">
             {presentation.kind === "body_map" && (
-              <span className="guided-choice-label">Choose locations</span>
+              <span className="guided-choice-label">
+                {t("Choose locations")}
+              </span>
             )}
             <div
               className={`answer-choices ${presentation.kind === "scale" ? "answer-scale" : ""}`}
@@ -181,7 +182,14 @@ export default function GuidedField({
                         <Icon name={icon} size={19} />
                       </span>
                     )}
-                    <span>{option.label}</span>
+                    <span>
+                      {t(
+                        field.key === "eye_sensation" &&
+                          option.label === "Watery"
+                          ? "Watery eyes"
+                          : option.label,
+                      )}
+                    </span>
                     <span
                       className={`answer-choice-mark ${presentation.multiple ? "multiple" : "single"}`}
                       aria-hidden="true"
@@ -195,11 +203,10 @@ export default function GuidedField({
             <div className="guided-choice-footer" aria-live="polite">
               {parsed.selected.length ? (
                 <span>
-                  {parsed.selected.length}{" "}
-                  {parsed.selected.length === 1 ? "option" : "options"} selected
+                  {t("{count} selected", { count: parsed.selected.length })}
                 </span>
               ) : (
-                <span>No selection yet</span>
+                <span>{t("No selection yet")}</span>
               )}
               {parsed.selected.length > 0 && (
                 <button
@@ -208,34 +215,37 @@ export default function GuidedField({
                   onClick={() => update({ ...parsed, selected: [] })}
                   disabled={disabled}
                 >
-                  Clear selections
+                  {t("Clear selections")}
                 </button>
               )}
             </div>
           </div>
         )}
       </div>
-      <div className="guided-custom-answer">
-        {expanded ? (
-          <label className="guided-details-label" htmlFor={inputId}>
-            Your own details <span>(optional)</span>
-          </label>
-        ) : (
-          <button
-            className="guided-add-details"
-            type="button"
-            aria-expanded="false"
-            aria-controls={`${inputId}-details`}
-            onClick={() => setShowDetails(true)}
-            disabled={disabled}
-          >
-            <Icon name="plus" size={17} /> Add details or another answer
-          </button>
-        )}
-        <div id={`${inputId}-details`} hidden={!expanded}>
-          {textarea}
+      {!hideDetails && (
+        <div className="guided-custom-answer">
+          {expanded ? (
+            <label className="guided-details-label" htmlFor={inputId}>
+              {t("Your own details")} <span>{t("(optional)")}</span>
+            </label>
+          ) : (
+            <button
+              className="guided-add-details"
+              type="button"
+              aria-expanded="false"
+              aria-controls={`${inputId}-details`}
+              onClick={() => setShowDetails(true)}
+              disabled={disabled}
+            >
+              <Icon name="plus" size={17} />{" "}
+              {t("Add details or another answer")}
+            </button>
+          )}
+          <div id={`${inputId}-details`} hidden={!expanded}>
+            {textarea}
+          </div>
         </div>
-      </div>
+      )}
       {error && (
         <p id={errorId} className="guided-error" role="alert">
           {error}

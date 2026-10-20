@@ -1,0 +1,39 @@
+PreConsult | 2 个典型 testcase | 2026-10-21
+
+所有人物、图片和医疗检查表均为虚构测试数据。
+
+使用方式
+1. 解压整个文件夹，再用浏览器打开 START-HERE.html。
+2. 点 TC01 / TC02 切换病例；每一题都有对应选项、可复制文字和验收重点。
+3. 如果想打印或离线阅读，打开 manual.pdf（12页）。
+4. 在自己的独立患者测试账号中照着填写。此材料包不会自动创建账号、上传或分享。
+
+TC01 双膝疼痛 | Alex Lin (TEST)
+case01/answers.txt                  纯文字填写答案
+case01/knee-photo.png               合成膝部照片（上传）
+case01/medical-exam.pdf             膝部检查表，1页（上传）
+case01/medical-exam-page-1.png      同一检查表的PNG，可替代PDF测试OCR
+
+TC02 高血压复诊 | Maya Chen (TEST)
+case02/answers.txt                  纯文字填写答案
+case02/bp-monitor-photo.png         合成血压计照片（上传）
+case02/checkup-and-bp-log.pdf        化验表和7天血压记录，2页（上传）
+case02/checkup-and-bp-log-page-1.png 化验表PNG，可替代PDF测试OCR
+case02/checkup-and-bp-log-page-2.png 血压记录PNG，可替代PDF测试OCR
+
+每例正常测试上传1张照片和1份PDF即可；不要重复上传PDF及其页面PNG。
+所有单个上传文件均小于10 MB。
+
+testcases.json                     全部填写内容与预期结果
+report-data.json                   医疗检查表的原始结构化数值
+field-map.json                     与当前应用源码对齐的字段与选项
+source/image-prompts.json          内置 image_gen 的完整生成提示词
+source/*validation.json            材料、字段、排版和说明页的验证结果
+source/generate_reports.py         医疗检查表生成器（ReportLab）
+source/generate_manual.py          中文手册生成器（ReportLab）
+source/build_cases.py              规范数据与纯文字答案生成器
+source/build_html.py               单文件说明页生成器
+
+已验证材料一致性、字段映射、说明页复制逻辑/手机布局和PDF排版。
+没有用真实账号完成应用端到端操作；AI输出需在实际跑测时核对。
+本包中的AI参考答案是事实库，实际问题与顺序可能变化，不能要求固定问满5题。

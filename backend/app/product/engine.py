@@ -14,6 +14,8 @@ import uuid
 
 from app.core.safety import check_safety
 from .provider import ExtractionProvider, ProviderUnavailable, get_provider
+from .locales import normalize_locale, translate_text, workflow_title, field_label
+from .summary_copy import summary_text
 from .workflows import (WORKFLOWS, SHARED_QUESTIONS, CORE_QUESTIONS, SIGNALS,
                         CONDITIONS, SYMPTOM_FIELDS, get_workflow, question_definitions)
 
@@ -389,7 +391,7 @@ def _redact_superseded(session: dict, superseded: list[dict], msg: dict) -> None
                     slots[key]['question'] = '' if slots[key].get('exclude_from_handoff') else slots[key]['question'].replace(item['_original_name'], item['name'])
     narrative_keys = {'main_concern', 'agenda_items', 'priority_concern', 'preparation_focus', 'concern_description'}
     changed_owners = {entry['owner'] for entry in superseded}
-    version_two = session.get('experience_version') == 2
+    version_two = session.get('experience_version', 0) >= 2
     whole_concern_removed = any(entry.get('whole_concern') for entry in superseded)
 
     def repeats_prior(value: object, *, owner: str = '', key: str = '') -> bool:
@@ -609,7 +611,7 @@ def process_message(session: dict, text: str, action: str = 'answer', *, provide
                 c['preparation_status'] = 'in progress'
     accepted['activations'].extend(_apply_conditions(session))
     # A consented, volunteered narrative supplies main concern even during a resumed draft.
-    if (session.get('experience_version') != 2 and session['concerns']
+    if (session.get('experience_version', 0) < 2 and session['concerns']
             and session['shared_slots']['main_concern']['status'] == 'MISSING'):
         session['shared_slots']['main_concern'].update(status='FILLED', value=text, evidence=_provenance(msg, text))
     eligible = _select_question(session)
@@ -633,6 +635,60 @@ def process_message(session: dict, text: str, action: str = 'answer', *, provide
     if session['ai_status']['mode'] == 'unavailable':
         prefix = 'Adaptive AI is unavailable. Your answer is saved, and the guided questions remain available.\n\n'
     _message(session, 'assistant', prefix + intro + question['question'])
+    return session
+
+
+def localize_summary(session: dict) -> dict:
+    """Render report structure in the patient's language without changing evidence."""
+    summary = session.get('summary')
+    if not summary:
+        return session
+    locale = normalize_locale(session.get('locale'))
+    copy = lambda text: summary_text(text, locale)
+    for section in summary.get('sections', []):
+        section['title'] = (workflow_title(section.get('workflow_id'), section.get('title'), locale)
+                            if section.get('concern_id') else copy(section.get('title', '')))
+        for entry in section.get('entries', []):
+            entry['label'] = field_label(entry.get('key', ''), entry.get('label'), locale)
+    for gap in summary.get('gaps', []):
+        gap['label'] = field_label(gap.get('key', ''), gap.get('label'), locale)
+        gap['description'] = copy(gap.get('description', ''))
+    def display_value(value):
+        # Localize authored choice values and their serialization headings only.
+        # Free text remains the original source wording in this factual appendix.
+        return '\n'.join(('- ' + translate_text(line[2:], locale)) if line.startswith('- ')
+                         else copy(line) for line in str(value).split('\n'))
+    lines = [copy('PATIENT PREPARATION NOTES'), copy('Patient-reported information for a planned consultation. This record does not establish a diagnosis or whether it is safe to wait.'), '']
+    for section in summary.get('sections', []):
+        suffix = f" — {copy(section['preparation_status'])}" if section.get('preparation_status') else ''
+        lines.append(section['title'] + suffix)
+        for entry in section.get('entries', []):
+            lines.append(f"• {entry['label']}: {display_value(entry['value'])}")
+        if not section.get('entries'):
+            lines.append('• ' + copy('No details supplied for this section.'))
+        lines.append('')
+    if session.get('_has_corrections'):
+        lines.extend([copy('Your corrections are reflected in this draft. Superseded wording remains in your private conversation.'), ''])
+    if session.get('unclassified_notes') and not session.get('_has_corrections'):
+        lines.append(copy('Patient notes not yet structured'))
+        lines.extend(f"• {note['text']}" for note in session['unclassified_notes'])
+        lines.append('')
+    if session.get('attachments'):
+        lines.append(copy('Attachments for clinician review'))
+        for attachment in session['attachments']:
+            lines.append(f"• {attachment.get('filename') or attachment.get('name', translate_text('Uploaded file', locale))} ({copy('uploaded by the patient; contents not interpreted by this tool')})")
+        lines.append('')
+    if summary.get('gaps'):
+        lines.append(copy('Unknown, skipped and uncollected information'))
+        names = {c['id']: workflow_title(c.get('workflow_id'), c['title'], locale) for c in session['concerns']}
+        for gap in summary['gaps']:
+            scope = names.get(gap['concern_id'], copy('Shared information'))
+            words = f" — {gap['patient_words']}" if gap.get('patient_words') else ''
+            lines.append(f"• {scope} / {gap['label']}: {gap['description']}{words}")
+    if session.get('unreconciled_corrections'):
+        lines.extend(['', copy('Patient corrections awaiting reconciliation')])
+        lines.extend(f"• {correction['text']}" for correction in session['unreconciled_corrections'])
+    summary.update(text='\n'.join(lines), locale=locale)
     return session
 
 
@@ -689,40 +745,11 @@ def _render_review(session: dict) -> dict:
             status = 'prepared with gaps' if any(s['status'] != 'FILLED' for s in applicable) else 'preparation fields supplied'
         c['preparation_status'] = status
         sections.append({'title': c['title'], 'concern_id': c['id'], 'workflow_id': c['workflow_id'], 'preparation_status': status, 'entries': facts})
-    lines = ['PATIENT PREPARATION NOTES', 'Patient-reported information for a planned consultation. This record does not establish a diagnosis or whether it is safe to wait.', '']
-    for section in sections:
-        suffix = f" — {section['preparation_status']}" if section.get('preparation_status') else ''
-        lines.append(section['title'] + suffix)
-        for entry in section['entries']:
-            lines.append(f"• {entry['label']}: {entry['value']}")
-        if not section['entries']:
-            lines.append('• No details supplied for this section.')
-        lines.append('')
-    if session.get('_has_corrections'):
-        lines.extend(['Your corrections are reflected in this draft. Superseded wording remains in your private conversation.', ''])
-    if session.get('unclassified_notes') and not session.get('_has_corrections'):
-        lines.append('Patient notes not yet structured')
-        lines.extend(f"• {note['text']}" for note in session['unclassified_notes'])
-        lines.append('')
-    if session.get('attachments'):
-        lines.append('Attachments for clinician review')
-        for attachment in session['attachments']:
-            lines.append(f"• {attachment.get('filename') or attachment.get('name', 'Uploaded file')} (uploaded by the patient; contents not interpreted by this tool)")
-        lines.append('')
-    if gaps:
-        lines.append('Unknown, skipped and uncollected information')
-        names = {c['id']: c['title'] for c in session['concerns']}
-        for gap in gaps:
-            scope = names.get(gap['concern_id'], 'Shared information')
-            words = f" — {gap['patient_words']}" if gap.get('patient_words') else ''
-            lines.append(f"• {scope} / {gap['label']}: {gap['description']}{words}")
     pending = session.get('unreconciled_corrections', [])
-    if pending:
-        lines.extend(['', 'Patient corrections awaiting reconciliation'])
-        lines.extend(f"• {correction['text']}" for correction in pending)
-    session['summary'] = {'version': version, 'text': '\n'.join(lines), 'sections': sections, 'gaps': gaps,
+    session['summary'] = {'version': version, 'sections': sections, 'gaps': gaps,
                           'needs_reconciliation': bool(pending), 'generated_at': _now(),
                           'provenance': 'Deterministically rendered from validated patient slots; no generated clinical conclusions.'}
+    localize_summary(session)
     session['status'] = 'review'
     session['current_question'] = None
     session['plan']['next_target'] = None

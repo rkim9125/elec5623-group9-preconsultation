@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .config import get_settings
 from .database import get_connection, utc_now
+from .profiles import PatientProfileInput, load_profile, save_profile
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -76,9 +77,14 @@ def _otp_hash(code: str, salt: str) -> str:
     return hashlib.scrypt(code.encode(), salt=bytes.fromhex(salt), n=16384, r=8, p=1).hex()
 
 
-def _check_doctor(email: str, role: str) -> None:
-    if role == "doctor" and email not in get_settings().doctor_emails:
-        raise HTTPException(403, "This email is not registered as a clinician. Contact the service administrator.")
+def _check_account_role(email: str, role: str, conn=None) -> None:
+    """Email ownership is verified by OTP; the first verified role is permanent."""
+    if conn is None:
+        with get_connection() as connection:
+            return _check_account_role(email, role, connection)
+    existing = conn.execute("SELECT r.role FROM users u JOIN account_roles r ON r.user_id = u.id WHERE u.email = ?", (email,)).fetchone()
+    if existing and existing["role"] != role:
+        raise HTTPException(409, "This email already belongs to a different account role. Use another email for your patient or doctor account.")
 
 
 def _client_address(request: Request) -> str:
@@ -140,13 +146,12 @@ def require_user(request: Request) -> dict:
         raise HTTPException(401, "Please sign in to continue.")
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT u.id, u.email, u.name, s.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?",
+            "SELECT u.id, u.email, u.name, r.role FROM sessions s JOIN users u ON u.id = s.user_id JOIN account_roles r ON r.user_id = u.id AND r.role = s.role WHERE s.token_hash = ? AND s.expires_at > ?",
             (_token_hash(token), time.time()),
         ).fetchone()
     if not row:
         raise HTTPException(401, "Your session has expired. Please sign in again.")
     user = dict(row)
-    _check_doctor(user["email"], user["role"])
     return user
 
 
@@ -167,7 +172,7 @@ def request_code(body: LoginRequest, request: Request, response: Response) -> di
     settings = get_settings()
     if not settings.mail_configured:
         raise HTTPException(503, "Email sign-in is not configured. Set RESEND_API_KEY and a verified RESEND_FROM_EMAIL on the server.")
-    _check_doctor(body.email, body.role)
+    _check_account_role(body.email, body.role)
     check_rate_limit(request, "otp_request", body.email)
     code = f"{secrets.randbelow(1_000_000):06d}"
     salt = secrets.token_hex(16)
@@ -192,7 +197,7 @@ def request_code(body: LoginRequest, request: Request, response: Response) -> di
 @router.post("/verify", dependencies=[Depends(csrf_protect)])
 def verify_code(body: VerifyRequest, request: Request, response: Response) -> dict:
     settings = get_settings()
-    _check_doctor(body.email, body.role)
+    _check_account_role(body.email, body.role)
     check_rate_limit(request, "otp_verify", body.email)
     token = secrets.token_urlsafe(48)
     now = time.time()
@@ -200,6 +205,9 @@ def verify_code(body: VerifyRequest, request: Request, response: Response) -> di
     # Invalid-attempt changes must COMMIT; raise only after leaving transaction.
     with get_connection() as conn:
         conn.execute("BEGIN IMMEDIATE")
+        # Recheck under the write lock: two role-specific codes can be issued
+        # before either is verified, but only the first verification can claim.
+        _check_account_role(body.email, body.role, conn)
         challenge = conn.execute("SELECT * FROM otp_challenges WHERE email = ? AND role = ?", (body.email, body.role)).fetchone()
         valid = bool(challenge and challenge["expires_at"] > now and challenge["attempts"] < settings.otp_attempt_limit)
         if valid and not hmac.compare_digest(_otp_hash(body.code, challenge["salt"]), challenge["code_hash"]):
@@ -209,7 +217,9 @@ def verify_code(body: VerifyRequest, request: Request, response: Response) -> di
             conn.execute("DELETE FROM otp_challenges WHERE id = ?", (challenge["id"],))
             conn.execute("INSERT OR IGNORE INTO users (id, email, name, created_at) VALUES (?, ?, '', ?)", (uuid4().hex, body.email, utc_now()))
             row = conn.execute("SELECT id, email, name FROM users WHERE email = ?", (body.email,)).fetchone()
+            conn.execute("INSERT OR IGNORE INTO account_roles (user_id, role, assigned_at) VALUES (?, ?, ?)", (row["id"], body.role, utc_now()))
             user = {**dict(row), "role": body.role}
+            conn.execute("DELETE FROM otp_challenges WHERE email = ? AND role != ?", (body.email, body.role))
             old_token = request.cookies.get(cookie_name())
             if old_token:
                 conn.execute("DELETE FROM sessions WHERE token_hash = ?", (_token_hash(old_token),))
@@ -234,6 +244,18 @@ def update_profile(body: ProfileRequest, user: dict = Depends(require_user)) -> 
     with get_connection() as conn:
         conn.execute("UPDATE users SET name = ? WHERE id = ?", (body.name, user["id"]))
     return {"user": {**user, "name": body.name}}
+
+
+@router.get("/profile")
+def patient_profile(response: Response, user: dict = Depends(require_patient)) -> dict:
+    response.headers["Cache-Control"] = "no-store"
+    return {"profile": load_profile(user["id"])}
+
+
+@router.put("/profile", dependencies=[Depends(csrf_protect)])
+def update_patient_profile(body: PatientProfileInput, response: Response, user: dict = Depends(require_patient)) -> dict:
+    response.headers["Cache-Control"] = "no-store"
+    return {"profile": save_profile(user["id"], body)}
 
 
 @router.post("/logout", status_code=204, dependencies=[Depends(csrf_protect)])

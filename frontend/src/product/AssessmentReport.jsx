@@ -3,6 +3,8 @@ import Icon from "./Icons.jsx";
 import { attachmentUrl, dateLabel, reportPdf } from "./api.js";
 import { Button, ErrorNotice, Modal } from "./UI.jsx";
 import "./assessment-report.css";
+import { useLocale } from "./i18n.jsx";
+import { recordLabel, recordedValue, slotStatusLabel } from "./recordLocale.js";
 
 const urgencyLabels = {
   emergency: "Emergency assessment advised",
@@ -11,13 +13,6 @@ const urgencyLabels = {
   uncertain: "Timing needs clinical clarification",
 };
 
-function sourceValue(source) {
-  return source.value == null
-    ? "Not provided"
-    : typeof source.value === "string"
-      ? source.value
-      : JSON.stringify(source.value);
-}
 
 export default function AssessmentReport({
   session,
@@ -27,12 +22,17 @@ export default function AssessmentReport({
   onGenerate,
   configured = true,
 }) {
+  const { t } = useLocale();
   const [selectedSources, setSelectedSources] = useState(null);
+  const outdated = session.ai_report?.status === "ready" &&
+    (session.ai_report.localization_outdated || !session.ai_report.locale ||
+      session.ai_report.locale !== (session.locale || "en"));
   const report =
-    session.ai_report?.status === "ready" ? session.ai_report : null;
+    session.ai_report?.status === "ready" && (!outdated || session.status === "approved") ? session.ai_report : null;
   const sources = report?.sources || [];
   const canGenerate =
     ["review", "approved"].includes(session.status) &&
+    !(outdated && session.status === "approved") &&
     !!session.summary &&
     !session.summary.needs_reconciliation &&
     !!session.consent;
@@ -44,10 +44,12 @@ export default function AssessmentReport({
         type="button"
         className="source-link"
         onClick={() => setSelectedSources(available)}
-        aria-label={`View ${available.length} supporting sources`}
+        aria-label={t("View {count} supporting sources", {
+          count: available.length,
+        })}
       >
         <Icon name="file" size={12} />
-        {available.length} {available.length === 1 ? "source" : "sources"}
+        {t("{count} sources", { count: available.length })}
       </button>
     ) : null;
   };
@@ -68,45 +70,61 @@ export default function AssessmentReport({
           <Icon name="sparkle" size={25} />
         </span>
         <div>
-          <span className="section-kicker">YOUR AI HEALTH REPORT</span>
+          <span className="section-kicker">{t("YOUR AI HEALTH REPORT")}</span>
           <h2 id="assessment-title">
-            AI diagnosis &amp; consultation guidance
+            {t("AI diagnosis & consultation guidance")}
           </h2>
-          <p>Possible explanations, clinical questions and your next steps.</p>
+          <p>
+            {t(
+              "Possible explanations, clinical questions and your next steps.",
+            )}
+          </p>
         </div>
       </header>
       <div className="assessment-boundary">
         <Icon name="shield" size={19} />
         <p>
           <strong>
-            Preliminary AI assessment · clinician confirmation required.
+            {t("Preliminary AI assessment · clinician confirmation required.")}
           </strong>{" "}
-          These are possibilities, not a confirmed diagnosis. AI can make
-          mistakes and cannot examine you. A clinician must verify the findings
-          and decide on diagnosis and treatment.
+          {t(
+            "These are possibilities, not a confirmed diagnosis. AI can make mistakes and cannot examine you. A clinician must verify the findings and decide on diagnosis and treatment.",
+          )}
         </p>
       </div>
 
       <ErrorNotice>{error}</ErrorNotice>
+      {outdated && (
+        <div className="notice notice-info" role="status">
+          {t(session.status === "approved"
+            ? "This shared report keeps the language approved by the patient. Withdraw sharing before preparing a new version in another language."
+            : "Prepare the assessment again to use your selected language. Your recorded answers remain saved.")}
+        </div>
+      )}
       {generating && (
         <div className="assessment-progress" role="status" aria-live="polite">
           <span className="spinner" />
           <div>
             <strong>
               {report
-                ? "Updating the AI assessment…"
-                : "Preparing your AI assessment…"}
+                ? t("Updating the AI assessment…")
+                : t("Preparing your AI assessment…")}
             </strong>
             <p>
-              Considering your recorded information
-              {attachments.length > 0
-                ? ` and all ${attachments.length} uploaded ${attachments.length === 1 ? "attachment" : "attachments"}`
-                : ""}
-              . This can take a few minutes. Your information is saved.
+              {attachments.length
+                ? t(
+                    "Considering your recorded information and {count} uploaded attachments. This can take a few minutes. Your information is saved.",
+                    { count: attachments.length },
+                  )
+                : t(
+                    "Considering your recorded information. This can take a few minutes. Your information is saved.",
+                  )}
             </p>
             {report && (
               <p>
-                The previous assessment remains below until the update is ready.
+                {t(
+                  "The previous assessment remains below until the update is ready.",
+                )}
               </p>
             )}
           </div>
@@ -115,11 +133,11 @@ export default function AssessmentReport({
 
       {!report && !generating && (
         <div className="assessment-empty">
-          <h3>Your assessment is ready to prepare</h3>
+          <h3>{t("Your assessment is ready to prepare")}</h3>
           <p>
-            Bring the health information, follow-up answers and uploaded files
-            together into a preliminary assessment for you and your doctor. It
-            will appear here separately from the factual summary below.
+            {t(
+              "Bring the health information, follow-up answers and uploaded files together into a preliminary assessment for you and your doctor. It will appear here separately from the factual summary below.",
+            )}
           </p>
         </div>
       )}
@@ -127,7 +145,7 @@ export default function AssessmentReport({
       {report && (
         <div className="assessment-content">
           <div className="assessment-overview">
-            <h3>Assessment overview</h3>
+            <h3>{t("Assessment overview")}</h3>
             <p>
               {report.overview?.text} {evidence(report.overview?.source_ids)}
             </p>
@@ -140,10 +158,14 @@ export default function AssessmentReport({
               <div className="assessment-care-title">
                 <Icon name="clock" size={22} />
                 <div>
-                  <span className="section-kicker">WHEN TO SEEK CARE</span>
+                  <span className="section-kicker">
+                    {t("WHEN TO SEEK CARE")}
+                  </span>
                   <h3>
-                    {urgencyLabels[report.care_guidance.urgency] ||
-                      "Consultation guidance"}
+                    {t(
+                      urgencyLabels[report.care_guidance.urgency] ||
+                        "Consultation guidance",
+                    )}
                   </h3>
                 </div>
               </div>
@@ -155,8 +177,9 @@ export default function AssessmentReport({
                 {evidence(report.care_guidance.source_ids)}
               </p>
               <small>
-                AI advice is provisional. New or worsening symptoms can change
-                the level of care needed.
+                {t(
+                  "AI advice is provisional. New or worsening symptoms can change the level of care needed.",
+                )}
               </small>
             </section>
           )}
@@ -164,11 +187,12 @@ export default function AssessmentReport({
           <section className="assessment-section">
             <div className="assessment-section-heading">
               <Icon name="results" size={22} />
-              <h3>Possible diagnoses to discuss</h3>
+              <h3>{t("Possible diagnoses to discuss")}</h3>
             </div>
             <p className="assessment-section-intro">
-              These possibilities need clinical evaluation. The list is not a
-              diagnosis or a ranking of certainty.
+              {t(
+                "These possibilities need clinical evaluation. The list is not a diagnosis or a ranking of certainty.",
+              )}
             </p>
             <div className="assessment-diagnoses">
               {(report.possible_diagnoses || []).map((diagnosis, index) => (
@@ -179,7 +203,7 @@ export default function AssessmentReport({
                   </p>
                   <div className="assessment-evidence-columns">
                     <div>
-                      <h5>What supports this possibility</h5>
+                      <h5>{t("What supports this possibility")}</h5>
                       <ul>
                         {(diagnosis.supporting_evidence || []).map(
                           (text, i) => (
@@ -189,7 +213,7 @@ export default function AssessmentReport({
                       </ul>
                     </div>
                     <div>
-                      <h5>Uncertainty &amp; what needs checking</h5>
+                      <h5>{t("Uncertainty & what needs checking")}</h5>
                       <ul>
                         {(diagnosis.uncertainties || []).map((text, i) => (
                           <li key={i}>{text}</li>
@@ -206,7 +230,7 @@ export default function AssessmentReport({
             <section className="assessment-section">
               <div className="assessment-section-heading">
                 <Icon name="check" size={21} />
-                <h3>Consultation plan &amp; next steps</h3>
+                <h3>{t("Consultation plan & next steps")}</h3>
               </div>
               {items(report.next_steps)}
             </section>
@@ -216,15 +240,17 @@ export default function AssessmentReport({
             <section className="assessment-red-flags">
               <div className="assessment-section-heading">
                 <Icon name="info" size={21} />
-                <h3>Symptoms that need urgent attention</h3>
+                <h3>{t("Symptoms that need urgent attention")}</h3>
               </div>
               <p>
-                These are warning signs to watch for, not a statement that you
-                have them.
+                {t(
+                  "These are warning signs to watch for, not a statement that you have them.",
+                )}
               </p>
               {items(report.red_flags)}
               <p className="assessment-emergency">
-                For a medical emergency in Australia, call <strong>000</strong>.
+                {t("For a medical emergency in Australia, call")}
+                <strong>000</strong>.
               </p>
             </section>
           )}
@@ -233,7 +259,7 @@ export default function AssessmentReport({
             <section className="assessment-section">
               <div className="assessment-section-heading">
                 <Icon name="file" size={21} />
-                <h3>Questions &amp; information to clarify</h3>
+                <h3>{t("Questions & information to clarify")}</h3>
               </div>
               {items(report.missing_information)}
             </section>
@@ -243,12 +269,12 @@ export default function AssessmentReport({
             <section className="assessment-section">
               <div className="assessment-section-heading">
                 <Icon name="upload" size={21} />
-                <h3>Uploaded documents &amp; images</h3>
+                <h3>{t("Uploaded documents & images")}</h3>
               </div>
               <p className="assessment-section-intro">
-                AI observations are unverified. Original images and every
-                uploaded PDF page are included in the complete PDF for clinical
-                review.
+                {t(
+                  "AI observations are unverified. Original images and every uploaded PDF page are included in the complete PDF for clinical review.",
+                )}
               </p>
               <div className="assessment-files">
                 {report.attachment_reviews.map((review) => {
@@ -281,15 +307,16 @@ export default function AssessmentReport({
                           className={`assessment-file-status ${review.status === "limited" ? "limited" : ""}`}
                         >
                           {review.status === "limited"
-                            ? "Interpretation limited"
-                            : "AI processed · unverified"}
+                            ? t("Interpretation limited")
+                            : t("AI processed · unverified")}
                         </span>
                         <p>
                           {review.findings} {evidence(review.source_ids)}
                         </p>
                         {review.limitations && (
                           <p className="assessment-file-limit">
-                            <strong>Limitations:</strong> {review.limitations}
+                            <strong>{t("Limitations:")}</strong>{" "}
+                            {review.limitations}
                           </p>
                         )}
                         {file && (
@@ -299,7 +326,8 @@ export default function AssessmentReport({
                             target="_blank"
                             rel="noreferrer"
                           >
-                            Open original file <Icon name="arrow" size={13} />
+                            {t("Open original file")}
+                            <Icon name="arrow" size={13} />
                           </a>
                         )}
                       </div>
@@ -312,7 +340,7 @@ export default function AssessmentReport({
 
           {!!report.limitations?.length && (
             <section className="assessment-limitations">
-              <h3>Limits of this assessment</h3>
+              <h3>{t("Limits of this assessment")}</h3>
               <ul>
                 {report.limitations.map((text, index) => (
                   <li key={index}>{text}</li>
@@ -321,8 +349,10 @@ export default function AssessmentReport({
             </section>
           )}
           <p className="assessment-generated">
-            AI-generated {dateLabel(report.generated_at, true)} · Summary
-            version {report.summary_version} · {report.model}
+            {t("AI-generated")}
+            {dateLabel(report.generated_at, true)}
+            {t("· Summary version")}
+            {report.summary_version} · {report.model}
           </p>
         </div>
       )}
@@ -331,15 +361,15 @@ export default function AssessmentReport({
         {canGenerate && (
           <>
             <p>
-              Generation uses your recorded information and all uploaded files.
-              Both you and your authorised doctor can view this assessment after
-              you approve sharing. Generating it does not mark it as
-              clinician-approved.
+              {t(
+                "Generation uses your recorded information and all uploaded files. Both you and your authorised doctor can view this assessment after you approve sharing. Generating it does not mark it as clinician-approved.",
+              )}
             </p>
             {!configured && (
               <p className="field-hint">
-                AI assessment is unavailable until the service administrator
-                configures the AI connection.
+                {t(
+                  "AI assessment is unavailable until the service administrator configures the AI connection.",
+                )}
               </p>
             )}
             <Button
@@ -350,39 +380,43 @@ export default function AssessmentReport({
               onClick={onGenerate}
             >
               {generating
-                ? "Preparing AI assessment…"
+                ? t("Preparing AI assessment…")
                 : report
-                  ? "Regenerate AI assessment"
+                  ? t("Regenerate AI assessment")
                   : error
-                    ? "Retry AI assessment"
-                    : "Generate AI assessment"}
+                    ? t("Retry AI assessment")
+                    : t("Generate AI assessment")}
             </Button>
           </>
         )}
         {!canGenerate && !report && (
           <p>
-            Complete or revise the preparation summary before generating an
-            assessment.
+            {t(
+              "Complete or revise the preparation summary before generating an assessment.",
+            )}
           </p>
         )}
       </div>
 
       {selectedSources && (
         <Modal
-          title="Supporting information"
+          title={t("Supporting information")}
           onClose={() => setSelectedSources(null)}
         >
           <p className="modal-copy">
-            These are the recorded details or attachment references cited by the
-            AI. A citation does not confirm the proposed diagnosis.
+            {t(
+              "These are the recorded details or attachment references cited by the AI. A citation does not confirm the proposed diagnosis.",
+            )}
           </p>
           <dl className="source-modal-list">
             {selectedSources.map((source) => (
               <div key={source.id}>
-                <dt>{source.label}</dt>
+                <dt>{recordLabel(source.label, t)}</dt>
                 <dd>
-                  {sourceValue(source)}
-                  <small>{source.status?.toLowerCase().replace(/_/g, " ")}</small>
+                  {recordedValue(source.value, t)}
+                  <small>
+                    {slotStatusLabel(source.status, t)}
+                  </small>
                 </dd>
               </div>
             ))}
@@ -392,7 +426,7 @@ export default function AssessmentReport({
               className="primary"
               onClick={() => setSelectedSources(null)}
             >
-              Done
+              {t("Done")}
             </Button>
           </div>
         </Modal>
@@ -402,6 +436,13 @@ export default function AssessmentReport({
 }
 
 export function ReportDownloadCard({ session, busy, onBusyChange }) {
+  const { t } = useLocale();
+  const patientLocale = session.locale || "en";
+  const synthesis = session.summary?.synthesis;
+  const outdated = patientLocale !== "en" && (
+    (synthesis?.status === "live" && (!synthesis.locale || synthesis.locale !== patientLocale || synthesis.localization_outdated)) ||
+    (session.ai_report?.status === "ready" && (!session.ai_report.locale || session.ai_report.locale !== patientLocale || session.ai_report.localization_outdated))
+  );
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState("");
   const mounted = useRef(true);
@@ -414,7 +455,7 @@ export function ReportDownloadCard({ session, busy, onBusyChange }) {
   }, []);
 
   async function download() {
-    if (pending.current || busy) return;
+    if (pending.current || busy || outdated) return;
     pending.current = true;
     setPreparing(true);
     setError("");
@@ -448,33 +489,37 @@ export function ReportDownloadCard({ session, busy, onBusyChange }) {
       <span className="complete-report-icon">
         <Icon name="download" size={24} />
       </span>
-      <h3 id="complete-report-title">Your complete report</h3>
+      <h3 id="complete-report-title">{t("Your complete report")}</h3>
       <p>
-        Save one PDF with the preparation summary
-        {session.ai_report?.status === "ready" ? ", AI assessment" : ""} and all
-        uploaded images and PDF pages.
+        {t(
+          session.ai_report?.status === "ready"
+            ? "Save one PDF with your preparation summary, AI assessment and all uploaded images and PDF pages."
+            : "Save one PDF with your preparation summary and all uploaded images and PDF pages.",
+        )}
       </p>
       {!session.ai_report && (
         <p className="field-hint">
-          Generate the AI assessment first to include diagnostic possibilities
-          and consultation guidance. Otherwise, the PDF contains the factual
-          summary and files only.
+          {t(
+            "Generate the AI assessment first to include diagnostic possibilities and consultation guidance. Otherwise, the PDF contains the factual summary and files only.",
+          )}
         </p>
       )}
       <ErrorNotice>{error}</ErrorNotice>
+      {outdated && <p className="field-hint">{t("Prepare your summary and assessment in this language before downloading the PDF.")}</p>}
       <Button
         className="primary full"
         icon="download"
         busy={preparing}
-        disabled={busy || !session.summary}
+        disabled={busy || !session.summary || outdated}
         onClick={download}
       >
-        {preparing ? "Preparing complete PDF…" : "Download complete PDF"}
+        {preparing ? t("Preparing complete PDF…") : t("Download complete PDF")}
       </Button>
       <p className="field-hint">
-        {session.attachments?.length || 0} attached{" "}
-        {session.attachments?.length === 1 ? "file" : "files"} · Images and
-        original PDF pages are included.
+        {t(
+          "{count} attached files · Images and original PDF pages are included.",
+          { count: session.attachments?.length || 0 },
+        )}
       </p>
     </section>
   );

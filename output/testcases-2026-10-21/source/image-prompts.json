@@ -1,0 +1,13 @@
+{
+  "generator": "Built-in image_gen tool",
+  "prompts": [
+    [
+      "case01",
+      "Use case: photorealistic-natural. Asset type: explicitly synthetic patient-upload image for a software QA testcase, not real clinical evidence. Create a realistic smartphone-style close-up of BOTH adult male knees viewed from the front, seated with legs relaxed in plain charcoal shorts, only lower thighs, knees and upper shins visible; no face or identifying features. Anatomically correct two knees, patient's RIGHT knee is on the VIEWER'S LEFT. On the patient's right anterior knee show a small faint fading yellow-purple bruise about 3 by 2 cm, intact skin. The other knee has no bruise. Ordinary skin texture, mild body hair, soft natural daylight, neutral indoor background, documentary style, sharp focus. No swelling, no blood, no wounds, no medical instruments, no diagnosis, no hospital branding, no decorative arrows. Landscape image. Include a clearly separated clean white header band with exact readable text: \"CASE 01 | ALEX LIN (TEST)\" and a smaller second line \"2026-10-19 | RIGHT KNEE = LEFT SIDE OF IMAGE\". Include a prominent bottom band with exact readable text: \"SYNTHETIC TEST IMAGE - NOT REAL MEDICAL EVIDENCE\". These warnings must be part of the image. Do not put text on the skin. This is a fabricated adult case, not a photograph of any real patient."
+    ],
+    [
+      "case02",
+      "Use case: product-mockup. Asset type: explicitly synthetic home blood-pressure-monitor photograph for software upload and OCR testing, not real clinical evidence. Create a photorealistic close-up of a generic unbranded upper-arm digital blood pressure monitor on a clean pale wood table, with its cuff resting beside it. No person, no logos, no medical advice. Soft daylight, front-facing camera with nearly straight-on clear large LCD readable without glare. The only measurement values on screen MUST be exactly: SYS 141 mmHg, DIA 88 mmHg, PUL 72 /min. Use clear black digital numerals 141, 88, 72 in separate labeled rows. No other numeric readout, no timestamp on the device. Landscape composition. Include a clean white header band with exact readable text: \"CASE 02 | MAYA CHEN (TEST)\" and smaller second line \"2026-10-20 19:30 | HOME RECORD\". Include a prominent bottom band with exact readable text: \"SYNTHETIC TEST IMAGE - NOT REAL MEDICAL EVIDENCE\". Warnings must be part of the image. This fabricated reading corresponds to the last row of a synthetic test log. Do not add diagnostic classification, colored hypertension ranges, fake certification or a clinician signature."
+    ]
+  ]
+}

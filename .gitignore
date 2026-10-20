@@ -33,5 +33,11 @@ dist/
 backend/data/
 .local/
 *.log
+
+# Local document previews and duplicate testcase packages
+/tmp/
+/output/*.zip
+/output/testcases-*/source/manual-preview-*.png
+/output/testcases-*/source/guide-*.png
 frontend/test-results/
 frontend/playwright-report/

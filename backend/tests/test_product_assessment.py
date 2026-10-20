@@ -42,6 +42,8 @@ def report_app(tmp_path, monkeypatch):
     database.init_db()
     with database.get_connection() as conn:
         conn.execute("INSERT INTO users VALUES ('p1','patient@example.test','Patient','now')")
+        conn.execute("INSERT INTO users VALUES ('d1','doctor@example.test','Doctor','now')")
+        conn.execute("INSERT INTO account_roles VALUES ('d1','doctor','now')")
     record = {'id': 'i1', 'patient_id': 'p1', 'status': 'review', 'consent': True, 'model': 'gpt-6-sol',
               'summary': {'version': 1, 'text': 'Current patient-reported leg discomfort.'}, 'attachments': [],
               'shared_slots': {'goal': {'status': 'FILLED', 'value': 'Discuss leg discomfort', 'label': 'Goal',
@@ -344,7 +346,7 @@ def test_same_size_attachment_changed_during_generation_rejected(report_app, mon
     assert 'ai_report' not in database.load_intake('i1')
 
 
-def test_clinician_allowlist_revoked_during_generation_rejected(report_app, monkeypatch):
+def test_clinician_registration_revoked_during_generation_rejected(report_app, monkeypatch):
     client, identity, _ = report_app
     record = database.load_intake('i1')
     record.update(status='approved', doctor_email='doctor@example.test')
@@ -353,7 +355,8 @@ def test_clinician_allowlist_revoked_during_generation_rejected(report_app, monk
     identity.update(id='d1', email='doctor@example.test', role='doctor')
     class RaceProvider:
         def generate(self, **kwargs):
-            monkeypatch.setenv('DOCTOR_EMAILS', '')
+            with database.get_connection() as conn:
+                conn.execute("DELETE FROM account_roles WHERE user_id = 'd1'")
             return valid_report(kwargs['context'])
     monkeypatch.setattr(assessment, 'get_assessment_provider', lambda: RaceProvider())
     assert client.post('/api/v1/intakes/i1/ai-report').status_code == 404

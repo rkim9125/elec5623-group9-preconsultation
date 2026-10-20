@@ -20,7 +20,7 @@ Same-origin `/api/v1`, HttpOnly cookie authentication. JSON error `detail` reada
 - POST /intakes/{id}/approve {version:number,doctor_email?:string} -> full session
 - POST /intakes/{id}/withdraw -> full session (revokes doctor visibility)
 - DELETE /intakes/{id} -> 204
-- GET /clinician/intakes -> only approved shared sessions assigned to authenticated allowlisted clinician
+- GET /clinician/intakes -> only approved shared sessions assigned to authenticated registered clinician
 - GET /clinician/intakes/{id} -> full approved session
 - POST /clinician/intakes/{id}/reviewed -> full session
 - POST /intakes/{id}/attachments multipart file -> attachment

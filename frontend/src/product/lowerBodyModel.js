@@ -1,14 +1,15 @@
 // English copy is kept separate for the product's future translation resources.
 export const bodyMapCopy = {
   title: "Body map",
-  description: "Select the area you’d like to record.",
+  description:
+    "Select all affected areas. Tap a selected area again to remove it.",
   viewLabel: "Body view",
   front: "Front",
   back: "Back",
   guide: "Tap an area",
   note: "Left and right refer to your body.",
   list: "Or select from the list",
-  selected: "SELECTED AREA",
+  selected: "SELECTED AREAS",
   empty: "No area selected",
   clear: "Clear",
 };
@@ -38,6 +39,38 @@ export const lowerBodyOptions = ["front", "back"].flatMap((view) =>
 );
 export const areaFromAnswer = (selected) =>
   lowerBodyOptions.find((option) => option.value === selected[0])?.area || null;
+
+export const areasFromAnswer = (selected = []) =>
+  selected.flatMap((value) => {
+    const area = lowerBodyOptions.find(
+      (option) => option.value === value,
+    )?.area;
+    return area ? [area] : [];
+  });
+
+// Accept old single-area callers while always emitting a multi-area selection.
+export const normalizeAreas = (value) =>
+  Array.isArray(value) ? value : value ? [value] : [];
+
+export function toggleLowerBodyArea(selected, area) {
+  const areas = normalizeAreas(selected);
+  const id = areaSummary(area);
+  return areas.some((item) => areaSummary(item) === id)
+    ? areas.filter((item) => areaSummary(item) !== id)
+    : [...areas, area];
+}
+
+// Older diagrams had broader labels. Keep these as patient details instead of
+// silently dropping them when a new precise location is selected.
+export function normalizeLowerBodyAnswer(parsed) {
+  const known = new Set(lowerBodyOptions.map(({ value }) => value));
+  const legacy = parsed.selected.filter((value) => !known.has(value));
+  return {
+    ...parsed,
+    selected: parsed.selected.filter((value) => known.has(value)),
+    details: [...legacy, parsed.details].filter(Boolean).join("\n"),
+  };
+}
 
 export const bodyOptionsFor = (presentation) =>
   presentation?.kind === "body_map" && presentation.illustration === "legs"

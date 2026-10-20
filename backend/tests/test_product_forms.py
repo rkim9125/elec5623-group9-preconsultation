@@ -26,7 +26,7 @@ def fields(session):
 
 def test_no_topic_creates_general_form_and_no_initial_chat():
     session = new()
-    assert session["experience_version"] == 2 and session["stage"] == "baseline"
+    assert session["experience_version"] == 3 and session["stage"] == "baseline"
     assert session["concerns"][0]["workflow_id"] == "GENERAL"
     assert session["messages"] == [] and session["current_question"] is None
     assert not session["baseline"]["completed"]
@@ -266,6 +266,7 @@ def test_api_form_owner_csrf_stale_revision_and_whole_batch_validation(form_api)
 
 def test_api_approved_baseline_is_immutable_and_withdrawal_allows_edit(form_api):
     login, _ = form_api
+    login("doctor@example.test", "doctor")
     client = login()
     session = client.post("/api/v1/intakes", json={"consent": True}).json()
     url = f"/api/v1/intakes/{session['id']}"

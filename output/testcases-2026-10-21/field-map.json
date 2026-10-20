@@ -1,0 +1,1902 @@
+{
+  "generated_for": "Two fictional manual test cases; exact current source-map only",
+  "generated_at": "2026-10-21",
+  "source_root": "/Users/tanguopeng/Documents/uni/ELEC5623/elec5623-group9-preconsultation",
+  "source_files": [
+    "backend/app/product/forms.py",
+    "backend/app/product/workflows.py",
+    "backend/app/product/presentation.py",
+    "backend/app/product/engine.py",
+    "frontend/src/product/ProfileWizard.jsx",
+    "frontend/src/product/Preparation.jsx",
+    "frontend/src/product/GuidedField.jsx",
+    "frontend/src/product/lowerBodyModel.js",
+    "frontend/src/product/translations.js"
+  ],
+  "privacy": "Pure in-memory schema. No database, .env, real patient, model call, email, or network access.",
+  "entry": {
+    "patient_portal": "http://127.0.0.1:8000/#/patient",
+    "language_options": [
+      "en",
+      "zh-CN",
+      "zh-TW",
+      "ko",
+      "ja"
+    ],
+    "language_for_manual_guide": "zh-CN",
+    "topic_choice": "Choose one workflow card (WF-01 or WF-24); no free conversation entry needed for these cases.",
+    "profile_entry": {
+      "en": "Add profile",
+      "zh_CN": "添加档案"
+    },
+    "remembered_profile_toggle": {
+      "en": "Use saved details for this visit",
+      "zh_CN": "本次就诊使用已保存的信息"
+    },
+    "consent": {
+      "en": "I agree to AI processing of my answers and uploads to prepare my summary and preliminary assessment. I review it and choose what to share with my doctor.",
+      "zh_CN": "我同意 AI 处理我的回答和上传文件，以准备摘要及初步评估。我会审核并决定与医生分享哪些内容。"
+    },
+    "default_model": "gpt-6-astra",
+    "model_control": "Advanced options → Assistant model",
+    "start_button": {
+      "en": "Let’s begin",
+      "zh_CN": "开始吧"
+    }
+  },
+  "profile_steps": [
+    {
+      "step": 1,
+      "key": "date_of_birth",
+      "question": {
+        "en": "When were you born?",
+        "zh_CN": "您的出生日期是？"
+      },
+      "control": "date",
+      "format": "YYYY-MM-DD",
+      "optional": true,
+      "options": []
+    },
+    {
+      "step": 2,
+      "key": "sex_at_birth",
+      "question": {
+        "en": "What was your sex recorded at birth?",
+        "zh_CN": "出生时记录的生理性别是什么？"
+      },
+      "control": "single_choice",
+      "format": "select one",
+      "optional": true,
+      "options": [
+        {
+          "value": "female",
+          "label": {
+            "en": "Female",
+            "zh_CN": "女性"
+          }
+        },
+        {
+          "value": "male",
+          "label": {
+            "en": "Male",
+            "zh_CN": "男性"
+          }
+        },
+        {
+          "value": "intersex",
+          "label": {
+            "en": "Intersex",
+            "zh_CN": "间性"
+          }
+        },
+        {
+          "value": "prefer_not_to_say",
+          "label": {
+            "en": "Prefer not to say",
+            "zh_CN": "不愿透露"
+          }
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "key": "blood_group",
+      "question": {
+        "en": "Do you know your blood group?",
+        "zh_CN": "您知道自己的血型吗？"
+      },
+      "control": "ABO_then_optional_Rh",
+      "format": "ABO alone (O), ABO+Rh (O+, O-), unknown or blank",
+      "optional": true,
+      "options": [
+        {
+          "value": "A",
+          "label": {
+            "en": "A",
+            "zh_CN": "A"
+          }
+        },
+        {
+          "value": "B",
+          "label": {
+            "en": "B",
+            "zh_CN": "B"
+          }
+        },
+        {
+          "value": "AB",
+          "label": {
+            "en": "AB",
+            "zh_CN": "AB"
+          }
+        },
+        {
+          "value": "O",
+          "label": {
+            "en": "O",
+            "zh_CN": "O"
+          }
+        },
+        {
+          "value": "unknown",
+          "label": {
+            "en": "I don’t know",
+            "zh_CN": "我不知道"
+          }
+        }
+      ],
+      "rh_options": [
+        {
+          "value": "+",
+          "label": {
+            "en": "Positive (+)",
+            "zh_CN": "阳性（+）"
+          }
+        },
+        {
+          "value": "-",
+          "label": {
+            "en": "Negative (−)",
+            "zh_CN": "阴性（−）"
+          }
+        },
+        {
+          "value": "",
+          "label": {
+            "en": "I don’t know",
+            "zh_CN": "我不知道"
+          }
+        }
+      ],
+      "note": "Choose ABO first. Rh unknown is valid and does not imply positive or negative."
+    },
+    {
+      "step": 4,
+      "key": "medical_history",
+      "question": {
+        "en": "Anything in your medical history to remember?",
+        "zh_CN": "有哪些需要记住的病史？"
+      },
+      "control": "textarea",
+      "format": "past diagnoses / persistent history, up to 4000 characters",
+      "optional": true,
+      "options": []
+    },
+    {
+      "step": 5,
+      "key": "surgical_history",
+      "question": {
+        "en": "Have you had any operations?",
+        "zh_CN": "您做过手术吗？"
+      },
+      "control": "textarea",
+      "format": "procedure and approximate year, up to 4000 characters",
+      "optional": true,
+      "options": []
+    },
+    {
+      "step": 6,
+      "key": "family_history",
+      "question": {
+        "en": "Any relevant family health history?",
+        "zh_CN": "有哪些相关家族健康史？"
+      },
+      "control": "textarea",
+      "format": "relation and relevant condition, up to 4000 characters",
+      "optional": true,
+      "options": []
+    },
+    {
+      "step": 7,
+      "key": "accessibility_needs",
+      "question": {
+        "en": "How can we make visits easier for you?",
+        "zh_CN": "怎样让您的就诊更方便？"
+      },
+      "control": "textarea",
+      "format": "communication / mobility / accessibility, up to 4000 characters",
+      "optional": true,
+      "options": []
+    }
+  ],
+  "profile_summary": "7 optional profile steps, followed by profile review/save. Durable details are reused; medicines, allergies and current readings are not assumed unchanged.",
+  "workflows": [
+    {
+      "workflow_id": "WF-01",
+      "workflow_title": {
+        "en": "Leg pain",
+        "zh_CN": "腿痛"
+      },
+      "category": {
+        "en": "Symptoms",
+        "zh_CN": "症状"
+      },
+      "initial_eligible_after_baseline": [
+        {
+          "key": "symptom_onset",
+          "label": "Symptom onset",
+          "question": {
+            "en": "When did you first notice this?",
+            "zh_CN": "您最早什么时候注意到这种情况？"
+          }
+        },
+        {
+          "key": "symptom_course",
+          "label": "Symptom course",
+          "question": {
+            "en": "How has it changed since you first noticed it?",
+            "zh_CN": "从开始到现在，这种情况有什么变化？"
+          }
+        },
+        {
+          "key": "symptom_pattern",
+          "label": "Symptom pattern",
+          "question": {
+            "en": "Is it present all the time, or does it come and go?",
+            "zh_CN": "这种情况一直存在，还是时有时无？"
+          }
+        },
+        {
+          "key": "severity",
+          "label": "Severity",
+          "question": {
+            "en": "How strong or troublesome does it feel to you?",
+            "zh_CN": "对您来说，症状有多强烈或困扰？"
+          }
+        },
+        {
+          "key": "previous_actions",
+          "label": "Previous actions",
+          "question": {
+            "en": "What have you already tried for this concern?",
+            "zh_CN": "您已经尝试过哪些方法或支持？"
+          }
+        },
+        {
+          "key": "previous_consultation.exists",
+          "label": "Previous consultation · exists",
+          "question": {
+            "en": "Have you discussed this concern with a healthcare professional before?",
+            "zh_CN": "您以前和医疗专业人员讨论过这个问题吗？"
+          }
+        }
+      ],
+      "visible_steps": [
+        {
+          "step": 1,
+          "key": "concern_description",
+          "owner": "selected_concern",
+          "label": {
+            "en": "In your own words",
+            "zh_CN": "用自己的话描述"
+          },
+          "question": {
+            "en": "Please briefly describe your leg discomfort.",
+            "zh_CN": "请简单说说您的腿哪里不舒服、是什么感觉。"
+          },
+          "hint": {
+            "en": "For example: My left calf aches when I walk. A sentence or two is enough.",
+            "zh_CN": "例如：“走路时左边小腿酸痛。”简单说一两句就好。"
+          },
+          "required_metadata": true,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 2,
+          "key": "leg.pain_site",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Leg · pain site",
+            "zh_CN": "腿部 · 疼痛部位"
+          },
+          "question": {
+            "en": "Where in your leg do you feel the pain?",
+            "zh_CN": "您的腿部哪里疼痛？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "multi_location_body_map_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Right thigh · Front",
+                "zh_CN": "右侧大腿 · 正面"
+              },
+              "value": "Right thigh · Front",
+              "selection": {
+                "side": "Right",
+                "key": "thigh",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Left thigh · Front",
+                "zh_CN": "左侧大腿 · 正面"
+              },
+              "value": "Left thigh · Front",
+              "selection": {
+                "side": "Left",
+                "key": "thigh",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Right knee · Front",
+                "zh_CN": "右侧膝盖 · 正面"
+              },
+              "value": "Right knee · Front",
+              "selection": {
+                "side": "Right",
+                "key": "knee",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Left knee · Front",
+                "zh_CN": "左侧膝盖 · 正面"
+              },
+              "value": "Left knee · Front",
+              "selection": {
+                "side": "Left",
+                "key": "knee",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Right shin · Front",
+                "zh_CN": "右侧小腿前侧 · 正面"
+              },
+              "value": "Right shin · Front",
+              "selection": {
+                "side": "Right",
+                "key": "shin",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Left shin · Front",
+                "zh_CN": "左侧小腿前侧 · 正面"
+              },
+              "value": "Left shin · Front",
+              "selection": {
+                "side": "Left",
+                "key": "shin",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Right ankle · Front",
+                "zh_CN": "右侧脚踝 · 正面"
+              },
+              "value": "Right ankle · Front",
+              "selection": {
+                "side": "Right",
+                "key": "ankle",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Left ankle · Front",
+                "zh_CN": "左侧脚踝 · 正面"
+              },
+              "value": "Left ankle · Front",
+              "selection": {
+                "side": "Left",
+                "key": "ankle",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Right foot · Front",
+                "zh_CN": "右侧脚部 · 正面"
+              },
+              "value": "Right foot · Front",
+              "selection": {
+                "side": "Right",
+                "key": "foot",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Left foot · Front",
+                "zh_CN": "左侧脚部 · 正面"
+              },
+              "value": "Left foot · Front",
+              "selection": {
+                "side": "Left",
+                "key": "foot",
+                "view": "front"
+              }
+            },
+            {
+              "label": {
+                "en": "Right thigh · Back",
+                "zh_CN": "右侧大腿 · 背面"
+              },
+              "value": "Right thigh · Back",
+              "selection": {
+                "side": "Right",
+                "key": "thigh",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Left thigh · Back",
+                "zh_CN": "左侧大腿 · 背面"
+              },
+              "value": "Left thigh · Back",
+              "selection": {
+                "side": "Left",
+                "key": "thigh",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Right back of knee · Back",
+                "zh_CN": "右侧膝盖后方 · 背面"
+              },
+              "value": "Right back of knee · Back",
+              "selection": {
+                "side": "Right",
+                "key": "knee",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Left back of knee · Back",
+                "zh_CN": "左侧膝盖后方 · 背面"
+              },
+              "value": "Left back of knee · Back",
+              "selection": {
+                "side": "Left",
+                "key": "knee",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Right calf · Back",
+                "zh_CN": "右侧小腿后侧 · 背面"
+              },
+              "value": "Right calf · Back",
+              "selection": {
+                "side": "Right",
+                "key": "shin",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Left calf · Back",
+                "zh_CN": "左侧小腿后侧 · 背面"
+              },
+              "value": "Left calf · Back",
+              "selection": {
+                "side": "Left",
+                "key": "shin",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Right ankle · Back",
+                "zh_CN": "右侧脚踝 · 背面"
+              },
+              "value": "Right ankle · Back",
+              "selection": {
+                "side": "Right",
+                "key": "ankle",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Left ankle · Back",
+                "zh_CN": "左侧脚踝 · 背面"
+              },
+              "value": "Left ankle · Back",
+              "selection": {
+                "side": "Left",
+                "key": "ankle",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Right foot · Back",
+                "zh_CN": "右侧脚部 · 背面"
+              },
+              "value": "Right foot · Back",
+              "selection": {
+                "side": "Right",
+                "key": "foot",
+                "view": "back"
+              }
+            },
+            {
+              "label": {
+                "en": "Left foot · Back",
+                "zh_CN": "左侧脚部 · 背面"
+              },
+              "value": "Left foot · Back",
+              "selection": {
+                "side": "Left",
+                "key": "foot",
+                "view": "back"
+              }
+            }
+          ],
+          "helper": {
+            "en": "Select an area on the picture or use the labels. Left and right refer to your own body. You can describe another area below.",
+            "zh_CN": "点击图中部位或使用标签。左右以您的身体为准，也可在下方描述其他部位。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 3,
+          "key": "leg.pain_character",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Leg · pain character",
+            "zh_CN": "腿部 · 疼痛感觉"
+          },
+          "question": {
+            "en": "How would you describe the pain in your own words?",
+            "zh_CN": "请用自己的话描述疼痛的感觉。"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Aching",
+                "zh_CN": "酸痛"
+              },
+              "value": "Aching"
+            },
+            {
+              "label": {
+                "en": "Sharp",
+                "zh_CN": "刺痛"
+              },
+              "value": "Sharp"
+            },
+            {
+              "label": {
+                "en": "Throbbing",
+                "zh_CN": "搏动性痛"
+              },
+              "value": "Throbbing"
+            },
+            {
+              "label": {
+                "en": "Burning",
+                "zh_CN": "灼热感"
+              },
+              "value": "Burning"
+            },
+            {
+              "label": {
+                "en": "Tight",
+                "zh_CN": "紧绷"
+              },
+              "value": "Tight"
+            },
+            {
+              "label": {
+                "en": "Stiff",
+                "zh_CN": "僵硬"
+              },
+              "value": "Stiff"
+            },
+            {
+              "label": {
+                "en": "Tender",
+                "zh_CN": "按压疼痛"
+              },
+              "value": "Tender"
+            }
+          ],
+          "helper": {
+            "en": "Choose any that fit, or describe your experience in your own words.",
+            "zh_CN": "选择所有符合的选项，或用自己的话描述。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 4,
+          "key": "symptom_frequency",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Symptom frequency",
+            "zh_CN": "症状频率"
+          },
+          "question": {
+            "en": "How often do you notice the pain?",
+            "zh_CN": "这种情况多久发生一次？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "single_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Several times a day",
+                "zh_CN": "每天多次"
+              },
+              "value": "Several times a day"
+            },
+            {
+              "label": {
+                "en": "About once a day",
+                "zh_CN": "大约每天一次"
+              },
+              "value": "About once a day"
+            },
+            {
+              "label": {
+                "en": "Several days a week",
+                "zh_CN": "每周几天"
+              },
+              "value": "Several days a week"
+            },
+            {
+              "label": {
+                "en": "About once a week",
+                "zh_CN": "大约每周一次"
+              },
+              "value": "About once a week"
+            },
+            {
+              "label": {
+                "en": "Less than once a week",
+                "zh_CN": "每周不到一次"
+              },
+              "value": "Less than once a week"
+            },
+            {
+              "label": {
+                "en": "Present all the time",
+                "zh_CN": "持续存在"
+              },
+              "value": "Present all the time"
+            },
+            {
+              "label": {
+                "en": "No regular pattern",
+                "zh_CN": "没有固定规律"
+              },
+              "value": "No regular pattern"
+            }
+          ],
+          "helper": {
+            "en": "Choose one that fits, or describe your experience in your own words.",
+            "zh_CN": "选择一个符合的选项，或用自己的话描述。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 5,
+          "key": "leg.activity_context",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Leg · activity context",
+            "zh_CN": "腿部 · 出现时的活动"
+          },
+          "question": {
+            "en": "What are you usually doing when you notice it?",
+            "zh_CN": "感觉疼痛时，您通常在做什么？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Walking",
+                "zh_CN": "步行"
+              },
+              "value": "Walking"
+            },
+            {
+              "label": {
+                "en": "Running",
+                "zh_CN": "跑步"
+              },
+              "value": "Running"
+            },
+            {
+              "label": {
+                "en": "Climbing stairs",
+                "zh_CN": "上下楼梯"
+              },
+              "value": "Climbing stairs"
+            },
+            {
+              "label": {
+                "en": "Standing",
+                "zh_CN": "站立"
+              },
+              "value": "Standing"
+            },
+            {
+              "label": {
+                "en": "Sitting",
+                "zh_CN": "坐着"
+              },
+              "value": "Sitting"
+            },
+            {
+              "label": {
+                "en": "Resting",
+                "zh_CN": "休息"
+              },
+              "value": "Resting"
+            },
+            {
+              "label": {
+                "en": "Lying in bed",
+                "zh_CN": "躺在床上"
+              },
+              "value": "Lying in bed"
+            }
+          ],
+          "helper": {
+            "en": "Choose any that fit, or describe your experience in your own words.",
+            "zh_CN": "选择所有符合的选项，或用自己的话描述。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 6,
+          "key": "leg.change_factors",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Leg · change factors",
+            "zh_CN": "腿部 · 影响因素"
+          },
+          "question": {
+            "en": "What have you noticed changes the pain?",
+            "zh_CN": "您注意到什么会使疼痛发生变化？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Changes with movement",
+                "zh_CN": "随活动变化"
+              },
+              "value": "The pain changes with movement."
+            },
+            {
+              "label": {
+                "en": "Changes with rest",
+                "zh_CN": "随休息变化"
+              },
+              "value": "The pain changes with rest."
+            },
+            {
+              "label": {
+                "en": "Changes with position",
+                "zh_CN": "随姿势变化"
+              },
+              "value": "The pain changes when I change position."
+            }
+          ],
+          "helper": {
+            "en": "Choose anything you have noticed, then describe whether it helps, worsens or otherwise changes the pain.",
+            "zh_CN": "选择您注意到的情况，再说明疼痛是否减轻、加重或有其他变化。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 7,
+          "key": "functional_impact",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Functional impact",
+            "zh_CN": "日常生活影响"
+          },
+          "question": {
+            "en": "How does the pain affect your everyday activities?",
+            "zh_CN": "这对您的日常活动有什么影响？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Daily tasks",
+                "zh_CN": "日常事务"
+              },
+              "value": "My usual daily tasks are affected."
+            },
+            {
+              "label": {
+                "en": "Work or study",
+                "zh_CN": "工作或学习"
+              },
+              "value": "My work or study is affected."
+            },
+            {
+              "label": {
+                "en": "Sleep",
+                "zh_CN": "睡眠"
+              },
+              "value": "My sleep is affected."
+            },
+            {
+              "label": {
+                "en": "Exercise or movement",
+                "zh_CN": "运动或活动"
+              },
+              "value": "My exercise or usual movement is affected."
+            },
+            {
+              "label": {
+                "en": "Social activities",
+                "zh_CN": "社交活动"
+              },
+              "value": "My social activities are affected."
+            },
+            {
+              "label": {
+                "en": "Personal care",
+                "zh_CN": "个人护理"
+              },
+              "value": "My personal care is affected."
+            }
+          ],
+          "helper": {
+            "en": "Choose activities that are affected, then add how they have changed. If nothing is affected, you can say so in your own words.",
+            "zh_CN": "选择受到影响的活动，再说明变化。如没有影响，也可自行说明。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 8,
+          "key": "appointment_goal",
+          "owner": "session",
+          "label": {
+            "en": "Your appointment goal",
+            "zh_CN": "您的就诊目标"
+          },
+          "question": {
+            "en": "What would you like to get from your appointment?",
+            "zh_CN": "您希望这次就诊达到什么目标？"
+          },
+          "hint": null,
+          "required_metadata": true,
+          "review_only": false,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Understand my symptoms",
+                "zh_CN": "了解我的症状"
+              },
+              "value": "I would like to understand my symptoms."
+            },
+            {
+              "label": {
+                "en": "Discuss next steps",
+                "zh_CN": "讨论下一步安排"
+              },
+              "value": "I would like to discuss next steps."
+            },
+            {
+              "label": {
+                "en": "Review an existing concern",
+                "zh_CN": "复查已有健康问题"
+              },
+              "value": "I would like to review an existing health concern."
+            },
+            {
+              "label": {
+                "en": "Discuss results",
+                "zh_CN": "讨论检查结果"
+              },
+              "value": "I would like to discuss existing test results."
+            },
+            {
+              "label": {
+                "en": "Discuss medicines",
+                "zh_CN": "讨论用药"
+              },
+              "value": "I would like to discuss my medicines."
+            },
+            {
+              "label": {
+                "en": "Ask about everyday impact",
+                "zh_CN": "讨论对日常生活的影响"
+              },
+              "value": "I would like to discuss the impact on my everyday life."
+            }
+          ],
+          "helper": {
+            "en": "Choose any that fit, or describe your experience in your own words.",
+            "zh_CN": "选择所有符合的选项，或用自己的话描述。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 9,
+          "key": "current_medications",
+          "owner": "session",
+          "label": {
+            "en": "Medicines and supplements",
+            "zh_CN": "药物与补充剂"
+          },
+          "question": {
+            "en": "What medicines or supplements do you currently use?",
+            "zh_CN": "您目前使用哪些药物、吸入剂或补充剂？"
+          },
+          "hint": null,
+          "required_metadata": true,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 10,
+          "key": "allergies",
+          "owner": "session",
+          "label": {
+            "en": "Allergies and reactions",
+            "zh_CN": "过敏与不良反应"
+          },
+          "question": {
+            "en": "What allergies or past medicine reactions would you like recorded?",
+            "zh_CN": "您希望记录哪些过敏或既往药物反应？"
+          },
+          "hint": null,
+          "required_metadata": true,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 11,
+          "key": "additional_information",
+          "owner": "session",
+          "label": {
+            "en": "Anything else for your doctor",
+            "zh_CN": "给医生的其他补充"
+          },
+          "question": {
+            "en": "Anything else you would like your doctor to know?",
+            "zh_CN": "还有什么希望医生了解的？"
+          },
+          "hint": {
+            "en": "Add any worries, questions for your doctor, or background that is not already in your profile. You can leave this blank.",
+            "zh_CN": "可补充担忧、想问医生的问题，或档案里没有的病史。不需要重复已填写的信息，也可以留空。"
+          },
+          "required_metadata": false,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        }
+      ],
+      "review_only": [
+        {
+          "step": null,
+          "key": "relevant_history",
+          "owner": "session",
+          "label": {
+            "en": "Relevant medical history",
+            "zh_CN": "相关病史"
+          },
+          "question": {
+            "en": "What medical history would you like the clinician to know?",
+            "zh_CN": "您希望医生了解哪些病史？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": true,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": null,
+          "key": "patient_worry",
+          "owner": "session",
+          "label": {
+            "en": "What matters most to you",
+            "zh_CN": "您最重视的事"
+          },
+          "question": {
+            "en": "What concerns you most about the appointment?",
+            "zh_CN": "有什么让您担心、希望医生了解的事情？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": true,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": null,
+          "key": "clinician_questions",
+          "owner": "session",
+          "label": {
+            "en": "Questions for your clinician",
+            "zh_CN": "想问医生的问题"
+          },
+          "question": {
+            "en": "Which questions would you like to take to your clinician?",
+            "zh_CN": "您想带哪些问题去咨询医生？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": true,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "What might explain this?",
+                "zh_CN": "可能是什么原因？"
+              },
+              "value": "What might explain what I have noticed?"
+            },
+            {
+              "label": {
+                "en": "What information would help?",
+                "zh_CN": "哪些信息会有帮助？"
+              },
+              "value": "What other information would help you understand my concern?"
+            },
+            {
+              "label": {
+                "en": "What are my options?",
+                "zh_CN": "我有哪些选择？"
+              },
+              "value": "What options can we discuss?"
+            },
+            {
+              "label": {
+                "en": "What happens next?",
+                "zh_CN": "接下来会怎样？"
+              },
+              "value": "What happens after this appointment?"
+            }
+          ],
+          "helper": {
+            "en": "Choose any that fit, or describe your experience in your own words.",
+            "zh_CN": "选择所有符合的选项，或用自己的话描述。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        }
+      ],
+      "visible_step_count": 11,
+      "notes": [
+        "The current lower body map has 20 selection combinations (left/right × front/back × 5 regions). Select multiple and preserve front/back labels."
+      ],
+      "non_baseline_schema": [
+        {
+          "key": "symptom_onset",
+          "question": {
+            "en": "When did you first notice this?",
+            "zh_CN": "您最早什么时候注意到这种情况？"
+          },
+          "condition": null,
+          "initial_status": "MISSING"
+        },
+        {
+          "key": "symptom_course",
+          "question": {
+            "en": "How has it changed since you first noticed it?",
+            "zh_CN": "从开始到现在，这种情况有什么变化？"
+          },
+          "condition": null,
+          "initial_status": "MISSING"
+        },
+        {
+          "key": "symptom_pattern",
+          "question": {
+            "en": "Is it present all the time, or does it come and go?",
+            "zh_CN": "这种情况一直存在，还是时有时无？"
+          },
+          "condition": null,
+          "initial_status": "MISSING"
+        },
+        {
+          "key": "severity",
+          "question": {
+            "en": "How strong or troublesome does it feel to you?",
+            "zh_CN": "对您来说，症状有多强烈或困扰？"
+          },
+          "condition": null,
+          "initial_status": "MISSING"
+        },
+        {
+          "key": "previous_actions",
+          "question": {
+            "en": "What have you already tried for this concern?",
+            "zh_CN": "您已经尝试过哪些方法或支持？"
+          },
+          "condition": null,
+          "initial_status": "MISSING"
+        },
+        {
+          "key": "previous_actions.response",
+          "question": {
+            "en": "What did you notice after trying that approach?",
+            "zh_CN": "尝试后您注意到什么变化？"
+          },
+          "condition": "previous_actions",
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_consultation.exists",
+          "question": {
+            "en": "Have you discussed this concern with a healthcare professional before?",
+            "zh_CN": "您以前和医疗专业人员讨论过这个问题吗？"
+          },
+          "condition": null,
+          "initial_status": "MISSING"
+        },
+        {
+          "key": "previous_consultation.date",
+          "question": {
+            "en": "When did that consultation take place?",
+            "zh_CN": "上次相关就诊是什么时候？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_consultation.reviewing_clinician",
+          "question": {
+            "en": "Who did you discuss this concern with?",
+            "zh_CN": "上次与您讨论这个问题的是哪位医疗人员？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_consultation.reported_explanation",
+          "question": {
+            "en": "What do you recall being told about this concern?",
+            "zh_CN": "您记得医生曾如何解释这个问题？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_tests",
+          "question": {
+            "en": "What tests have already been done for this concern, if any?",
+            "zh_CN": "您想纳入哪些已经做过的相关检查？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "sensitive_permission",
+          "question": {
+            "en": "Would you like to include optional personal details about this topic? You can decline and still prepare your appointment.",
+            "zh_CN": "您愿意填写此话题的可选个人详情吗？拒绝也能继续准备就诊。"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "optional_personal_detail",
+          "question": {
+            "en": "What personal detail related to this concern would you like included?",
+            "zh_CN": "您希望纳入哪些与此问题相关的个人详情？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "leg.reported_event",
+          "question": {
+            "en": "What happened when you injured your leg?",
+            "zh_CN": "What happened when you injured your leg?"
+          },
+          "condition": "injury",
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "leg.pain_spread",
+          "question": {
+            "en": "Where does the pain travel?",
+            "zh_CN": "Where does the pain travel?"
+          },
+          "condition": "spreading",
+          "initial_status": "NOT_APPLICABLE"
+        }
+      ]
+    },
+    {
+      "workflow_id": "WF-24",
+      "workflow_title": {
+        "en": "Established high blood pressure review",
+        "zh_CN": "已确诊高血压复查"
+      },
+      "category": {
+        "en": "Planned reviews",
+        "zh_CN": "计划中的复查"
+      },
+      "initial_eligible_after_baseline": [
+        {
+          "key": "previous_consultation.exists",
+          "label": "Previous consultation · exists",
+          "question": {
+            "en": "Have you discussed this concern with a healthcare professional before?",
+            "zh_CN": "您以前和医疗专业人员讨论过这个问题吗？"
+          }
+        }
+      ],
+      "visible_steps": [
+        {
+          "step": 1,
+          "key": "concern_description",
+          "owner": "selected_concern",
+          "label": {
+            "en": "In your own words",
+            "zh_CN": "用自己的话描述"
+          },
+          "question": {
+            "en": "What would you like to discuss about this topic?",
+            "zh_CN": "这次就诊，您想具体讨论这方面的什么问题？"
+          },
+          "hint": {
+            "en": "A sentence or two is enough. We will guide you through the details next.",
+            "zh_CN": "简单说一两句就好，接下来会逐步询问具体情况。"
+          },
+          "required_metadata": true,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 2,
+          "key": "relevant_history.blood_pressure_explanation",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Relevant history · blood pressure explanation",
+            "zh_CN": "相关病史 · 血压说明"
+          },
+          "question": {
+            "en": "What has a clinician told you about your blood pressure?",
+            "zh_CN": "医生曾如何向您解释血压情况？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 3,
+          "key": "previous_consultation.date",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Previous consultation · date",
+            "zh_CN": "既往就诊 · 日期"
+          },
+          "question": {
+            "en": "When was your last blood pressure review?",
+            "zh_CN": "上次相关就诊是什么时候？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 4,
+          "key": "bp_readings",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Bp readings",
+            "zh_CN": "血压读数"
+          },
+          "question": {
+            "en": "What existing blood pressure readings would you like included?",
+            "zh_CN": "您想纳入哪些已有血压读数？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 5,
+          "key": "review_changes",
+          "owner": "selected_concern",
+          "label": {
+            "en": "Review changes",
+            "zh_CN": "复诊期间的变化"
+          },
+          "question": {
+            "en": "What changes, if any, would you like mentioned at this review?",
+            "zh_CN": "您想在这次复查中提及哪些变化？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": false,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Symptoms",
+                "zh_CN": "症状"
+              },
+              "value": "I would like to discuss changes in my symptoms."
+            },
+            {
+              "label": {
+                "en": "Medicines",
+                "zh_CN": "药物"
+              },
+              "value": "I would like to discuss changes in my medicines."
+            },
+            {
+              "label": {
+                "en": "Daily routine",
+                "zh_CN": "日常作息"
+              },
+              "value": "I would like to discuss changes in my daily routine."
+            },
+            {
+              "label": {
+                "en": "Home records",
+                "zh_CN": "居家记录"
+              },
+              "value": "I would like to discuss changes in my home records."
+            }
+          ],
+          "helper": {
+            "en": "Choose any that fit, or describe your experience in your own words.",
+            "zh_CN": "选择所有符合的选项，或用自己的话描述。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 6,
+          "key": "appointment_goal",
+          "owner": "session",
+          "label": {
+            "en": "Your appointment goal",
+            "zh_CN": "您的就诊目标"
+          },
+          "question": {
+            "en": "What would you like to get from your appointment?",
+            "zh_CN": "您希望这次就诊达到什么目标？"
+          },
+          "hint": null,
+          "required_metadata": true,
+          "review_only": false,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "Understand my symptoms",
+                "zh_CN": "了解我的症状"
+              },
+              "value": "I would like to understand my symptoms."
+            },
+            {
+              "label": {
+                "en": "Discuss next steps",
+                "zh_CN": "讨论下一步安排"
+              },
+              "value": "I would like to discuss next steps."
+            },
+            {
+              "label": {
+                "en": "Review an existing concern",
+                "zh_CN": "复查已有健康问题"
+              },
+              "value": "I would like to review an existing health concern."
+            },
+            {
+              "label": {
+                "en": "Discuss results",
+                "zh_CN": "讨论检查结果"
+              },
+              "value": "I would like to discuss existing test results."
+            },
+            {
+              "label": {
+                "en": "Discuss medicines",
+                "zh_CN": "讨论用药"
+              },
+              "value": "I would like to discuss my medicines."
+            },
+            {
+              "label": {
+                "en": "Ask about everyday impact",
+                "zh_CN": "讨论对日常生活的影响"
+              },
+              "value": "I would like to discuss the impact on my everyday life."
+            }
+          ],
+          "helper": {
+            "en": "Choose any that fit, or describe your experience in your own words.",
+            "zh_CN": "选择所有符合的选项，或用自己的话描述。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 7,
+          "key": "current_medications",
+          "owner": "session",
+          "label": {
+            "en": "Medicines and supplements",
+            "zh_CN": "药物与补充剂"
+          },
+          "question": {
+            "en": "What medicines or supplements do you currently use?",
+            "zh_CN": "您目前使用哪些药物、吸入剂或补充剂？"
+          },
+          "hint": null,
+          "required_metadata": true,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 8,
+          "key": "allergies",
+          "owner": "session",
+          "label": {
+            "en": "Allergies and reactions",
+            "zh_CN": "过敏与不良反应"
+          },
+          "question": {
+            "en": "What allergies or past medicine reactions would you like recorded?",
+            "zh_CN": "您希望记录哪些过敏或既往药物反应？"
+          },
+          "hint": null,
+          "required_metadata": true,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": 9,
+          "key": "additional_information",
+          "owner": "session",
+          "label": {
+            "en": "Anything else for your doctor",
+            "zh_CN": "给医生的其他补充"
+          },
+          "question": {
+            "en": "Anything else you would like your doctor to know?",
+            "zh_CN": "还有什么希望医生了解的？"
+          },
+          "hint": {
+            "en": "Add any worries, questions for your doctor, or background that is not already in your profile. You can leave this blank.",
+            "zh_CN": "可补充担忧、想问医生的问题，或档案里没有的病史。不需要重复已填写的信息，也可以留空。"
+          },
+          "required_metadata": false,
+          "review_only": false,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        }
+      ],
+      "review_only": [
+        {
+          "step": null,
+          "key": "relevant_history",
+          "owner": "session",
+          "label": {
+            "en": "Relevant medical history",
+            "zh_CN": "相关病史"
+          },
+          "question": {
+            "en": "What medical history would you like the clinician to know?",
+            "zh_CN": "您希望医生了解哪些病史？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": true,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": null,
+          "key": "patient_worry",
+          "owner": "session",
+          "label": {
+            "en": "What matters most to you",
+            "zh_CN": "您最重视的事"
+          },
+          "question": {
+            "en": "What concerns you most about the appointment?",
+            "zh_CN": "有什么让您担心、希望医生了解的事情？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": true,
+          "control": "text_or_voice",
+          "allows_free_text": true,
+          "options": [],
+          "helper": null,
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        },
+        {
+          "step": null,
+          "key": "clinician_questions",
+          "owner": "session",
+          "label": {
+            "en": "Questions for your clinician",
+            "zh_CN": "想问医生的问题"
+          },
+          "question": {
+            "en": "Which questions would you like to take to your clinician?",
+            "zh_CN": "您想带哪些问题去咨询医生？"
+          },
+          "hint": null,
+          "required_metadata": false,
+          "review_only": true,
+          "control": "multiple_choice_plus_text_voice",
+          "allows_free_text": true,
+          "options": [
+            {
+              "label": {
+                "en": "What might explain this?",
+                "zh_CN": "可能是什么原因？"
+              },
+              "value": "What might explain what I have noticed?"
+            },
+            {
+              "label": {
+                "en": "What information would help?",
+                "zh_CN": "哪些信息会有帮助？"
+              },
+              "value": "What other information would help you understand my concern?"
+            },
+            {
+              "label": {
+                "en": "What are my options?",
+                "zh_CN": "我有哪些选择？"
+              },
+              "value": "What options can we discuss?"
+            },
+            {
+              "label": {
+                "en": "What happens next?",
+                "zh_CN": "接下来会怎样？"
+              },
+              "value": "What happens after this appointment?"
+            }
+          ],
+          "helper": {
+            "en": "Choose any that fit, or describe your experience in your own words.",
+            "zh_CN": "选择所有符合的选项，或用自己的话描述。"
+          },
+          "answer_storage": "exact text; selected suggestions use canonical values",
+          "skip_and_uncertain_available": true
+        }
+      ],
+      "visible_step_count": 9,
+      "notes": [
+        "medication_experience is omitted in a fresh baseline because medication_use is not yet established. It can become eligible during AI extraction.",
+        "Blood pressure values stay exact text; the UI does not enforce a reading table or infer units."
+      ],
+      "non_baseline_schema": [
+        {
+          "key": "medication_experience",
+          "question": {
+            "en": "What would you like the clinician to know about taking these medicines?",
+            "zh_CN": "关于用药体验，您希望医生了解什么？"
+          },
+          "condition": "medication_use",
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "symptom_onset",
+          "question": {
+            "en": "When did you first notice this?",
+            "zh_CN": "您最早什么时候注意到这种情况？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "symptom_course",
+          "question": {
+            "en": "How has it changed since you first noticed it?",
+            "zh_CN": "从开始到现在，这种情况有什么变化？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "symptom_pattern",
+          "question": {
+            "en": "Is it present all the time, or does it come and go?",
+            "zh_CN": "这种情况一直存在，还是时有时无？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "symptom_frequency",
+          "question": {
+            "en": "How often does it happen?",
+            "zh_CN": "这种情况多久发生一次？"
+          },
+          "condition": "episodes",
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "severity",
+          "question": {
+            "en": "How strong or troublesome does it feel to you?",
+            "zh_CN": "对您来说，症状有多强烈或困扰？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "functional_impact",
+          "question": {
+            "en": "How does it affect your usual activities?",
+            "zh_CN": "这对您的日常活动有什么影响？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_actions",
+          "question": {
+            "en": "What have you already tried for this concern?",
+            "zh_CN": "您已经尝试过哪些方法或支持？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_actions.response",
+          "question": {
+            "en": "What did you notice after trying that approach?",
+            "zh_CN": "尝试后您注意到什么变化？"
+          },
+          "condition": "previous_actions",
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_consultation.exists",
+          "question": {
+            "en": "Have you discussed this concern with a healthcare professional before?",
+            "zh_CN": "您以前和医疗专业人员讨论过这个问题吗？"
+          },
+          "condition": null,
+          "initial_status": "MISSING"
+        },
+        {
+          "key": "previous_consultation.reviewing_clinician",
+          "question": {
+            "en": "Who did you discuss this concern with?",
+            "zh_CN": "上次与您讨论这个问题的是哪位医疗人员？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_consultation.reported_explanation",
+          "question": {
+            "en": "What do you recall being told about this concern?",
+            "zh_CN": "您记得医生曾如何解释这个问题？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "previous_tests",
+          "question": {
+            "en": "What tests have already been done for this concern, if any?",
+            "zh_CN": "您想纳入哪些已经做过的相关检查？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "sensitive_permission",
+          "question": {
+            "en": "Would you like to include optional personal details about this topic? You can decline and still prepare your appointment.",
+            "zh_CN": "您愿意填写此话题的可选个人详情吗？拒绝也能继续准备就诊。"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "optional_personal_detail",
+          "question": {
+            "en": "What personal detail related to this concern would you like included?",
+            "zh_CN": "您希望纳入哪些与此问题相关的个人详情？"
+          },
+          "condition": null,
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "bp_readings.source",
+          "question": {
+            "en": "Where did that reading come from?",
+            "zh_CN": "Where did that reading come from?"
+          },
+          "condition": "records_available",
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "bp_readings.unit",
+          "question": {
+            "en": "What unit is shown?",
+            "zh_CN": "What unit is shown?"
+          },
+          "condition": "records_available",
+          "initial_status": "NOT_APPLICABLE"
+        },
+        {
+          "key": "bp_readings.date",
+          "question": {
+            "en": "When was it taken?",
+            "zh_CN": "When was it taken?"
+          },
+          "condition": "records_available",
+          "initial_status": "NOT_APPLICABLE"
+        }
+      ]
+    }
+  ],
+  "answer_format": {
+    "manual": "Click suggested options when matching, then paste narrative in text/voice composer above. Do not manually paste storage headings into the visible text input.",
+    "storage_example": "Selected options:\n- Aching\n- Tight\n\nAdditional details:\nMy own description.",
+    "unknown": "Use the I’m not sure control to retain uncertainty; do not invent values.",
+    "skip": "Use Prefer not to answer / skip where appropriate.",
+    "previous_answers": "For current_medications and allergies a prior same-patient visit may show an explicit Use this answer for this visit card with date. It is not auto-filled; click and verify/update for the new visit."
+  },
+  "ai_followup": {
+    "presentation": "Wizard, one question per step, up to 5 questions in one planned batch; review all answers then submit together.",
+    "fixed_questions": false,
+    "selection": "May show up to 3 A/B/C suggestions, otherwise free text; all questions allow typed/voice custom answer and uncertainty/skip.",
+    "resume": "Draft answers save and survive reload. Already completed batches open review; Edit returns to one question.",
+    "rounds": "Normally one batch. Exceptional second batch only for a new explicit medicine/allergy conflict.",
+    "guide_instruction": "Provide an answer bank based on the fictional case, not a guaranteed question order. If a generated question is not covered by the case, choose uncertainty/skip rather than fabricate.",
+    "eligible_target_note": "initial_eligible_after_baseline is from a completed empty in-memory baseline, before AI extraction. Actual supplied evidence can resolve targets, activate conditional fields, and add per-medicine/test/reading targets."
+  },
+  "attachments": {
+    "supported": [
+      "PDF",
+      "JPG",
+      "PNG",
+      "WebP"
+    ],
+    "maximum_file_size": "10 MB each",
+    "flow": "Upload files. If using Extract details, review extracted text before adding it to patient notes. Final approved sharing includes attachments.",
+    "synthetic_marking": "Every generated upload should prominently say FICTIONAL / TEST DATA / NOT FOR CLINICAL USE."
+  },
+  "sharing": {
+    "review": "Review patient summary and AI assessment, correct any inaccuracies, then enter an existing doctor-account email, check approval, and approve/share.",
+    "identity": "Patient and doctor email accounts must differ. A fictional test persona is a label/data fixture, not an invented working email login."
+  }
+}

@@ -29,6 +29,9 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from .auth import require_user
 from .intelligence import current_sources
 from .media import attachment_path, authorized, validate_document
+from .locales import field_label, translate_text, workflow_title
+from .report_copy import report_locale, report_text
+from .summary_copy import summary_text
 
 router = APIRouter(tags=['Consultation reports'])
 _INK = colors.HexColor('#24473e')
@@ -41,14 +44,12 @@ _CONTROL = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]')
 _PAGE_WIDTH, _PAGE_HEIGHT = A4
 _MARGIN = 46
 _WIDTH = _PAGE_WIDTH - 2 * _MARGIN
-_DISCLAIMER = ('AI-generated preliminary assessment, not a confirmed diagnosis. '
-               'A qualified clinician must verify the information, examine the patient where needed, '
-               'and make diagnosis and treatment decisions. No clinician approval is implied by sharing this report.')
 
 # Embed a Unicode subset when the host supplies one. Standard PDF CJK fonts are
 # a fallback for other deployments; Western interface text uses Helvetica.
 pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
 pdfmetrics.registerFont(UnicodeCIDFont('HYSMyeongJo-Medium'))
+pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
 _UNICODE_FONT = None
 for _font_path in (
     '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
@@ -72,7 +73,10 @@ def _markup(value: object) -> str:
     for part in _NON_ASCII.split(text):
         encoded = escape(part).replace('\n', '<br/>')
         if _NON_ASCII.fullmatch(part or '') and (_UNICODE_FONT or re.search(r'[\u2e80-\u9fff\uac00-\ud7ff\uf900-\ufaff\uff00-\uffef]', part)):
-            font = _UNICODE_FONT or ('HYSMyeongJo-Medium' if re.search(r'[\uac00-\ud7ff]', part) else 'STSong-Light')
+            embedded_supports_text = (_UNICODE_FONT and all(ord(char) in pdfmetrics.getFont(_UNICODE_FONT).face.charWidths
+                                                          for char in part if not char.isspace()))
+            font = _UNICODE_FONT if embedded_supports_text else ('HYSMyeongJo-Medium' if re.search(r'[\uac00-\ud7ff]', part) else
+                                     'HeiseiMin-W3' if re.search(r'[\u3040-\u30ff]', part) else 'STSong-Light')
             encoded = f'<font name="{font}">{encoded}</font>'
         pieces.append(encoded)
     return ''.join(pieces)
@@ -80,15 +84,15 @@ def _markup(value: object) -> str:
 
 _STYLES = {
     'body': ParagraphStyle('body', fontName='Helvetica', fontSize=10, leading=15, textColor=_INK,
-                           spaceAfter=7, splitLongWords=True, alignment=TA_LEFT),
+                           spaceAfter=7, splitLongWords=True, alignment=TA_LEFT, wordWrap='CJK'),
     'small': ParagraphStyle('small', fontName='Helvetica', fontSize=8, leading=12, textColor=_MUTED,
-                            spaceAfter=5, splitLongWords=True),
+                            spaceAfter=5, splitLongWords=True, wordWrap='CJK'),
     'title': ParagraphStyle('title', fontName='Helvetica-Bold', fontSize=27, leading=32, textColor=_INK,
-                            spaceAfter=13, keepWithNext=True),
+                            spaceAfter=13, keepWithNext=True, wordWrap='CJK'),
     'heading': ParagraphStyle('heading', fontName='Helvetica-Bold', fontSize=17, leading=22,
-                              textColor=_TEAL, spaceBefore=19, spaceAfter=10, keepWithNext=True),
+                              textColor=_TEAL, spaceBefore=19, spaceAfter=10, keepWithNext=True, wordWrap='CJK'),
     'subheading': ParagraphStyle('subheading', fontName='Helvetica-Bold', fontSize=11, leading=16,
-                                 textColor=_INK, spaceBefore=10, spaceAfter=6, keepWithNext=True),
+                                 textColor=_INK, spaceBefore=10, spaceAfter=6, keepWithNext=True, wordWrap='CJK'),
 }
 
 
@@ -96,14 +100,16 @@ def _p(text: object, style: str = 'body') -> Paragraph:
     return Paragraph(_markup(text), _STYLES[style])
 
 
-def _footer(pdf, document):
+def _footer(pdf, document, locale='en'):
     pdf.saveState()
     pdf.setStrokeColor(_LINE)
     pdf.line(_MARGIN, 37, _PAGE_WIDTH - _MARGIN, 37)
-    pdf.setFont('Helvetica', 8)
-    pdf.setFillColor(_MUTED)
-    pdf.drawString(_MARGIN, 24, 'PreConsult  |  Private health information')
-    pdf.drawRightString(_PAGE_WIDTH - _MARGIN, 24, f'Report page {document.page}')
+    left = _p('PreConsult  |  ' + report_text(locale, 'private'), 'small')
+    left.wrap(_WIDTH - 130, 20)
+    left.drawOn(pdf, _MARGIN, 20)
+    right = _p(report_text(locale, 'page', page=document.page), 'small')
+    right.wrap(125, 20)
+    right.drawOn(pdf, _PAGE_WIDTH - _MARGIN - 125, 20)
     pdf.restoreState()
 
 
@@ -114,61 +120,80 @@ def _paragraphs(text: object, style: str = 'body') -> list:
     return [_p(value[i:i + 1800], style) for i in range(0, len(value), 1800)] or [_p('', style)]
 
 
-def _reference_numbers(ids: list, source_numbers: dict) -> str:
+def _summary_value(entry: dict, locale: str) -> str:
+    value = str(entry.get('value', ''))
+    if entry.get('key') == 'agenda_items':
+        return '; '.join(translate_text(part.strip(), locale) for part in value.split(';'))
+    # Choice serialization is authored UI copy. The optional free-text details
+    # and original evidence section retain exactly what the patient entered.
+    if value.startswith('Selected options:\n'):
+        choices, separator, details = value.partition('\n\nAdditional details:\n')
+        translated = '\n'.join('- ' + translate_text(line[2:], locale) if line.startswith('- ')
+                               else summary_text(line, locale) for line in choices.split('\n'))
+        return translated + ('\n\n' + summary_text('Additional details:', locale) + '\n' + details if separator else '')
+    return value
+
+
+def _reference_numbers(ids: list, source_numbers: dict, locale='en') -> str:
     numbers = list(dict.fromkeys(source_numbers[s] for s in ids if s in source_numbers))
-    return f" [Sources {', '.join(str(n) for n in numbers)}]" if numbers else ''
+    return ' [' + report_text(locale, 'sources', numbers=', '.join(str(n) for n in numbers)) + ']' if numbers else ''
 
 
-def _cited(story: list, entries: list, source_numbers: dict):
+def _cited(story: list, entries: list, source_numbers: dict, locale='en'):
     for entry in entries or []:
         if isinstance(entry, dict):
-            story.extend(_paragraphs(str(entry.get('text', '')) + _reference_numbers(entry.get('source_ids', []), source_numbers)))
+            story.extend(_paragraphs(str(entry.get('text', '')) + _reference_numbers(entry.get('source_ids', []), source_numbers, locale)))
 
 
-def _assessment(story: list, report: dict | None, source_numbers: dict):
-    story.append(_p('AI diagnosis & consultation guidance', 'heading'))
+def _assessment(story: list, report: dict | None, source_numbers: dict, locale='en'):
+    t = lambda key, **values: report_text(locale, key, **values)
+    story.append(_p(t('ai_heading'), 'heading'))
     if not report:
-        story.append(_p('Not generated for this version. Open this consultation in PreConsult and generate an AI assessment to include it in a new PDF.'))
+        story.append(_p(t('not_generated')))
         return
-    notice = Table([[_p('PRELIMINARY AI ASSESSMENT — CLINICIAN REVIEW REQUIRED', 'subheading')],
-                    [_p(_DISCLAIMER, 'small')]], colWidths=[_WIDTH - 22])
+    notice = Table([[_p(t('preliminary'), 'subheading')],
+                    [_p(t('pdf_disclaimer'), 'small')]], colWidths=[_WIDTH - 22])
     notice.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), _PALE), ('BOX', (0, 0), (-1, -1), .5, _LINE),
                                ('LEFTPADDING', (0, 0), (-1, -1), 11), ('RIGHTPADDING', (0, 0), (-1, -1), 11),
                                ('TOPPADDING', (0, 0), (-1, -1), 5), ('BOTTOMPADDING', (0, 0), (-1, -1), 5)]))
-    story.extend([notice, Spacer(1, 9), _p(f"Model: {report.get('model', 'Unavailable')}  |  Generated: {report.get('generated_at', 'Unavailable')}  |  Summary version: {report.get('summary_version', 'Unavailable')}", 'small')])
-    _cited(story, [report.get('overview', {})], source_numbers)
-    story.append(_p('Possible diagnoses to discuss', 'subheading'))
+    story.extend([notice, Spacer(1, 9), _p(t('metadata', model=report.get('model', t('unavailable')),
+        generated=report.get('generated_at', t('unavailable')), version=report.get('summary_version', t('unavailable'))), 'small')])
+    _cited(story, [report.get('overview', {})], source_numbers, locale)
+    story.append(_p(t('diagnoses'), 'subheading'))
     diagnoses = report.get('possible_diagnoses', [])
     if not diagnoses:
-        story.append(_p('The available information does not support a useful diagnostic hypothesis.'))
+        story.append(_p(t('no_diagnoses')))
     for item in diagnoses:
-        story.append(_p(item.get('name', 'Possible cause'), 'subheading'))
-        story.extend(_paragraphs(str(item.get('explanation', '')) + _reference_numbers(item.get('source_ids', []), source_numbers)))
+        story.append(_p(item.get('name', t('possible_cause')), 'subheading'))
+        story.extend(_paragraphs(str(item.get('explanation', '')) + _reference_numbers(item.get('source_ids', []), source_numbers, locale)))
         for value in item.get('supporting_evidence', []):
-            story.extend(_paragraphs('Supporting information: ' + value))
+            story.extend(_paragraphs(t('supporting') + value))
         for value in item.get('uncertainties', []):
-            story.extend(_paragraphs('Uncertainty / limitation: ' + value))
+            story.extend(_paragraphs(t('uncertainty') + value))
     guidance = report.get('care_guidance', {})
-    story.append(_p('Consultation timing & care guidance', 'subheading'))
-    story.append(_p(f"{str(guidance.get('urgency', 'uncertain')).capitalize()} — {guidance.get('timeframe', '')}"))
-    story.extend(_paragraphs(str(guidance.get('reason', '')) + _reference_numbers(guidance.get('source_ids', []), source_numbers)))
-    for title, key in [('Recommended next steps', 'next_steps'), ('Warning symptoms & when to seek help', 'red_flags'),
-                       ('Information still needed', 'missing_information')]:
-        story.append(_p(title, 'subheading'))
-        _cited(story, report.get(key, []), source_numbers)
+    story.append(_p(t('care'), 'subheading'))
+    urgency = guidance.get('urgency', 'uncertain')
+    story.append(_p(f"{t(urgency if urgency in {'emergency', 'urgent', 'routine', 'uncertain'} else 'uncertain')} - {guidance.get('timeframe', '')}"))
+    story.extend(_paragraphs(str(guidance.get('reason', '')) + _reference_numbers(guidance.get('source_ids', []), source_numbers, locale)))
+    for key in ['next_steps', 'red_flags', 'missing_information']:
+        story.append(_p(t(key), 'subheading'))
+        _cited(story, report.get(key, []), source_numbers, locale)
     if report.get('attachment_reviews'):
-        story.append(_p('AI reading of attachments', 'subheading'))
+        story.append(_p(t('attachment_reviews'), 'subheading'))
         for item in report['attachment_reviews']:
-            story.append(_p(f"{item.get('filename', 'Attachment')} — {item.get('status', 'limited')}", 'subheading'))
-            story.extend(_paragraphs(str(item.get('findings', '')) + _reference_numbers(item.get('source_ids', []), source_numbers)))
-            story.extend(_paragraphs('Limitations: ' + str(item.get('limitations', ''))))
+            status = 'reviewed' if item.get('status') == 'reviewed' else 'limited'
+            story.append(_p(f"{item.get('filename', t('attachment'))} - {t(status)}", 'subheading'))
+            story.extend(_paragraphs(str(item.get('findings', '')) + _reference_numbers(item.get('source_ids', []), source_numbers, locale)))
+            story.extend(_paragraphs(t('limitations_prefix') + str(item.get('limitations', ''))))
     if report.get('limitations'):
-        story.append(_p('Assessment limitations', 'subheading'))
+        story.append(_p(t('limitations'), 'subheading'))
         for value in report['limitations']:
             story.extend(_paragraphs(value))
 
 
 def _main_document(intake: dict, report: dict | None, attachments: list[dict]) -> bytes:
+    locale = report_locale(intake.get('locale'))
+    t = lambda key, **values: report_text(locale, key, **values)
     summary = intake['summary']
     synthesis = summary.get('synthesis') or {}
     # Use current, shareable values only; model text cannot invent source records.
@@ -180,73 +205,82 @@ def _main_document(intake: dict, report: dict | None, attachments: list[dict]) -
             source_ids.add(source['id'])
     source_numbers = {source['id']: index + 1 for index, source in enumerate(sources)}
     currently_shared = intake.get('status') == 'approved' and bool(summary.get('approved_at'))
-    sharing_label = ('Patient-approved sharing' if currently_shared else
-                     'Sharing withdrawn — patient copy' if intake.get('status') == 'withdrawn' else
-                     'Patient draft — not yet approved for sharing')
-    story = [_p('PRECONSULT  /  CONSULTATION REPORT', 'small'),
-             _p(intake.get('title') or 'Your consultation report', 'title'),
-             _p(f"Patient: {intake.get('patient_name') or intake.get('patient_email') or 'Patient'}", 'body'),
-             _p(f"Prepared: {summary.get('generated_at', 'Not recorded')}  |  Version {summary.get('version', 1)}", 'small'),
+    sharing_label = t('approved' if currently_shared else 'withdrawn' if intake.get('status') == 'withdrawn' else 'draft')
+    # Exact catalog translation only: a custom patient title stays their own text.
+    title = translate_text(intake.get('title') or t('report_title'), locale)
+    story = [_p(t('brand_heading'), 'small'), _p(title, 'title'),
+             _p(f"{t('patient')}: {intake.get('patient_name') or intake.get('patient_email') or t('patient')}", 'body'),
+             _p(t('prepared', date=summary.get('generated_at', t('not_recorded')), version=summary.get('version', 1)), 'small'),
              _p(sharing_label, 'small')]
     if currently_shared:
-        story.append(_p('Shared with: ' + str(intake.get('doctor_email') or 'Authorised clinician'), 'small'))
-    _assessment(story, report, source_numbers)
-    story.append(_p('Patient-provided consultation summary', 'heading'))
-    story.append(_p('Patient-reported facts and AI-assisted wording. Verify details with the patient; this section is not a diagnostic conclusion.', 'small'))
+        story.append(_p(t('shared_with') + str(intake.get('doctor_email') or t('clinician')), 'small'))
+    _assessment(story, report, source_numbers, locale)
+    story.append(_p(t('summary'), 'heading'))
+    story.append(_p(t('summary_note'), 'small'))
     if synthesis.get('status') == 'live':
-        for heading, key in [('Patient overview', 'patient_overview'), ('Clinician brief', 'clinician_brief')]:
+        for key in ['patient_overview', 'clinician_brief']:
             if synthesis.get(key):
-                story.append(_p(heading, 'subheading'))
-                _cited(story, synthesis[key], source_numbers)
+                story.append(_p(t(key), 'subheading'))
+                _cited(story, synthesis[key], source_numbers, locale)
         for concern in synthesis.get('concern_summaries', []):
-            story.append(_p(concern.get('title', 'Concern'), 'subheading'))
-            story.extend(_paragraphs(str(concern.get('summary', '')) + _reference_numbers(concern.get('source_ids', []), source_numbers)))
-        for heading, key in [('Appointment agenda', 'appointment_agenda'), ('Uncertainties in the summary', 'uncertainties')]:
+            story.append(_p(translate_text(concern.get('title', t('concern')), locale), 'subheading'))
+            story.extend(_paragraphs(str(concern.get('summary', '')) + _reference_numbers(concern.get('source_ids', []), source_numbers, locale)))
+        for key in ['appointment_agenda', 'uncertainties']:
             if synthesis.get(key):
-                story.append(_p(heading, 'subheading'))
-                _cited(story, synthesis[key], source_numbers)
+                story.append(_p(t(key), 'subheading'))
+                _cited(story, synthesis[key], source_numbers, locale)
     elif summary.get('sections'):
         for section in summary['sections']:
-            story.append(_p(section.get('title', 'Patient information'), 'subheading'))
+            story.append(_p(translate_text(section.get('title', t('patient_information')), locale), 'subheading'))
             for entry in section.get('entries', []):
-                story.extend(_paragraphs(f"{entry.get('label', '')}: {entry.get('value', '')}"))
+                label = field_label(entry.get('key', ''), entry.get('label', ''), locale)
+                story.extend(_paragraphs(f"{label}: {_summary_value(entry, locale)}"))
         for gap in summary.get('gaps', []):
-            story.extend(_paragraphs(f"{gap.get('label', '')}: {gap.get('description', 'Not supplied')}"))
+            label = field_label(gap.get('key', ''), gap.get('label', ''), locale)
+            description = translate_text(gap.get('description', t('not_supplied')), locale)
+            story.extend(_paragraphs(f"{label}: {description}"))
     else:
-        story.extend(_paragraphs(summary.get('text', 'No summary text is available.')))
-    story.append(_p('Current source information', 'heading'))
-    story.append(_p('Original wording is retained below. Unknown, omitted and uncollected information is not a negative finding. Source numbers refer to this report only.', 'small'))
-    concern_names = {concern['id']: concern.get('title', 'Concern') for concern in intake.get('concerns', [])}
-    status_names = {'FILLED': 'Reported', 'UNCERTAIN': 'Unknown or uncertain', 'MISSING': 'Not collected', 'SKIPPED': 'Patient chose not to include'}
+        story.extend(_paragraphs(summary.get('text', t('no_summary'))))
+    story.append(_p(t('source_heading'), 'heading'))
+    story.append(_p(t('source_note'), 'small'))
+    concern_names = {concern['id']: workflow_title(concern.get('workflow_id'), concern.get('title', t('concern')), locale)
+                     for concern in intake.get('concerns', [])}
+    status_names = {'FILLED': 'reported', 'UNCERTAIN': 'unknown', 'MISSING': 'uncollected', 'SKIPPED': 'skipped'}
     for index, source in enumerate(sources, 1):
         scope = concern_names.get(source.get('concern_id'))
-        label = source.get('label', source.get('key', 'Source'))
-        status = status_names.get(source.get('status'), 'Reported')
-        story.append(_p(f"[{index}] {scope + ' / ' if scope else ''}{label} — {status}", 'subheading'))
-        story.extend(_paragraphs(source.get('value') if source.get('value') is not None else 'No value supplied.'))
-    story.append(_p('Attachment appendix', 'heading'))
+        label = field_label(source.get('key', ''), source.get('label', source.get('key', t('source'))), locale)
+        status = t(status_names.get(source.get('status'), 'reported'))
+        story.append(_p(f"[{index}] {scope + ' / ' if scope else ''}{label} - {status}", 'subheading'))
+        # Patient evidence is deliberately untouched. Only the server-authored
+        # attachment registry description is localised, not the original file.
+        value = (t('uploaded_source', filename=source['label']) if source.get('concern_id') == 'attachments'
+                 else source.get('value') if source.get('value') is not None else t('no_value'))
+        story.extend(_paragraphs(value))
+    story.append(_p(t('appendix'), 'heading'))
     if not attachments:
-        story.append(_p('No attachments were uploaded for this consultation.'))
+        story.append(_p(t('no_attachments')))
     else:
-        story.append(_p('Every uploaded attachment follows this report. Image pages show the complete image, scaled to fit without cropping. PDF pages retain their original page layout; interactive actions are disabled.', 'small'))
+        story.append(_p(t('appendix_note'), 'small'))
         for index, attachment in enumerate(attachments, 1):
             count = attachment['page_count']
-            description = (f'{count} original PDF page' + ('s' if count != 1 else '') if attachment['media_type'] == 'application/pdf'
-                           else f'All {count} image frames' if count > 1 else 'Complete uploaded image')
-            story.append(_p(f"A{index}. {attachment['filename']} — {description}"))
+            description = (t('pdf_pages', count=count) if attachment['media_type'] == 'application/pdf'
+                           else t('frames', count=count) if count > 1 else t('complete_image'))
+            story.append(_p(f"A{index}. {attachment['filename']} - {description}"))
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=_MARGIN, leftMargin=_MARGIN,
-                            topMargin=45, bottomMargin=54, title='PreConsult consultation report',
+                            topMargin=45, bottomMargin=54, title=t('pdf_title'),
                             author='PreConsult', pageCompression=1)
-    doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
+    footer = lambda pdf, document: _footer(pdf, document, locale)
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
     return buffer.getvalue()
 
 
-def _attachment_page(attachment: dict, number: int, image_data: bytes | None = None, frame_index: int = 0) -> bytes:
+def _attachment_page(attachment: dict, number: int, image_data: bytes | None = None, frame_index: int = 0, locale='en') -> bytes:
+    t = lambda key, **values: report_text(locale, key, **values)
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4, pageCompression=1)
-    frame_label = f"  /  FRAME {frame_index + 1} OF {attachment['page_count']}" if image_data is not None and attachment['page_count'] > 1 else ''
-    title = _p(f"ATTACHMENT A{number}" + frame_label, 'small')
+    frame_label = "  /  " + t('frame', frame=frame_index + 1, count=attachment['page_count']) if image_data is not None and attachment['page_count'] > 1 else ''
+    title = _p(t('attachment_number', number=number) + frame_label, 'small')
     _, height = title.wrap(_WIDTH, 60)
     title.drawOn(pdf, _MARGIN, _PAGE_HEIGHT - 45 - height)
     name = _p(attachment['filename'], 'heading')
@@ -275,12 +309,12 @@ def _attachment_page(attachment: dict, number: int, image_data: bytes | None = N
             pdf.setLineWidth(.5)
             pdf.rect(x, y, width, height, stroke=1, fill=0)
     else:
-        content = _p(f"The following {attachment['page_count']} page(s) reproduce this uploaded PDF. Original page sizes and visible content are retained. Active links, scripts and embedded executable content are disabled.")
+        content = _p(t('pdf_cover', count=attachment['page_count']))
         _, height = content.wrap(_WIDTH, 300)
         content.drawOn(pdf, _MARGIN, top - 30 - height)
-    pdf.setFont('Helvetica', 8)
-    pdf.setFillColor(_MUTED)
-    pdf.drawString(_MARGIN, 26, 'PreConsult  |  Patient-uploaded attachment  |  Private health information')
+    footer = _p('PreConsult  |  ' + t('uploaded_attachment') + '  |  ' + t('private'), 'small')
+    footer.wrap(_WIDTH, 30)
+    footer.drawOn(pdf, _MARGIN, 22)
     pdf.showPage()
     pdf.save()
     return buffer.getvalue()
@@ -321,6 +355,13 @@ def create_pdf(intake: dict) -> bytes:
     """Build all-or-nothing: a missing source never produces a partial PDF."""
     from .assessment import public_report
 
+    locale = report_locale(intake.get('locale'))
+    report = public_report(intake)
+    synthesis = (intake.get('summary') or {}).get('synthesis') or {}
+    if ((synthesis.get('status') == 'live' and report_locale(synthesis.get('locale')) != locale)
+            or (report and (report_locale(report.get('locale')) != locale
+                           or (locale != 'en' and report.get('localization_outdated'))))):
+        raise HTTPException(409, 'Regenerate the summary and AI assessment in the selected patient language before downloading the report.')
     attachments = []
     for attachment in intake.get('attachments', []):
         try:
@@ -337,20 +378,20 @@ def create_pdf(intake: dict) -> bytes:
             raise HTTPException(422, 'An animated attachment contains more than 30 frames. Replace it with a still image or a PDF of up to 30 pages before downloading the complete report.')
         attachments.append({**attachment, 'data': data, 'page_count': count})
     writer = PdfWriter()
-    writer.append(PdfReader(BytesIO(_main_document(intake, public_report(intake), attachments))), import_outline=False)
+    writer.append(PdfReader(BytesIO(_main_document(intake, report, attachments))), import_outline=False)
     for number, attachment in enumerate(attachments, 1):
         is_pdf = attachment['media_type'] == 'application/pdf'
         if is_pdf:
-            writer.append(PdfReader(BytesIO(_attachment_page(attachment, number))), import_outline=False)
+            writer.append(PdfReader(BytesIO(_attachment_page(attachment, number, locale=locale))), import_outline=False)
             source = PdfReader(BytesIO(attachment['data']))
             for page in source.pages:
                 copied = writer.add_page(page, excluded_keys=['/AA', '/A', '/OpenAction', '/Thumb'])
                 _remove_active_content(copied, set())
         else:
             for frame_index in range(attachment['page_count']):
-                writer.append(PdfReader(BytesIO(_attachment_page(attachment, number, attachment['data'], frame_index))), import_outline=False)
-    writer.add_metadata({'/Title': 'PreConsult consultation report', '/Author': 'PreConsult',
-                         '/Subject': 'Patient information and preliminary AI assessment with complete uploaded attachments'})
+                writer.append(PdfReader(BytesIO(_attachment_page(attachment, number, attachment['data'], frame_index, locale))), import_outline=False)
+    writer.add_metadata({'/Title': report_text(locale, 'pdf_title'), '/Author': 'PreConsult',
+                         '/Subject': report_text(locale, 'pdf_subject'), '/Language': locale})
     buffer = BytesIO()
     writer.write(buffer)
     return buffer.getvalue()

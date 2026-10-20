@@ -1,0 +1,133 @@
+{
+  "files": [
+    {
+      "path": "READ-ME.txt",
+      "bytes": 2301,
+      "sha256": "aabb117dd7dc39dee97f655930d998d3de900a1ef1f4e3cf91c6bc67de6df78d"
+    },
+    {
+      "path": "START-HERE.html",
+      "bytes": 50059,
+      "sha256": "17267281ea369ab658ce21b2fff887051894d39acd56b53542c195b52efe04e1"
+    },
+    {
+      "path": "case01/answers.txt",
+      "bytes": 5022,
+      "sha256": "dd886dd9cd1bf6fa381d2f791aa5aaf88050e20e73808d3c050e3eb5268b584d"
+    },
+    {
+      "path": "case01/knee-photo.png",
+      "bytes": 2172624,
+      "sha256": "de47c67bfe08c76d9cfefc973059c5f9cc238232925539ddfcb2262019c99f55"
+    },
+    {
+      "path": "case01/medical-exam-page-1.png",
+      "bytes": 161461,
+      "sha256": "e69d8c1b16ffa773c06662012523670170f79cf8751ad60cfa86ec853a7ac98c"
+    },
+    {
+      "path": "case01/medical-exam.pdf",
+      "bytes": 101621,
+      "sha256": "835ba516a59eede24580f3b940006a39b7f647516baee50dd7f1830f52664679"
+    },
+    {
+      "path": "case02/answers.txt",
+      "bytes": 5723,
+      "sha256": "32292b9f2d2e56ff3d783a2025e7a7a16b31a9de4918707c0de2ca071cd26393"
+    },
+    {
+      "path": "case02/bp-monitor-photo.png",
+      "bytes": 1991601,
+      "sha256": "83aa42b874254903feff57c935722c4ae0d9b67982cee95cfdf61a1f753252b1"
+    },
+    {
+      "path": "case02/checkup-and-bp-log-page-1.png",
+      "bytes": 151518,
+      "sha256": "d3a032a2688f972b9841228f87b6244a41836488937b5835f2da5efa83f30754"
+    },
+    {
+      "path": "case02/checkup-and-bp-log-page-2.png",
+      "bytes": 159324,
+      "sha256": "2c115f1212e775d066047b7b978cad49fd3514c1bc59560734af4c55eb2eb182"
+    },
+    {
+      "path": "case02/checkup-and-bp-log.pdf",
+      "bytes": 104465,
+      "sha256": "d139ae2ecf88db1f674cbacbf0922b29fd8f4a150da0b60ce6c07954a369890c"
+    },
+    {
+      "path": "field-map.json",
+      "bytes": 64393,
+      "sha256": "78011b20348efc57fea5c1cb366ff1a06a5ecb76722b9e2d0279d16233a30a23"
+    },
+    {
+      "path": "manual.pdf",
+      "bytes": 326215,
+      "sha256": "ac74380765c4197db2c66351a19722d83c73f094218227cb6de1e9a4ff467d00"
+    },
+    {
+      "path": "report-data.json",
+      "bytes": 6472,
+      "sha256": "1ba42d044b6f3cf52638740e2cd678a7c05d1320a754884a15f04fb0f4f73752"
+    },
+    {
+      "path": "source/build_cases.py",
+      "bytes": 19599,
+      "sha256": "64838a95225117ec1fa846e3e825fbf5e9805c57a787d1855cae75497956f8e1"
+    },
+    {
+      "path": "source/build_html.py",
+      "bytes": 19287,
+      "sha256": "3a607d8d8ee022d92f0458e9c5de6abc3491c1babd7e7563f95328550f615884"
+    },
+    {
+      "path": "source/case-validation.json",
+      "bytes": 4260,
+      "sha256": "cf79fd60f1d25adc6d1d943ffb5d825269506ed2733c469a553466c3a9053261"
+    },
+    {
+      "path": "source/generate_manual.py",
+      "bytes": 12839,
+      "sha256": "0cd931fd04f39e13efab9e7abea111331412ee29dbbd5b73df955adb7041acb6"
+    },
+    {
+      "path": "source/generate_reports.py",
+      "bytes": 14464,
+      "sha256": "4472b8c6cb16d4ba7e3ba27ee7597faae30e5cb772859b0078688e2c315ac8d8"
+    },
+    {
+      "path": "source/html-validation.json",
+      "bytes": 467,
+      "sha256": "3f05a10c33bb19875631c8414dc7a65c119e56746efa6795149b7557a1b05724"
+    },
+    {
+      "path": "source/image-prompts.json",
+      "bytes": 2614,
+      "sha256": "5748168c20f89c8c583070e84bcd9b727fc05e210298d016b08aa87d94bed8d2"
+    },
+    {
+      "path": "source/manual-validation.json",
+      "bytes": 722,
+      "sha256": "c8d8be7fc37a4cc22645e24cbfc2d97d0a915c90b31ddfcb325d2bf958c09996"
+    },
+    {
+      "path": "source/report-validation.json",
+      "bytes": 469,
+      "sha256": "d2950226f53307e4e6fc832b0e700b389e4acc819ba668c0cdd24a8f8a1e67ac"
+    },
+    {
+      "path": "source/verify_html.mjs",
+      "bytes": 3165,
+      "sha256": "a7755142c71b51b86cc8228e87c6f90890125ca059a4ae4271be2d32c9b90206"
+    },
+    {
+      "path": "testcases.json",
+      "bytes": 33058,
+      "sha256": "aeb8ee453dd394ccaf1565347748746441179fd8dd9c2fcf3648caaed80dad4c"
+    }
+  ],
+  "all_html_links_exist": true,
+  "canonical_manual_match": true,
+  "upload_limit_bytes": 10485760,
+  "voice_instructions": "Stop transcription fills the existing editable input. Edit the text, then continue/submit; no transcript confirmation step."
+}

@@ -1,0 +1,25 @@
+{
+  "console_errors": [],
+  "cases": [
+    {
+      "id": "TC01",
+      "fields": 11,
+      "profile_fields": 7,
+      "text_matches": true
+    },
+    {
+      "id": "TC02",
+      "fields": 9,
+      "profile_fields": 7,
+      "text_matches": true
+    }
+  ],
+  "screenshots": [
+    "source/guide-desktop.png",
+    "source/guide-mobile.png",
+    "source/guide-case02.png"
+  ],
+  "copy_handler_passed": true,
+  "keyboard_tabs_passed": true,
+  "mobile_no_overflow": true
+}

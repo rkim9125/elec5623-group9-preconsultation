@@ -998,6 +998,7 @@ SHARED_QUESTIONS = {
     'patient_worry': 'What concerns you most about the appointment?',
     'appointment_goal': 'What would you most like to get from the appointment?',
     'clinician_questions': 'What would you like to ask the clinician?',
+    'additional_information': 'Anything else you would like your doctor to know?',
     'agenda_items': 'What would you like to discuss at this appointment?',
     'priority_concern': 'Which concern is most important for you to discuss?',
     'preparation_focus': 'Which concern would you like to prepare in more detail now?',

@@ -1,5 +1,7 @@
 # Preparation experience v2
 
+The current wizard, direct-chat, profile, voice and language extensions are documented in [the v3 contract](product-v3-contract.md). This document describes the underlying evidence and baseline contracts retained for compatibility.
+
 Patient journey: choose topics → grouped baseline form → optional adaptive follow-up → AI summary and correction → explicit approval. Existing sessions remain readable; approved versions cannot change until sharing is withdrawn. All interface text is English.
 
 The integration now also provides a separate preliminary AI assessment and a complete PDF with attachments. See [the assessment/report contract](assessment-report.md). The factual-summary contract below is unchanged; the added assessment does not rewrite an approved summary.

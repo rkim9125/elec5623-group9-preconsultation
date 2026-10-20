@@ -11,6 +11,7 @@ from typing import Protocol
 import httpx
 
 from .config import get_settings
+from .locales import language_instruction
 from .workflows import WORKFLOWS, SIGNALS, question_definitions, SHARED_QUESTIONS
 
 
@@ -119,6 +120,7 @@ class OpenAIProvider:
         if not settings.openai_api_key:
             raise ProviderUnavailable('OpenAI is not configured. Your answers are saved; adaptive extraction is unavailable.')
         context = {
+            'locale': session.get('locale', 'en'),
             'current_question': session.get('current_question'), 'correction': correction,
             'concerns': [{k: c.get(k) for k in ('id', 'workflow_id', 'title', 'slots', 'signals')} for c in session.get('concerns', [])],
             'shared_slots': session.get('shared_slots', {}),
@@ -131,7 +133,7 @@ class OpenAIProvider:
         }
         payload = {
             'model': session['model'], 'store': False,
-            'instructions': _SYSTEM,
+            'instructions': _SYSTEM + language_instruction(session.get('locale', 'en'), verbatim=True),
             'input': json.dumps({'context': context, 'CURRENT_MESSAGE': text}, ensure_ascii=False),
             'text': {'format': {'type': 'json_schema', 'name': 'preconsultation_extraction', 'schema': EXTRACTION_SCHEMA, 'strict': True}},
             'max_output_tokens': 14000,
