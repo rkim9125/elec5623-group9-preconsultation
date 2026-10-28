@@ -26,6 +26,7 @@ import { LocaleProvider, useLocale, LanguageSwitcher } from "./i18n.jsx";
 import FollowupPanel from "./FollowupPanel.jsx";
 import { bloodGroupLabel } from "./bloodGroup.js";
 import { recordTitle, recordLabel, recordedValue, slotStatusLabel } from "./recordLocale.js";
+import SymptomOverview from "./SymptomOverview.jsx";
 
 const setRoute = (path) => {
   return navigateWithGuard(() => {
@@ -924,7 +925,7 @@ function NewIntake({ workflows, config, onCreated }) {
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All concerns");
-  const [model, setModel] = useState(config?.default_model || "gpt-6-astra");
+  const [model, setModel] = useState(config?.default_model || "gpt-6-sol");
   const [consent, setConsent] = useState(false);
   const [text, setText] = useState("");
   const [profile, setProfile] = useState(null);
@@ -1235,7 +1236,7 @@ function NewIntake({ workflows, config, onCreated }) {
               onChange={(e) => setModel(e.target.value)}
             >
               {(
-                config?.models || [{ id: "gpt-6-astra", label: "gpt-6-astra" }]
+                config?.models || [{ id: "gpt-6-sol", label: "gpt-6-sol" }]
               ).map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.label}
@@ -2409,6 +2410,7 @@ function Review({
                   )}
             </p>
           </div>
+          <SymptomOverview session={session} />
           {session.summary && (
             <SynthesisSummary
               synthesis={session.summary.synthesis}

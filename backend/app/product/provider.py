@@ -10,7 +10,7 @@ import json
 from typing import Protocol
 import httpx
 
-from .config import get_settings
+from .config import get_settings, response_reasoning
 from .locales import language_instruction
 from .workflows import WORKFLOWS, SIGNALS, question_definitions, SHARED_QUESTIONS
 
@@ -83,6 +83,13 @@ For WF-30 agenda, create individual explicitly stated concerns, not an extra umb
 Facts use keys in the workflow expanded schema or session keys. Use concern_id 'session'
 for session keys. A single reply can answer many fields, including unasked ones. The current
 question helps disambiguate brief answers, but never force unrelated text into its target.
+For symptom history, distinguish onset (when it began), onset character (sudden/gradual),
+overall duration, duration of each episode, frequency and severity. Aggravating factors
+make a symptom worse; relieving factors make it better. 'Changes with movement' alone
+does not establish either direction. Prefer a registered specific field to a broad legacy
+change-factors field when the patient's words explicitly support that direction. A single
+description may fill several OLD CARTS dimensions, but every value still requires its own
+verbatim support. An unmentioned radiation, trigger or relief remains unknown/uncollected.
 'Stated' values may be approximate. Do not output synthetic 'yes', 'no' or other values
 unless those literal words occur in the message. Operations remove require a clear patient
 request to remove the named fact. Remove facts use the existing exact owner/key from
@@ -133,6 +140,7 @@ class OpenAIProvider:
         }
         payload = {
             'model': session['model'], 'store': False,
+            **response_reasoning(session['model']),
             'instructions': _SYSTEM + language_instruction(session.get('locale', 'en'), verbatim=True),
             'input': json.dumps({'context': context, 'CURRENT_MESSAGE': text}, ensure_ascii=False),
             'text': {'format': {'type': 'json_schema', 'name': 'preconsultation_extraction', 'schema': EXTRACTION_SCHEMA, 'strict': True}},

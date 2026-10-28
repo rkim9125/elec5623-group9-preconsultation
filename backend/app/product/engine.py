@@ -73,6 +73,8 @@ def _add_concern(session: dict, workflow_id: str, title: str | None = None, evid
         if key in SHARED_QUESTIONS or key == 'summary_review':
             continue
         c['slots'][key] = _slot(key, question=q['question'], condition=q.get('condition', CONDITIONS.get(key)))
+        if q.get('label'):
+            c['slots'][key]['label'] = q['label']
     # Topic selection permits the matching preparation module, not a diagnosis.
     symptom_topic = workflow_id in {f'WF-{n:02}' for n in range(1, 21)} | {'WF-22'}
     c['signals']['current_symptom'] = {'present': symptom_topic, 'evidence': evidence, 'basis': 'selected_topic'}
@@ -121,6 +123,16 @@ def _apply_conditions(session: dict) -> list[dict]:
         _set_applicable(slot, bool(multi), changes, 'session', key)
     for c in session['concerns']:
         wf = c['workflow_id']
+        # Add schema fields to existing drafts without replacing any patient
+        # value, evidence, refusal or history. Custom symptom drafts use GENERAL.
+        for definition in question_definitions(wf):
+            key = definition['key']
+            if key not in SHARED_QUESTIONS and key != 'summary_review':
+                if key not in c['slots']:
+                    c['slots'][key] = _slot(key, question=definition['question'],
+                                           condition=definition.get('condition', CONDITIONS.get(key)))
+                    if definition.get('label'):
+                        c['slots'][key]['label'] = definition['label']
         sensitive = wf == 'WF-19'
         permission = c['slots']['sensitive_permission']
         denied = permission['status'] == 'SKIPPED' or (permission['status'] == 'FILLED' and not _signal(c, 'sensitive_permission'))
@@ -135,6 +147,12 @@ def _apply_conditions(session: dict) -> list[dict]:
                 applicable = _signal(c, condition)
             if key in SYMPTOM_FIELDS:
                 applicable = _signal(c, 'current_symptom')
+            if key == 'symptom_episode_duration':
+                applicable = _signal(c, 'current_symptom') and _signal(c, 'episodes')
+            if key in {'leg.change_factors', 'leg.activity_context', 'back.change_factors'}:
+                # Historical broad answers stay in sources/review; new visits
+                # use explicit aggravating and relieving factors instead.
+                applicable = False
             if key.startswith('previous_consultation.') and key != 'previous_consultation.exists':
                 applicable = _signal(c, 'previous_consultation')
                 if wf == 'WF-24' and key == 'previous_consultation.date':
@@ -158,12 +176,9 @@ def _apply_conditions(session: dict) -> list[dict]:
                 if denied and slot['status'] != 'SKIPPED':
                     _update_slot(slot, None, 'SKIPPED', permission.get('evidence'), correction=True)
             _set_applicable(slot, applicable, changes, c['id'], key)
-        # Onset and overall duration share supplied time evidence, never fabricate dates.
-        onset, duration = c['slots'].get('symptom_onset'), c['slots'].get('symptom_duration')
-        if onset and duration:
-            for known, other, known_key in ((onset, duration, 'symptom_onset'), (duration, onset, 'symptom_duration')):
-                if known['status'] in {'FILLED', 'UNCERTAIN', 'SKIPPED'} and (other['status'] == 'MISSING' or other.get('reused_from') == known_key):
-                    other.update(value=known['value'], status=known['status'], evidence=deepcopy(known.get('evidence')), reused_from=known_key)
+        # Onset, total duration and episode duration are distinct. Extraction
+        # may reuse an explicit time span for more than one field, but a filled
+        # onset slot alone must not fabricate a duration answer.
     return changes
 
 
@@ -232,13 +247,14 @@ def _select_question(session: dict) -> list[dict]:
 
 def _update_slot(slot: dict, value: str | None, status: str, evidence: dict, *, correction: bool = False) -> None:
     old = {k: deepcopy(slot.get(k)) for k in ('value', 'status', 'evidence')}
-    if old['status'] in {'FILLED', 'UNCERTAIN', 'SKIPPED'} and old['value'] != value:
+    if old['status'] in {'FILLED', 'UNCERTAIN', 'SKIPPED'} and old['value'] != value and not slot.get('reused_from'):
         slot.setdefault('history', []).append({**old, 'superseded_at': _now(), 'reason': 'patient_correction' if correction else 'additional_statement'})
         if old['status'] == 'FILLED' and status == 'FILLED' and not correction:
             slot.update(value=f"Earlier: {old['value']} | Later: {value}", status='UNCERTAIN', evidence=evidence,
                         conflict=True, alternatives=[old, {'value': value, 'status': status, 'evidence': evidence}])
             return
     slot.update(value=value, status=status, evidence=evidence)
+    slot.pop('reused_from', None)
     if correction:
         slot.pop('conflict', None)
         slot.pop('alternatives', None)

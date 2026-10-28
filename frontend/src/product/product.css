@@ -186,10 +186,21 @@ main:focus {
   min-height: 44px;
   padding: 11px 16px;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 11px;
   font-size: 14px;
   line-height: 1.4;
   font-weight: 600;
+}
+.button[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.82;
+}
+:is(h1, h2, h3):lang(zh),
+:is(h1, h2, h3):lang(ja),
+:is(h1, h2, h3):lang(ko) {
+  letter-spacing: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 .primary {
   color: #fff;

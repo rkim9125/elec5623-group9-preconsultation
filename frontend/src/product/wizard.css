@@ -382,8 +382,18 @@
   background: #fffefa;
   border: 1px solid #e2e7dd;
   border-radius: 24px;
-  box-shadow: 0 10px 36px #30412e04;
+  box-shadow: 0 3px 6px #213d3003, 0 12px 32px #213d3005;
   text-align: center;
+}
+.wizard-question-card > .wizard-emblem {
+  width: 64px;
+  height: 64px;
+  margin: 8px auto 18px;
+  border-radius: 22px;
+}
+.wizard-question-card > .wizard-emblem > svg {
+  width: 31px;
+  height: 31px;
 }
 .wizard-question-top {
   display: flex;
@@ -405,9 +415,13 @@
 .wizard-question-hint,
 .wizard-review > p {
   color: #596d61;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   margin-bottom: 25px;
+}
+.wizard-question-hint {
+  max-width: 62ch;
+  margin-inline: auto;
 }
 .wizard-question-card .guided-field {
   text-align: left;
@@ -438,8 +452,9 @@
   justify-content: center;
 }
 .wizard-actions > .text-button {
-  font-size: 11px;
+  font-size: 12px;
   color: #596d61;
+  min-height: 44px;
 }
 .wizard-answer-status {
   display: flex;
@@ -453,7 +468,8 @@
   gap: 5px;
   border: 1px solid transparent;
   color: #596d61;
-  font-size: 11px;
+  font-size: 12px;
+  min-height: 44px;
   border-radius: 20px;
   padding: 7px 11px;
   background: transparent;
@@ -511,9 +527,10 @@
   gap: 9px;
   background: none;
   border: 0;
-  padding: 8px 0;
+  padding: 10px 4px;
+  min-height: 44px;
   color: #5d7761;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 }
 .wizard-review-list {
@@ -672,6 +689,9 @@
   border: 0;
   color: #3b4338;
   cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
 }
 .voice-symbol {
   display: flex;
@@ -685,7 +705,7 @@
   border-radius: 2px;
 }
 .voice-caption {
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
   color: #596d61;
   margin: 9px 10px 0;
@@ -846,6 +866,7 @@
   color: inherit;
   font: inherit;
   max-width: 150px;
+  min-height: 40px;
 }
 .topbar .language-switcher {
   margin-left: auto;
@@ -1317,6 +1338,33 @@
 .profile-prefilled .text-button {
   color: #3f6956;
 }
+/* Keep secondary actions legible and touchable without changing the workflow. */
+.wizard-save,
+.wizard-question-top {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+.wizard-support > summary {
+  min-height: 52px;
+}
+.wizard-question-card h2:lang(zh),
+.wizard-question-card h2:lang(ja),
+.wizard-question-card h2:lang(ko),
+.followup-wizard .followup-question h3:lang(zh),
+.followup-wizard .followup-question h3:lang(ja),
+.followup-wizard .followup-question h3:lang(ko) {
+  letter-spacing: normal;
+}
+@media (hover: hover) {
+  .voice-mic:hover:not(:disabled) {
+    background: #eff4ee;
+  }
+  .wizard-review-list > button:hover,
+  .wizard-jump:hover {
+    background: #f2f6ee;
+    border-radius: 8px;
+  }
+}
 @media (max-width: 650px) {
   .intake-page > .back-link {
     margin-bottom: 14px;
@@ -1403,10 +1451,28 @@
     margin-bottom: 9px;
   }
   .wizard-question-hint {
-    font-size: 11px;
+    font-size: 13px;
     margin-bottom: 15px;
   }
   .wizard-question-card .voice-composer-wrap {
     margin-top: 15px;
+  }
+  .wizard-toolbar,
+  .wizard-toolbar .wizard-save,
+  .wizard-question-top,
+  .voice-caption,
+  .followup-question .voice-caption {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .voice-composer textarea,
+  .followup-question .voice-composer textarea {
+    font-size: 16px;
+  }
+  .language-switcher select {
+    min-height: 44px;
+  }
+  .wizard-answer-status {
+    flex-wrap: wrap;
   }
 }

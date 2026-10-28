@@ -12,6 +12,7 @@ import {
 } from "./followupModel.js";
 import "./followup.css";
 import { followupAnswerText } from "./recordLocale.js";
+import SymptomOverview, { SymptomContext } from "./SymptomOverview.jsx";
 
 /** One question per step; the complete set is reviewed and submitted together. */
 export default function FollowupPanel({ session, onUpdate, renderContext }) {
@@ -301,6 +302,7 @@ export default function FollowupPanel({ session, onUpdate, renderContext }) {
             <p>{t(batch.overview)}</p>
           </details>
         )}
+        <SymptomOverview session={session} />
         <ErrorNotice>{error}</ErrorNotice>
         {pending ? (
           <>
@@ -380,6 +382,9 @@ export default function FollowupPanel({ session, onUpdate, renderContext }) {
                                       ? "Skip this question"
                                       : "Not answered",
                                 )}
+                            {answer?.status === "UNCERTAIN" &&
+                              answer.value &&
+                              ` — ${followupAnswerText(question, answer, t)}`}
                           </p>
                         </div>
                         <button
@@ -417,6 +422,7 @@ export default function FollowupPanel({ session, onUpdate, renderContext }) {
                       key={question.id}
                       aria-labelledby={`followup-question-${index}`}
                     >
+                      <SymptomContext field={question} />
                       <div className="followup-question-heading">
                         <span className="followup-number" aria-hidden="true">
                           {String(index + 1).padStart(2, "0")}
@@ -490,7 +496,15 @@ export default function FollowupPanel({ session, onUpdate, renderContext }) {
                       <VoiceComposer
                         id={inputId}
                         value={followupAnswerText(question, answer, t)}
-                        onChange={(value) => change(question.id, value)}
+                        onChange={(value) =>
+                          change(
+                            question.id,
+                            value,
+                            answer?.status === "UNCERTAIN"
+                              ? "UNCERTAIN"
+                              : undefined,
+                          )
+                        }
                         disabled={disabled}
                         maxLength={6000}
                         onError={setError}
@@ -563,12 +577,28 @@ export default function FollowupPanel({ session, onUpdate, renderContext }) {
                       </strong>
                       <p>
                         {answer.status === "FILLED"
-                          ? followupAnswerText(questions.find((question) => question.id === answer.question_id), answer, t)
+                          ? followupAnswerText(
+                              questions.find(
+                                (question) =>
+                                  question.id === answer.question_id,
+                              ),
+                              answer,
+                              t,
+                            )
                           : t(
                               answer.status === "UNCERTAIN"
                                 ? "I don’t know"
                                 : "Skip this question",
                             )}
+                        {answer.status === "UNCERTAIN" &&
+                          answer.value &&
+                          ` — ${followupAnswerText(
+                            questions.find(
+                              (question) => question.id === answer.question_id,
+                            ),
+                            answer,
+                            t,
+                          )}`}
                       </p>
                     </div>
                   ))}

@@ -241,6 +241,32 @@ def _main_document(intake: dict, report: dict | None, attachments: list[dict]) -
             story.extend(_paragraphs(f"{label}: {description}"))
     else:
         story.extend(_paragraphs(summary.get('text', t('no_summary'))))
+    symptom_history = [row for row in summary.get('symptom_history', []) if row.get('applicable')]
+    if symptom_history:
+        story.append(_p(translate_text('Your symptom story', locale), 'heading'))
+        story.append(_p(translate_text('Patient-reported details and remaining gaps. This is not a medical completeness or safety score.', locale), 'small'))
+        status_labels = {'FILLED': 'Recorded', 'PARTIAL': 'Partly recorded', 'MISSING': 'Not yet recorded',
+                         'UNCERTAIN': 'Not sure', 'SKIPPED': 'Chose not to answer', 'NOT_APPLICABLE': 'Not applicable'}
+        concern_lookup = {concern['id']: concern for concern in intake.get('concerns', [])}
+        for row in symptom_history:
+            concern = concern_lookup.get(row.get('concern_id'), {})
+            story.append(_p(workflow_title(concern.get('workflow_id'), concern.get('title', t('concern')), locale), 'subheading'))
+            detail_rows = list(row.get('dimensions', []))
+            if row.get('radiation', {}).get('applicable'):
+                detail_rows.append(row['radiation'])
+            for dimension in detail_rows:
+                if dimension.get('status') == 'NOT_APPLICABLE':
+                    continue
+                label = translate_text(dimension.get('label', dimension['id']), locale)
+                status = translate_text(status_labels.get(dimension.get('status'), 'Not yet recorded'), locale)
+                story.append(_p(f'{label} — {status}', 'small'))
+                for entry in dimension.get('values', []):
+                    if entry.get('status') in {'FILLED', 'UNCERTAIN'} and entry.get('value'):
+                        # Original patient wording remains attributable and editable;
+                        # headings and state labels are authored translations.
+                        entry_label = field_label(entry.get('key', ''), entry.get('key', '').replace('_', ' ').capitalize(), locale)
+                        uncertainty = translate_text('Not sure', locale) + ': ' if entry['status'] == 'UNCERTAIN' else ''
+                        story.extend(_paragraphs(f"{entry_label}: {uncertainty}{entry['value']}"))
     story.append(_p(t('source_heading'), 'heading'))
     story.append(_p(t('source_note'), 'small'))
     concern_names = {concern['id']: workflow_title(concern.get('workflow_id'), concern.get('title', t('concern')), locale)

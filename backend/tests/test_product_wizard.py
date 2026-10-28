@@ -26,8 +26,8 @@ def wizard_api(product_env):
 
 def test_default_model_exact_spelling_configurable_and_no_model_substitution(monkeypatch):
     monkeypatch.delenv('OPENAI_MODEL', raising=False)
-    assert config.get_settings().openai_model == 'gpt-6-astra'
-    assert config.model_options()[0]['id'] == 'gpt-6-astra'
+    assert config.get_settings().openai_model == 'gpt-6-sol'
+    assert config.model_options()[0]['id'] == 'gpt-6-sol'
     monkeypatch.setenv('OPENAI_MODEL', 'explicit-custom-model')
     assert config.get_settings().openai_model == 'explicit-custom-model'
     assert config.model_options()[0]['id'] == 'explicit-custom-model'

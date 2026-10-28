@@ -31,7 +31,7 @@ const tokens = JSON.parse(
 const config = await (await fetch(`${base}/api/v1/config`)).json();
 assert.equal(config.ai_configured, false);
 assert.equal(config.mail_configured, false);
-assert.equal(config.default_model, "gpt-6-astra");
+assert.equal(config.default_model, "gpt-6-sol");
 let executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 if (!executablePath) {
   try {
@@ -347,12 +347,12 @@ try {
     page.getByRole("heading", { name: "Tell us what’s on your mind." }),
   ).toBeFocused();
   await page.locator(".advanced-options summary").click();
-  await expect(page.getByLabel("Assistant model")).toHaveValue("gpt-6-astra");
-  await page.getByLabel("Assistant model").selectOption("gpt-6-sol");
+  await expect(page.getByLabel("Assistant model")).toHaveValue("gpt-6-sol");
   await page.getByLabel("Assistant model").selectOption("gpt-6-astra");
+  await page.getByLabel("Assistant model").selectOption("gpt-6-sol");
   await page.locator(".advanced-options summary").click();
   pass(
-    "Keyboard opens custom chat and advanced options default to gpt-6-astra",
+    "Keyboard opens custom chat and advanced options default to gpt-6-sol",
   );
 
   const responseInput = page.getByRole("textbox", {
@@ -631,7 +631,7 @@ try {
   );
 
   const intake = await createSelected("WF-01");
-  assert.equal(intake.model, "gpt-6-astra");
+  assert.equal(intake.model, "gpt-6-sol");
   assert.equal(intake.profile_snapshot.date_of_birth, "1990-04-25");
   assert.equal(intake.shared_slots.relevant_history.status, "FILLED");
   assert.equal(intake.shared_slots.current_medications.status, "MISSING");

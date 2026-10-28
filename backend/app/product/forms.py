@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from . import engine, presentation
+from . import engine, presentation, oldcarts
 from .locales import CHAT_OPENERS
 from .workflows import CORE_QUESTIONS, SHARED_QUESTIONS, get_workflow
 
@@ -128,6 +128,9 @@ def _field(owner: str, key: str, slot: dict, definition: dict | None = None, *, 
         field["profile_reused"] = True
     if guidance:
         field["presentation"] = guidance
+    dimension = oldcarts.dimension_for_key(workflow_id, key)
+    if dimension:
+        field["oldcarts_dimension"] = dimension
     return field
 
 
@@ -135,6 +138,7 @@ def get_form(session: dict) -> dict:
     """Return a stable, concise form with shared background collected once."""
     # Existing drafts retain their original fields and answers; only the wizard
     # presentation merges the three repeated prompts into one optional step.
+    engine._apply_conditions(session)
     session["shared_slots"].setdefault("additional_information", engine._slot(
         "additional_information", question=SHARED_QUESTIONS["additional_information"]))
     groups = []
@@ -150,6 +154,14 @@ def get_form(session: dict) -> dict:
         rows = [{"key": "concern_description", "question": CORE_QUESTIONS["concern_description"]}]
         if workflow:
             rows.extend(workflow["questions"])
+        # Keep editable access to a broad answer in an older draft. It remains
+        # historical context and never supplies either directional factor.
+        legacy_keys = {'WF-01': ('leg.activity_context', 'leg.change_factors'),
+                       'WF-02': ('back.change_factors',)}.get(concern['workflow_id'], ())
+        for key in legacy_keys:
+            slot = concern['slots'].get(key, {})
+            if slot.get('status') in {'FILLED', 'UNCERTAIN', 'SKIPPED'}:
+                rows.append({'key': key, 'question': slot.get('question', ''), 'legacy_context': True})
         if sensitive:
             rows.insert(0, {"key": "sensitive_permission"})
         fields, seen = [], set()
@@ -168,9 +180,13 @@ def get_form(session: dict) -> dict:
                 continue
             if slot["status"] == "NOT_APPLICABLE" and not sensitive and not generic_frequency:
                 continue
-            fields.append(_field(concern["id"], key, slot, row,
-                                 permission=sensitive and key != "sensitive_permission",
-                                 workflow_id=concern["workflow_id"]))
+            field = _field(concern["id"], key, slot, row,
+                           permission=sensitive and key != "sensitive_permission",
+                           workflow_id=concern["workflow_id"])
+            if row.get('legacy_context'):
+                field['review_only'] = True
+                field['legacy_context'] = True
+            fields.append(field)
         groups.append({"id": concern["id"], "workflow_id": concern["workflow_id"], "title": concern["title"],
                        "description": "Include the details you would like your clinician to understand.", "fields": fields})
     return {"groups": groups, "completed": bool(session.get("baseline", {}).get("completed"))}

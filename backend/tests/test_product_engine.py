@@ -23,7 +23,10 @@ def new(ids=None): return new_intake(PATIENT, 'gpt-6-sol', ids or [])
 
 @pytest.mark.parametrize('workflow', WORKFLOWS, ids=lambda w: w['id'])
 def test_all_30_catalogue_banks_registered_and_questionable(workflow):
-    assert 6 <= len(workflow['questions']) <= 7
+    # Symptom banks now separate worsening/relief and include baseline severity.
+    # Keep the authored bank bounded; adaptive follow-up has its own <=5 limit.
+    assert 6 <= len(workflow['questions']) <= 9
+    assert len({q['key'] for q in workflow['questions']}) == len(workflow['questions'])
     assert all(q['key'] and q['question'].endswith('?') for q in workflow['questions'])
     rows=question_definitions(workflow['id']); assert len({q['key'] for q in rows}) == len(rows)
     s=new([workflow['id']]); process_message(s,'I am preparing for my booked appointment.',provider=Stub())

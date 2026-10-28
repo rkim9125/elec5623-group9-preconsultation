@@ -20,7 +20,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .auth import check_rate_limit, csrf_protect, require_user
-from .config import get_settings
+from .output_safety import unsafe_model_instruction
+from .config import get_settings, response_reasoning
 from .database import load_intake, mutate_intake, utc_now, registered_doctors
 from .intelligence import current_concerns, current_sources
 from .locales import Locale, language_instruction, normalize_locale, prose_matches_locale
@@ -178,7 +179,7 @@ def _negated(text: str, position: int) -> bool:
 
 
 def _scope_violation(text: str) -> bool:
-    if _INSTRUCTION_ECHO.search(text):
+    if _INSTRUCTION_ECHO.search(text) or unsafe_model_instruction(text):
         return True
     for pattern in (_SCAN_ASSERTION, _SCAN_PASSIVE, _REASSURANCE):
         for match in pattern.finditer(text):
@@ -405,6 +406,7 @@ class OpenAIAssessment:
             response = httpx.post(settings.openai_base_url.rstrip('/') + '/responses',
                 headers={'Authorization': 'Bearer ' + settings.openai_api_key},
                 json={'model': model, 'store': False, 'instructions': prompt,
+                      **response_reasoning(model, careful=True),
                       'input': [{'role': 'user', 'content': content}],
                       'text': {'format': {'type': 'json_schema', 'name': name, 'schema': schema, 'strict': True}},
                       'max_output_tokens': max_output}, timeout=httpx.Timeout(180, connect=10))

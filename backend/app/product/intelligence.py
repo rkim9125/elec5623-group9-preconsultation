@@ -14,7 +14,8 @@ from typing import Protocol
 
 import httpx
 
-from .config import get_settings
+from .config import get_settings, response_reasoning
+from .output_safety import unsafe_model_instruction
 from .locales import language_instruction, translate_text, workflow_title, field_label, prose_matches_locale
 from .followup_copy import followup_copy
 
@@ -72,6 +73,12 @@ Prepare ONE complete batch of at most FIVE useful follow-up questions from eligi
 These are missing fields outside the baseline; never repeat answered or declined information.
 Put ALL useful follow-ups in this batch: do not plan a later round, one-question interview,
 or a sequence of clarification calls. Fewer questions, or an empty list, are appropriate.
+Targets tagged oldcarts_dimension describe applicable symptom-history gaps. Prefer their
+supplied order and cover different missing dimensions before asking more detail within
+one dimension. This is information organisation, not clinical triage. A means aggravating
+factors and R means relieving factors; radiation is a separate detail. Preserve the
+difference between onset, overall duration and the length of each episode. Do not repeat
+information already supported by current sources, and do not fill gaps from silence.
 Use only listed target_id values, each once. Respect the patient's priorities without assigning
 medical priority. You cannot invent targets, screening objectives, or request new measurements.
 For each target provide question and display_label faithfully translated from its curated
@@ -104,6 +111,10 @@ concern's citations restricted to that concern's own sources. Use the supplied t
 appointment_agenda: up to 6 bullets drawn ONLY from explicit patient goals, questions, worries
 or named concerns. Do not invent questions or investigations the patient did not request.
 uncertainties: up to 12 clear gaps, preserving unknown versus declined versus not collected.
+For symptom concerns, organise the supplied history around onset, location, duration,
+character, aggravating factors, relieving factors, timing and severity where applicable.
+Radiation and daily impact are separate details. Never imply an uncollected dimension is
+negative or that eight filled dimensions establish a complete medical assessment.
 Group related gaps only when every associated source is cited. Do not turn missing data into
 'none', 'normal', 'no symptoms', 'no allergies', or other negative claims.
 Every entry needs at least one directly supporting source ID. Use separate bullets for
@@ -187,7 +198,8 @@ def current_concerns(session: dict) -> list[dict]:
 
 
 def _safe_text(value: object, limit: int = 700) -> str:
-    if not isinstance(value, str) or not value.strip() or len(value) > limit or _FORBIDDEN.search(value):
+    if (not isinstance(value, str) or not value.strip() or len(value) > limit
+            or _FORBIDDEN.search(value) or unsafe_model_instruction(value)):
         raise IntelligenceUnavailable('AI output could not be validated against the preparation scope. Your structured notes remain available.')
     if '<script' in value.lower() or '<iframe' in value.lower():
         raise IntelligenceUnavailable('AI output contained unsupported markup. Your structured notes remain available.')
@@ -388,6 +400,7 @@ class OpenAIIntelligence:
         if not settings.openai_api_key:
             raise IntelligenceUnavailable('OpenAI is not configured. Your structured notes are saved; you can review them or retry later.')
         payload = {'model': model, 'store': False, 'instructions': prompt,
+                   **response_reasoning(model, careful=name == 'preparation_synthesis'),
                    'input': json.dumps(data, ensure_ascii=False),
                    'text': {'format': {'type': 'json_schema', 'name': name, 'schema': schema, 'strict': True}},
                    'max_output_tokens': max_output}

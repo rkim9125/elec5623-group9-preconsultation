@@ -8,6 +8,7 @@ import { portalTranslationRows } from "./portalTranslations.js";
 import { preparationTranslationRows } from "./preparationTranslations.js";
 import { bodyProfileTranslationRows } from "./bodyProfileTranslations.js";
 import { followupTranslationRows } from "./followupTranslations.js";
+import { oldcartsTranslationRows } from "./oldcartsTranslations.js";
 
 export const LOCALE_STORAGE_KEY = "preconsultation.locale";
 export const languages = [
@@ -32,6 +33,7 @@ for (const row of [
   ...preparationTranslationRows,
   ...bodyProfileTranslationRows,
   ...followupTranslationRows,
+  ...oldcartsTranslationRows,
 ]) {
   for (let index = 0; index < languages.length; index += 1) {
     productResources[languages[index].id][row[0]] = row[index] || row[0];

@@ -62,10 +62,26 @@ export function serializeGuidedAnswer({ selected = [], details = "" }) {
   return `${CHOICES_HEADING}${unique.map((value) => `- ${value}`).join("\n")}${details ? `${DETAILS_HEADING}${details}` : ""}`;
 }
 
-export function toggleGuidedSelection(selected, value, multiple = true) {
+export function toggleGuidedSelection(
+  selected,
+  value,
+  multiple = true,
+  options = [],
+) {
   if (selected.includes(value))
     return selected.filter((item) => item !== value);
-  return multiple ? [...selected, value] : [value];
+  const normalized = normalizeOptions(options);
+  if (
+    !multiple ||
+    normalized.find((option) => option.value === value)?.exclusive
+  )
+    return [value];
+  const exclusive = new Set(
+    normalized
+      .filter((option) => option.exclusive)
+      .map((option) => option.value),
+  );
+  return [...selected.filter((item) => !exclusive.has(item)), value];
 }
 
 export function appendGuidedDetails(value, text, options = []) {

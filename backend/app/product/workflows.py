@@ -1,9 +1,11 @@
 """Versioned preparation catalogue. These question templates are not clinical protocols.
 
-The 30 source question banks are retained verbatim; deterministic conditions below
+The 30 preparation topics reuse symptom-history fields; deterministic conditions
 control eligibility. Shared fields are instantiated once per session.
 """
 from __future__ import annotations
+
+from .oldcarts import additional_questions
 
 WORKFLOWS: list[dict] = [{'id': 'WF-01',
   'title': 'Leg pain',
@@ -12,18 +14,24 @@ WORKFLOWS: list[dict] = [{'id': 'WF-01',
   'questions': [{'key': 'leg.pain_site',
                  'label': 'Leg · pain site',
                  'question': 'Where in your leg do you feel the pain?'},
+                {'key': 'symptom_onset',
+                 'label': 'Symptom onset',
+                 'question': 'When did you first notice this?'},
                 {'key': 'leg.pain_character',
                  'label': 'Leg · pain character',
                  'question': 'How would you describe the pain in your own words?'},
                 {'key': 'symptom_frequency',
                  'label': 'Symptom frequency',
                  'question': 'How often do you notice the pain?'},
-                {'key': 'leg.activity_context',
-                 'label': 'Leg · activity context',
-                 'question': 'What are you usually doing when you notice it?'},
-                {'key': 'leg.change_factors',
-                 'label': 'Leg · change factors',
-                 'question': 'What have you noticed changes the pain?'},
+                {'key': 'aggravating_factors',
+                 'label': 'What makes it worse',
+                 'question': 'What makes this symptom worse, if anything?'},
+                {'key': 'relieving_factors',
+                 'label': 'What helps',
+                 'question': 'What eases this symptom, if anything?'},
+                {'key': 'severity',
+                 'label': 'Severity',
+                 'question': 'How strong or troublesome does it feel to you?'},
                 {'key': 'functional_impact',
                  'label': 'Functional impact',
                  'question': 'How does the pain affect your everyday activities?'},
@@ -52,9 +60,12 @@ WORKFLOWS: list[dict] = [{'id': 'WF-01',
                 {'key': 'symptom_frequency',
                  'label': 'Symptom frequency',
                  'question': 'How often does it bother you?'},
-                {'key': 'back.change_factors',
-                 'label': 'Back · change factors',
-                 'question': 'What have you noticed changes the discomfort?'},
+                {'key': 'aggravating_factors',
+                 'label': 'What makes it worse',
+                 'question': 'What makes this symptom worse, if anything?'},
+                {'key': 'relieving_factors',
+                 'label': 'What helps',
+                 'question': 'What eases this symptom, if anything?'},
                 {'key': 'functional_impact',
                  'label': 'Functional impact',
                  'question': 'How does the discomfort affect your daily routine?'},
@@ -1101,7 +1112,8 @@ CONDITIONS = {
     'medication_experience': 'medication_use', 'medication_actual_use': 'medication_use',
     'medication_supply': 'prescription_goal', 'previous_consultation.reported_care': 'previous_consultation',
 }
-SYMPTOM_FIELDS = {'symptom_onset', 'symptom_duration', 'symptom_course', 'symptom_pattern', 'severity', 'functional_impact'}
+SYMPTOM_FIELDS = {'symptom_onset', 'symptom_duration', 'symptom_course', 'symptom_pattern', 'severity', 'functional_impact',
+                  'symptom_onset_character', 'aggravating_factors', 'relieving_factors', 'symptom_location', 'symptom_character'}
 
 
 def get_workflow(workflow_id: str) -> dict | None:
@@ -1119,6 +1131,9 @@ def question_definitions(workflow_id: str) -> list[dict]:
     for key, question, signal in EXTRAS.get(workflow_id, []):
         if key not in {q['key'] for q in rows}:
             rows.append({'key': key, 'label': key.replace('.', ' · ').replace('_', ' ').capitalize(), 'question': question, 'condition': signal})
+    for question in additional_questions(workflow_id):
+        if question['key'] not in {q['key'] for q in rows}:
+            rows.append(question)
     return rows
 
 # Public workflow responses expose full schemas as well as source question banks.

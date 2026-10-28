@@ -9,9 +9,10 @@ export function Button({ children, icon, className = "", busy, ...props }) {
       className={`button ${className}`}
       {...props}
       disabled={props.disabled || busy}
+      aria-busy={busy || undefined}
     >
       {busy ? (
-        <span className="spinner" />
+        <span className="spinner" aria-hidden="true" />
       ) : icon ? (
         <Icon name={icon} size={17} />
       ) : null}
@@ -32,7 +33,7 @@ export function Loading({ label = "Loading your workspace…" }) {
   const { t } = useLocale();
   return (
     <div className="loading-state" role="status">
-      <span className="spinner" />
+      <span className="spinner" aria-hidden="true" />
       <p>{t(label)}</p>
     </div>
   );

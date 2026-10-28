@@ -128,6 +128,9 @@ def public_session(session: dict) -> dict:
     if (projection.get("summary") or {}).get("sections"):
         engine.localize_summary(projection)
     result = {key: value for key, value in projection.items() if not key.startswith("_")}
+    from .oldcarts import coverage_for_session
+    snapshot = (projection.get("summary") or {}).get("symptom_history")
+    result["symptom_history"] = deepcopy(snapshot) if snapshot is not None else coverage_for_session(projection)
     result["ai_report"] = public_report(session)
     for attachment in result.get("attachments", []):
         attachment.pop("storage_path", None)
@@ -140,7 +143,7 @@ def clinician_public_session(session: dict) -> dict:
                "created_at", "updated_at", "status", "model", "consent",
                "concerns", "shared_slots", "summary", "attachments",
                "doctor_email", "reviewed_at", "reviewed_by", "shared_at", "ai_report"}
-    allowed.update({"locale", "profile_snapshot"})
+    allowed.update({"locale", "profile_snapshot", "symptom_history"})
     result = {key: value for key, value in public_session(session).items() if key in allowed}
     # Slots contain superseded values and source excerpts for the patient's own
     # correction history. Clinicians receive only the current approved values.
@@ -355,6 +358,18 @@ def retry_followup(intake_id: str, request: Request, body: LocaleInput | None = 
         set_patient_locale(session, body.locale)
     check_rate_limit(request, "intake_message", user["email"])
     return persist(run_engine(pipeline.start_followup, session))
+
+
+@router.post("/intakes/{intake_id}/baseline/organize", dependencies=[Depends(csrf_protect)])
+def organize_baseline(intake_id: str, body: LocaleUpdateInput, request: Request, user: dict = Depends(require_patient)) -> dict:
+    session = require_owner(intake_id, user)
+    ensure_editable(session)
+    if body.revision is not None and body.revision != session.get('revision'):
+        raise HTTPException(409, 'This intake changed. Refresh the form before saving it again.')
+    if body.locale:
+        set_patient_locale(session, body.locale)
+    check_rate_limit(request, 'intake_message', user['email'])
+    return persist(run_engine(pipeline.organize_baseline, session))
 
 
 @router.put("/intakes/{intake_id}/followup/draft", dependencies=[Depends(csrf_protect)])

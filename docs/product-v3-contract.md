@@ -48,7 +48,7 @@ The existing `gpt-4o-mini-transcribe` integration uses the singular `language` p
 
 ## Models and clinician registration
 
-The application default is `gpt-6-astra`, matching the [official model catalogue](https://developers.openai.com/api/docs/models). `OPENAI_MODEL` remains an administrator override; advanced options expose the configured model plus `gpt-6-astra`, `gpt-6-sol` and `gpt-5.6-sol`. The application never silently substitutes a different model. Model access errors retain notes and display an unavailable state.
+The application default is `gpt-6-sol`, matching the [official model catalogue](https://developers.openai.com/api/docs/models). `OPENAI_MODEL` remains an administrator override; advanced options expose the configured model plus `gpt-6-astra`, `gpt-6-sol` and `gpt-5.6-sol`. The application never silently substitutes a different model. Model access errors retain notes and display an unavailable state.
 
 Any valid email can register as patient or doctor. An email belongs to one permanent account role; a second role requires a different email. `/config.care_team` and approval validation use registered doctor accounts rather than `DOCTOR_EMAILS`. OTP verification, CSRF protection, explicit versioned patient approval, assigned-recipient checks and withdrawal continue to apply. No account can read an unapproved preparation simply by registering as a doctor.
 

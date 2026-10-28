@@ -15,6 +15,7 @@ import uuid
 from typing import Callable
 
 from . import engine
+from . import oldcarts
 from .followup_copy import legacy_question_copy, followup_copy, localized_lifecycle
 from .locales import translate_text, field_label, prose_matches_locale
 from .provider import ExtractionProvider, ProviderUnavailable, get_provider
@@ -145,9 +146,6 @@ def _baseline_keys(session: dict) -> set[tuple[str, str]]:
             if slot.get('baseline') or slot.get('baseline_deferred'):
                 keys.add((owner, key))
     for owner, key in list(keys):
-        if key in {'symptom_onset', 'symptom_duration'}:
-            keys.add((owner, 'symptom_onset'))
-            keys.add((owner, 'symptom_duration'))
         if key in {'main_concern', 'concern_description', 'agenda_items'}:
             keys.add(('session', 'topic_clarification'))
         # Common shared questions stay shared even if a legacy form used a concern owner.
@@ -177,9 +175,12 @@ def eligible_followups(session: dict) -> list[dict]:
         if not slot or slot.get('status') != 'MISSING' or slot.get('exclude_from_handoff') or tid in asked or tid in seen:
             continue
         seen.add(tid)
+        concern = engine._concern(session, owner)
+        dimension = oldcarts.dimension_for_key(concern['workflow_id'], key) if concern else None
         targets.append({'target_id': tid, 'concern_id': owner, 'key': key,
-                        'label': slot.get('label', key), 'question': question['question']})
-    return targets
+                        'label': slot.get('label', key), 'question': question['question'],
+                        **({'oldcarts_dimension': dimension} if dimension else {})})
+    return oldcarts.priority_targets(session, targets)
 
 
 def _assistant(session: dict, mode: str, overview: str, *, focus: str = '', rationale: str = '', topics: list[str] | None = None) -> None:
@@ -315,7 +316,7 @@ def _restore_independent_item_answers(session: dict, message_id: str) -> None:
             session.setdefault('audit', []).append({'event': 'direct_item_answer_reconnected', 'concern_id': current['concern_id'], 'item_id': current['id'], 'key': key})
 
 
-def _prepare_baseline(session: dict, provider: ExtractionProvider) -> bool:
+def _prepare_baseline(session: dict, provider: ExtractionProvider, *, prefill: bool = False) -> bool:
     """Discover explicit signals/items without rewriting direct form answers.
 
     Data lines retain explicit owners. Labels are not accepted as patient evidence.
@@ -323,14 +324,31 @@ def _prepare_baseline(session: dict, provider: ExtractionProvider) -> bool:
     """
     _invalidate_baseline_derivatives(session)
     rows = _baseline_rows(session)
+    if prefill:
+        # Early organisation uses only saved, patient-authored answers. Empty
+        # wizard fields remain eligible; explicit uncertainty/refusal is protected.
+        rows = []
+        owners = [('session', session.get('shared_slots', {}))] + [(c['id'], c['slots']) for c in session.get('concerns', [])]
+        for owner, slots in owners:
+            for key, slot in slots.items():
+                if (slot.get('status') in {'FILLED', 'UNCERTAIN'} and not slot.get('exclude_from_handoff')
+                        and not slot.get('reused_from') and isinstance(slot.get('value'), str) and slot['value'].strip()
+                        and (slot.get('evidence') or {}).get('source') == 'patient_form'):
+                    rows.append({'concern_id': owner, 'key': key, 'status': slot['status'], 'value': slot['value']})
+        rows.sort(key=lambda row: (row['concern_id'], row['key']))
     fingerprint = hashlib.sha256(json.dumps(rows, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
     state = _state(session)
-    if state.get('baseline_fingerprint') == fingerprint:
+    fingerprint_key = 'description_fingerprint' if prefill else 'baseline_fingerprint'
+    if state.get(fingerprint_key) == fingerprint:
         return True
     if not rows:
-        state['baseline_fingerprint'] = fingerprint
+        state[fingerprint_key] = fingerprint
         return True
     excluded = _baseline_keys(session)
+    if prefill:
+        excluded = {(owner, key) for owner, slots in owners for key, slot in slots.items()
+                    if slot.get('status') in {'FILLED', 'UNCERTAIN', 'SKIPPED'}
+                    and (slot.get('evidence') or {}).get('source') != 'saved_baseline_form'}
     protected = {}
     for owner, key in excluded:
         slots = engine._owner_slots(session, owner)
@@ -421,7 +439,7 @@ def _prepare_baseline(session: dict, provider: ExtractionProvider) -> bool:
         _restore_independent_item_answers(session, msg['id'])
         session.setdefault('audit', []).append({'event': 'baseline_extraction', 'source': 'saved_baseline_form', **result})
         session['ai_status'] = {'mode': 'live', 'model': session['model'], 'message': followup_copy('form_organized', session.get('locale', 'en'))}
-        state['baseline_fingerprint'] = fingerprint
+        state[fingerprint_key] = fingerprint
         engine._apply_conditions(session)
         engine._metrics(session)
         return True
@@ -437,9 +455,20 @@ def _prepare_baseline(session: dict, provider: ExtractionProvider) -> bool:
             slots = engine._owner_slots(session, owner)
             if slots is not None:
                 slots[key] = slot
-        session['ai_status'] = {'mode': 'unavailable', 'model': session['model'], 'message': str(exc)}
-        _finish_followup(session, str(exc), 'unavailable')
+        message = _safe_failure_message(exc, session.get('locale', 'en'))
+        session['ai_status'] = {'mode': 'unavailable', 'model': session['model'], 'message': message}
+        if not prefill:
+            _finish_followup(session, message, 'unavailable')
         return False
+
+
+def organize_baseline(session: dict, *, extraction: ExtractionProvider | None = None) -> dict:
+    """Fill supported gaps from saved answers without starting an interview round."""
+    _guard(session)
+    if session.get('status') != 'active' or session.get('stage') != 'baseline' or session.get('baseline', {}).get('completed'):
+        raise ValueError('Return to your editable preparation before organising these answers.')
+    _prepare_baseline(session, extraction or get_provider(), prefill=True)
+    return session
 
 
 def _batch_context(session: dict) -> str:
@@ -478,6 +507,10 @@ def _publish_batch(session: dict, questions: list[dict], overview: str, *, reaso
                      'concern_id': target['concern_id'], 'key': target['key'],
                      'question': item.get('question', target['question']), 'display_label': item.get('display_label', target.get('label', target['key'])), 'why': item['rationale'],
                      'options': item.get('options', []), 'allow_custom': True})
+        concern = engine._concern(session, target['concern_id'])
+        dimension = oldcarts.dimension_for_key(concern['workflow_id'], target['key']) if concern else None
+        if dimension:
+            rows[-1]['oldcarts_dimension'] = dimension
         if target['target_id'] not in state['asked_targets']:
             state['asked_targets'].append(target['target_id'])
     session['followup_batch'] = {'id': batch_id, 'round': state['rounds_created'], 'status': 'pending',
@@ -595,7 +628,11 @@ def _plan(session: dict, intelligence: IntelligenceProvider) -> dict:
         return _finish_followup(session, str(exc), 'unavailable')
     if plan.get('overview_fallback') and session.get('ai_activity'):
         session['ai_activity'][-1]['message'] = 'The optional overview did not pass validation; the validated follow-up plan was retained.'
-    questions = legacy_questions + plan['questions'][:remaining]
+    # The model can select fewer questions; the authored coverage order controls
+    # which selected details fit the bounded batch. Never turn a gap into a fact.
+    target_order = {target['target_id']: index for index, target in enumerate(targets)}
+    planned = sorted(plan['questions'], key=lambda item: target_order.get(item['target']['target_id'], len(targets)))
+    questions = legacy_questions + planned[:remaining]
     if not questions:
         state['completed'] = True
         return _finish_followup(session, plan['overview'], 'ready')
@@ -864,7 +901,9 @@ def _synthesize(session: dict, intelligence: IntelligenceProvider) -> dict:
         return session
     session['stage'] = 'review'
     summary['locale'] = session.get('locale', 'en')
+    summary['symptom_history'] = oldcarts.coverage_for_session(session)
     if summary.get('needs_reconciliation') or session.get('unreconciled_corrections'):
+        summary['symptom_history'] = []
         message = followup_copy('correction_pending', session.get('locale', 'en'))
         summary['synthesis'] = unavailable_synthesis(session, message, include_sources=False)
         _assistant(session, 'unavailable', message)

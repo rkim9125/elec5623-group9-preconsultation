@@ -16,6 +16,11 @@ import {
   toggleGuidedSelection,
 } from "./answerValues.js";
 import "./visual-inputs.css";
+import {
+  painNumbers,
+  selectPainNumber,
+  withPainOptions,
+} from "./oldcartsModel.js";
 
 const activityIcons = {
   "Daily tasks": "grid",
@@ -47,16 +52,20 @@ export default function GuidedField({
   onChange,
   onFocus,
   hideDetails = false,
+  hideHelper = false,
 }) {
   const { t } = useLocale();
   const helperId = useId();
   const errorId = useId();
   const [showDetails, setShowDetails] = useState(false);
+  const [showPainNumbers, setShowPainNumbers] = useState(false);
   const [error, setError] = useState("");
   const presentation = field.presentation;
   const isLowerBody =
     presentation?.kind === "body_map" && presentation.illustration === "legs";
-  const options = normalizeOptions(bodyOptionsFor(presentation));
+  const baseOptions = normalizeOptions(bodyOptionsFor(presentation));
+  const options = normalizeOptions(withPainOptions(baseOptions, presentation));
+  const painScale = presentation?.pain_scale === true;
   const guided =
     ["choices", "body_map", "scale"].includes(presentation?.kind) &&
     options.length > 0;
@@ -80,11 +89,23 @@ export default function GuidedField({
   const select = (value) =>
     update({
       ...parsed,
-      selected: toggleGuidedSelection(
-        parsed.selected,
-        value,
-        isLowerBody || presentation.multiple === true,
-      ),
+      selected: [
+        ...toggleGuidedSelection(
+          painScale
+            ? parsed.selected.filter(
+                (item) => !painNumbers.some((option) => option.value === item),
+              )
+            : parsed.selected,
+          value,
+          isLowerBody || presentation.multiple === true,
+          baseOptions,
+        ),
+        ...(painScale
+          ? parsed.selected.filter((item) =>
+              painNumbers.some((option) => option.value === item),
+            )
+          : []),
+      ],
     });
   const textarea = (
     <textarea
@@ -108,7 +129,9 @@ export default function GuidedField({
           ? update({ ...parsed, details: event.target.value })
           : onChange(event.target.value)
       }
-      aria-describedby={error ? errorId : guided ? helperId : undefined}
+      aria-describedby={
+        error ? errorId : guided && !hideHelper ? helperId : undefined
+      }
       aria-invalid={error ? true : undefined}
       disabled={disabled}
     />
@@ -120,16 +143,18 @@ export default function GuidedField({
       className={`guided-field guided-${presentation.kind}`}
       onFocus={onFocus}
     >
-      <p className="guided-field-helper" id={helperId}>
-        {t(
-          (isLowerBody
-            ? "Choose all affected areas, including both sides or views. You can add details in your own words."
-            : presentation.helper) ||
-            (presentation.multiple
-              ? "Select all that fit. You can add details in your own words."
-              : "Choose one, or add your answer in your own words."),
-        )}
-      </p>
+      {!hideHelper && (
+        <p className="guided-field-helper" id={helperId}>
+          {t(
+            (isLowerBody
+              ? "Choose all affected areas, including both sides or views. You can add details in your own words."
+              : presentation.helper) ||
+              (presentation.multiple
+                ? "Select all that fit. You can add details in your own words."
+                : "Choose one, or add your answer in your own words."),
+          )}
+        </p>
+      )}
       <div
         className={`guided-options-layout ${presentation.kind === "body_map" && !isLowerBody ? "with-body-map" : ""}`}
       >
@@ -162,10 +187,10 @@ export default function GuidedField({
             <div
               className={`answer-choices ${presentation.kind === "scale" ? "answer-scale" : ""}`}
               role="group"
-              aria-labelledby={`${inputId}-question`}
-              aria-describedby={helperId}
+              aria-label={t(field.question || field.label)}
+              aria-describedby={hideHelper ? undefined : helperId}
             >
-              {options.map((option) => {
+              {baseOptions.map((option) => {
                 const selected = parsed.selected.includes(option.value);
                 const icon = choiceIcon(field, option);
                 return (
@@ -200,10 +225,86 @@ export default function GuidedField({
                 );
               })}
             </div>
+            {painScale && (
+              <div className="optional-pain-scale">
+                <button
+                  className="pain-number-toggle"
+                  type="button"
+                  disabled={disabled}
+                  aria-expanded={showPainNumbers}
+                  aria-controls={`${inputId}-pain-numbers`}
+                  onClick={() => setShowPainNumbers(!showPainNumbers)}
+                >
+                  <Icon name={showPainNumbers ? "chevron" : "plus"} size={15} />
+                  {t(
+                    showPainNumbers
+                      ? "Hide pain numbers"
+                      : "Add a pain number (optional)",
+                  )}
+                </button>
+                {showPainNumbers && (
+                  <div
+                    id={`${inputId}-pain-numbers`}
+                    className="pain-number-panel"
+                  >
+                    <p>
+                      {t(
+                        "0 means no pain; 10 means the worst pain you can imagine.",
+                      )}
+                    </p>
+                    <div
+                      className="pain-number-options"
+                      role="group"
+                      aria-label={t("Pain number")}
+                    >
+                      {painNumbers.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          disabled={disabled}
+                          className={
+                            parsed.selected.includes(option.value)
+                              ? "selected"
+                              : ""
+                          }
+                          aria-pressed={parsed.selected.includes(option.value)}
+                          aria-label={t("Pain level {number} out of 10", {
+                            number: option.label,
+                          })}
+                          onClick={() =>
+                            update({
+                              ...parsed,
+                              selected: selectPainNumber(
+                                parsed.selected,
+                                option.value,
+                              ),
+                            })
+                          }
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="guided-choice-footer" aria-live="polite">
               {parsed.selected.length ? (
                 <span>
-                  {t("{count} selected", { count: parsed.selected.length })}
+                  {painScale
+                    ? parsed.selected
+                        .map((value) =>
+                          painNumbers.some((option) => option.value === value)
+                            ? value
+                            : t(
+                                baseOptions.find(
+                                  (option) => option.value === value,
+                                )?.label || value,
+                              ),
+                        )
+                        .join(" · ")
+                    : t("{count} selected", { count: parsed.selected.length })}
                 </span>
               ) : (
                 <span>{t("No selection yet")}</span>

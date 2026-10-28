@@ -55,7 +55,7 @@ def get_settings() -> Settings:
         db_path=Path(os.getenv("PRODUCT_DB_PATH", str(BACKEND_DIR / "data" / "product.sqlite3"))).expanduser().resolve(),
         upload_dir=Path(os.getenv("UPLOAD_DIR", str(BACKEND_DIR / "data" / "uploads"))).expanduser().resolve(),
         openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
-        openai_model=os.getenv("OPENAI_MODEL", "gpt-6-astra").strip() or "gpt-6-astra",
+        openai_model=os.getenv("OPENAI_MODEL", "gpt-6-sol").strip() or "gpt-6-sol",
         openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").strip(),
         openai_transcription_model=os.getenv("OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe").strip(),
         resend_api_key=os.getenv("RESEND_API_KEY", "").strip(),
@@ -69,3 +69,14 @@ def model_options() -> list[dict[str, str]]:
     configured = get_settings().openai_model
     ids = list(dict.fromkeys([configured, "gpt-6-astra", "gpt-6-sol", "gpt-5.6-sol"]))
     return [{"id": model, "label": model} for model in ids]
+
+
+def response_reasoning(model: str, *, careful: bool = False) -> dict:
+    """Keep short Sol operations responsive; retain reasoning for final reports.
+
+    Other selected/custom models retain their provider defaults. This changes
+    neither the selected model nor its access rights.
+    """
+    if model == "gpt-6-sol":
+        return {"reasoning": {"effort": "medium" if careful else "low"}}
+    return {}

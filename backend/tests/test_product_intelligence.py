@@ -66,13 +66,18 @@ def test_baseline_questions_are_never_exposed_to_planner_even_when_deferred():
     assert s['followup_started_at']<=s['messages'][-1]['created_at']
     assert [x['operation'] for x in s['ai_activity']]==['baseline_extraction','planning']
 
-def test_baseline_alias_onset_duration_is_excluded_even_if_missing():
+def test_baseline_onset_does_not_hide_a_distinct_duration_gap():
     s=baseline(['WF-21']);c=s['concerns'][0]
     c['signals']['current_symptom']={'present':True}
-    s['baseline']['field_keys'].append({'concern_id':c['id'],'key':'symptom_duration'})
+    s['baseline']['field_keys'] = [{'concern_id':c['id'],'key':'symptom_onset'}]
+    for slot in c['slots'].values():
+        slot.pop('baseline', None)
+        slot.pop('baseline_deferred', None)
     excluded=pipeline._baseline_keys(s)
-    assert (c['id'],'symptom_onset') in excluded and (c['id'],'symptom_duration') in excluded
-    assert all(q['key'] not in {'symptom_onset','symptom_duration'} for q in pipeline.eligible_followups(s))
+    assert (c['id'],'symptom_onset') in excluded and (c['id'],'symptom_duration') not in excluded
+    targets = pipeline.eligible_followups(s)
+    assert all(q['key'] != 'symptom_onset' for q in targets)
+    assert any(q['key'] == 'symptom_duration' for q in targets)
 
 def test_retry_preserves_batch_and_does_not_repeat_successful_baseline_extraction():
     s=baseline();ex=Extractor();model=Smart();pipeline.start_followup(s,intelligence=model,extraction=ex)

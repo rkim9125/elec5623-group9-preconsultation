@@ -17,6 +17,7 @@ from .auth import require_user, csrf_protect, check_rate_limit
 from .config import get_settings
 from .locales import Locale, language_instruction
 from .database import load_intake, mutate_intake, utc_now
+from .output_safety import unsafe_model_instruction, instruction_failure
 
 router = APIRouter(tags=['media'])
 TYPES = {'application/pdf': '.pdf', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp'}
@@ -231,6 +232,8 @@ async def analyze(intake_id: str, attachment_id: str, request: Request, user=Dep
         text = '\n'.join(c.get('text','') for o in payload.get('output',[]) for c in o.get('content',[]) if c.get('type') == 'output_text')
         if payload.get('status') == 'incomplete' or not text.strip():
             raise HTTPException(502, 'Document reading did not finish. Please retry or describe the file yourself.')
+        if unsafe_model_instruction(text):
+            raise HTTPException(502, instruction_failure(intake.get('locale', 'en')))
         return {'text': text[:16000], 'model': intake['model'], 'attachment_id': attachment_id}
     except (ValueError, TypeError, AttributeError, KeyError):
         raise HTTPException(502, 'The document service returned an invalid response. Please try again.') from None

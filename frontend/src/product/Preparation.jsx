@@ -13,7 +13,14 @@ import {
 import VoiceComposer from "./VoiceComposer.jsx";
 import { useLocale } from "./i18n.jsx";
 import { topicVisual } from "./topics.js";
-import { recordTitle, recordLabel, recordedValue, slotStatusLabel } from "./recordLocale.js";
+import {
+  recordTitle,
+  recordLabel,
+  recordedValue,
+  slotStatusLabel,
+} from "./recordLocale.js";
+import SymptomOverview, { SymptomContext } from "./SymptomOverview.jsx";
+import { dimensionFor, withPainOptions } from "./oldcartsModel.js";
 
 const stages = [
   "Your concerns",
@@ -91,6 +98,10 @@ export function BaselineForm({
   const [saveState, setSaveState] = useState("Saved");
   const [revision, setRevision] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  const [organizing, setOrganizing] = useState(false);
+  const [organizationNotice, setOrganizationNotice] = useState("");
+  const organizingRef = useRef(false);
+  const organizedDescriptions = useRef({});
   const latest = useRef({});
   const mounted = useRef(true);
   const dirty = useRef(false);
@@ -104,45 +115,71 @@ export function BaselineForm({
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
-  const loadForm = useCallback(async () => {
-    setLoadError("");
-    try {
-      const result = await request(`/intakes/${session.id}/form`);
-      if (!mounted.current) return;
-      const values = Object.fromEntries(
-        result.groups.flatMap((group) =>
-          group.fields.map((field) => [fieldId(field), initialAnswer(field)]),
-        ),
-      );
-      latest.current = values;
-      serverRevision.current = result.revision;
-      dirty.current = false;
-      saveFailed.current = false;
-      setSaveState("Saved");
-      setAnswers(values);
-      setForm(result);
-      const ordered = [
-        ...result.groups.filter((g) => g.id !== "shared"),
-        ...result.groups.filter((g) => g.id === "shared"),
-      ].flatMap((g) => g.fields);
-      const first =
-        ordered.find(
-          (field) =>
-            !field.requires_permission &&
-            !field.review_only &&
-            !field.profile_reused &&
-            field.status === "MISSING",
-        ) || ordered[0];
-      if (first) setActiveField(fieldId(first));
-    } catch (err) {
-      if (mounted.current) setLoadError(err.message);
-    }
-  }, [session.id]);
+  const loadForm = useCallback(
+    async ({ after } = {}) => {
+      setLoadError("");
+      try {
+        const result = await request(`/intakes/${session.id}/form`);
+        if (!mounted.current) return;
+        const values = Object.fromEntries(
+          result.groups.flatMap((group) =>
+            group.fields.map((field) => [fieldId(field), initialAnswer(field)]),
+          ),
+        );
+        latest.current = values;
+        serverRevision.current = result.revision;
+        dirty.current = false;
+        saveFailed.current = false;
+        setSaveState("Saved");
+        setAnswers(values);
+        setForm(result);
+        const ordered = [
+          ...result.groups.filter((g) => g.id !== "shared"),
+          ...result.groups.filter((g) => g.id === "shared"),
+        ].flatMap((g) => g.fields);
+        const remaining = after
+          ? ordered.slice(
+              ordered.findIndex((field) => fieldId(field) === after) + 1,
+            )
+          : ordered;
+        const first =
+          remaining.find(
+            (field) =>
+              (!field.requires_permission ||
+                (values[`${field.concern_id}::sensitive_permission`]?.status ===
+                  "FILLED" &&
+                  /^yes\b/i.test(
+                    values[
+                      `${field.concern_id}::sensitive_permission`
+                    ]?.value?.trim() || "",
+                  ))) &&
+              !field.review_only &&
+              !field.profile_reused &&
+              field.status === "MISSING",
+          ) || (after ? null : ordered[0]);
+        if (first) setActiveField(fieldId(first));
+        else if (after) setReview(true);
+        return result;
+      } catch (err) {
+        if (mounted.current) {
+          setLoadError(err.message);
+          if (after) {
+            // Organization may have changed the server. Never allow an older
+            // full form snapshot to overwrite it after a failed reload.
+            setForm(null);
+            setError(err.message);
+          }
+        }
+        return null;
+      }
+    },
+    [session.id],
+  );
   useEffect(() => {
     mounted.current = true;
     loadForm();
     const warn = (event) => {
-      if (dirty.current) {
+      if (dirty.current || organizingRef.current) {
         event.preventDefault();
         event.returnValue = "";
       }
@@ -173,7 +210,12 @@ export function BaselineForm({
     const previous = latest.current[key] || initialAnswer(field);
     const updated = { ...previous, ...patch };
     if (Object.hasOwn(patch, "value") && !Object.hasOwn(patch, "status"))
-      updated.status = patch.value.trim() ? "FILLED" : "MISSING";
+      updated.status =
+        previous.status === "UNCERTAIN"
+          ? "UNCERTAIN"
+          : patch.value.trim()
+            ? "FILLED"
+            : "MISSING";
     if (updated.status === "SKIPPED" || updated.status === "MISSING")
       updated.value = "";
     let next = { ...latest.current, [key]: updated };
@@ -267,6 +309,7 @@ export function BaselineForm({
   useEffect(
     () =>
       registerNavigationGuard(async () => {
+        if (organizingRef.current) return false;
         if (voiceBusy) {
           setError(t("Finish or cancel voice input before leaving."));
           return false;
@@ -291,6 +334,16 @@ export function BaselineForm({
       }),
     [save, voiceBusy, t],
   );
+
+  useEffect(() => {
+    if (!review) return;
+    const frame = requestAnimationFrame(() =>
+      document
+        .getElementById("wizard-review-title")
+        ?.focus({ preventScroll: true }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [review]);
 
   if (!form)
     return (
@@ -325,11 +378,15 @@ export function BaselineForm({
       </Button>
     );
   const key = fieldId(current);
+  const dimension = dimensionFor(current);
   const index = stepFields.indexOf(current);
   const answer = answers[key] || initialAnswer(current);
   const group = form.groups.find((item) => item.fields.includes(current));
   const inputId = `answer-${current.concern_id}-${current.key}`;
-  const options = bodyOptionsFor(current.presentation);
+  const options = withPainOptions(
+    bodyOptionsFor(current.presentation),
+    current.presentation,
+  );
   const guided =
     ["choices", "body_map", "scale"].includes(current.presentation?.kind) &&
     options?.length > 0;
@@ -337,7 +394,7 @@ export function BaselineForm({
   const resolved = stepFields.filter(
     (field) => answers[fieldId(field)]?.status !== "MISSING",
   ).length;
-  const disabled = operation === "continuing" || leaving;
+  const disabled = operation === "continuing" || leaving || organizing;
   const navigationDisabled = disabled || voiceBusy;
   const savedFields = fields.filter((field) => field.profile_reused);
   const previousAnswer = form.previous_answers?.[current.key];
@@ -358,18 +415,81 @@ export function BaselineForm({
     setActiveField(fieldId(field));
     setTimeout(() => document.getElementById("wizard-question")?.focus(), 0);
   }
-  function next() {
+  async function next() {
+    if (navigationDisabled || organizingRef.current) return;
+    if (
+      current.key === "concern_description" &&
+      answer.status === "FILLED" &&
+      answer.value.trim() &&
+      organizedDescriptions.current[key] !== answer.value
+    ) {
+      organizingRef.current = true;
+      setOrganizing(true);
+      setOrganizationNotice("");
+      try {
+        if (saving.current) await saving.current;
+        if (dirty.current) await save(false);
+        if (dirty.current || saveFailed.current || !mounted.current) return;
+        const updated = await request(
+          `/intakes/${session.id}/baseline/organize`,
+          {
+            method: "POST",
+            body: { revision: serverRevision.current, locale },
+          },
+        );
+        if (!mounted.current) return;
+        serverRevision.current = updated.revision;
+        onUpdateRef.current(updated);
+        if (updated.status !== "active") return;
+        organizedDescriptions.current[key] = answer.value;
+        const reloaded = await loadForm({ after: key });
+        if (!mounted.current || !reloaded) return;
+        const filled = reloaded.groups.some((item) =>
+          item.fields.some(
+            (field) =>
+              field.status === "FILLED" &&
+              answers[fieldId(field)]?.status === "MISSING",
+          ),
+        );
+        setOrganizationNotice(
+          updated.ai_status?.mode !== "live" || !filled
+            ? "Your description is saved. Continue at your own pace; you can review every answer."
+            : "We’ve filled in details from your description. You can check or change them at any time.",
+        );
+        setTimeout(
+          () => document.getElementById("wizard-question")?.focus(),
+          0,
+        );
+      } catch (err) {
+        // The description was already saved. Provider unavailability must not
+        // trap the patient here or erase their manual answers.
+        if (mounted.current) {
+          if ([401, 403, 404, 409].includes(err.status)) {
+            setError(err.message);
+            return;
+          }
+          setOrganizationNotice(
+            "Your description is saved. Continue at your own pace; you can review every answer.",
+          );
+          const nextField = stepFields
+            .slice(index + 1)
+            .find((field) => answers[fieldId(field)]?.status === "MISSING");
+          if (nextField) setActiveField(fieldId(nextField));
+          else setReview(true);
+        }
+      } finally {
+        organizingRef.current = false;
+        if (mounted.current) setOrganizing(false);
+      }
+      return;
+    }
     if (current.review_only) {
       setReview(true);
       return;
     }
     const nextField = stepFields
       .slice(index + 1)
-      .find(
-        (field) =>
-          !field.profile_reused ||
-          answers[fieldId(field)]?.status === "MISSING",
-      );
+      .find((field) => answers[fieldId(field)]?.status === "MISSING");
     if (nextField) goTo(nextField);
     else setReview(true);
   }
@@ -393,7 +513,7 @@ export function BaselineForm({
             name={operation ? "clock" : dirty.current ? "file" : "check"}
             size={16}
           />
-          {t(saveState)}
+          {t(organizing ? "Organising what you shared…" : saveState)}
         </span>
       </div>
       <div
@@ -405,10 +525,18 @@ export function BaselineForm({
         aria-valuemax={stepFields.length}
       >
         <span
-          style={{ width: `${(100 * resolved) / Math.max(1, stepFields.length)}%` }}
+          style={{
+            width: `${(100 * resolved) / Math.max(1, stepFields.length)}%`,
+          }}
         />
       </div>
       <ErrorNotice>{error}</ErrorNotice>
+      {organizationNotice && (
+        <p className="profile-prefilled" role="status">
+          <Icon name="check" size={16} />
+          <span>{t(organizationNotice)}</span>
+        </p>
+      )}
       {savedFields.length > 0 && (
         <div className="profile-prefilled">
           <Icon name="check" size={16} />
@@ -433,42 +561,61 @@ export function BaselineForm({
             <Icon name="check" size={38} />
           </div>
           <span className="overline">{t("LOOKING GOOD")}</span>
-          <h2>{t("The essentials, in your own words.")}</h2>
+          <h2 id="wizard-review-title" tabIndex={-1}>
+            {t("The essentials, in your own words.")}
+          </h2>
           <p>
             {t(
               "Take a quick look. You can change any answer or continue with what you’ve shared.",
             )}
           </p>
+          <SymptomOverview
+            session={session}
+            editableFields={availableFields}
+            disabled={navigationDisabled}
+            onEdit={(field) => {
+              setReview(false);
+              goTo(field);
+            }}
+          />
           <div className="wizard-review-list">
-            {availableFields.filter((field) => !field.review_only || answers[fieldId(field)]?.status !== "MISSING").map((field) => {
-              const item = answers[fieldId(field)];
-              return (
-                <button
-                  key={fieldId(field)}
-                  disabled={disabled}
-                  onClick={() => {
-                    setReview(false);
-                    goTo(field);
-                  }}
-                >
-                  <Icon
-                    name={item?.status === "FILLED" ? "check" : "file"}
-                    size={18}
-                  />
-                  <span>
-                    <strong>{t(field.label)}</strong>
-                    <small>
-                      {item?.status === "SKIPPED"
-                        ? t("Prefer not to answer")
-                        : item?.status === "UNCERTAIN"
-                          ? t("I’m not sure")
-                          : item?.value ? recordedValue(item.value, t) : t("Not answered yet")}
-                    </small>
-                  </span>
-                  <Icon name="edit" size={17} />
-                </button>
-              );
-            })}
+            {availableFields
+              .filter(
+                (field) =>
+                  !field.review_only ||
+                  answers[fieldId(field)]?.status !== "MISSING",
+              )
+              .map((field) => {
+                const item = answers[fieldId(field)];
+                return (
+                  <button
+                    key={fieldId(field)}
+                    disabled={disabled}
+                    onClick={() => {
+                      setReview(false);
+                      goTo(field);
+                    }}
+                  >
+                    <Icon
+                      name={item?.status === "FILLED" ? "check" : "file"}
+                      size={18}
+                    />
+                    <span>
+                      <strong>{t(field.label)}</strong>
+                      <small>
+                        {item?.status === "SKIPPED"
+                          ? t("Prefer not to answer")
+                          : item?.status === "UNCERTAIN"
+                            ? `${t("I’m not sure")}${item?.value ? ` — ${recordedValue(item.value, t)}` : ""}`
+                            : item?.value
+                              ? recordedValue(item.value, t)
+                              : t("Not answered yet")}
+                      </small>
+                    </span>
+                    <Icon name="edit" size={17} />
+                  </button>
+                );
+              })}
           </div>
           <div className="wizard-actions">
             <Button
@@ -493,23 +640,30 @@ export function BaselineForm({
           <div className="wizard-question-top">
             <span>{t(group?.title || "Your consultation")}</span>
             <span>
-              {current.review_only ? t("Saved details") : `${index + 1} / ${stepFields.length}`}
+              {current.review_only
+                ? t("Saved details")
+                : `${index + 1} / ${stepFields.length}`}
             </span>
           </div>
           <div className="wizard-emblem">
-            <Icon name={icon} size={36} />
+            <Icon name={dimension?.icon || icon} size={36} />
             <span className="emblem-spark">
               <Icon name="sparkle" size={13} />
             </span>
           </div>
+          <SymptomContext field={current} />
           <h2 id="wizard-question" tabIndex={-1}>
             {t(current.question || current.label)}
           </h2>
           <p className="wizard-question-hint">
             {t(
-              current.hint || (current.input_type === "permission"
-                ? "You decide what you’re comfortable sharing."
-                : guided ? "Choose what fits, or tell us in your own words." : "Tell us in your own words. You can type or use your voice."),
+              current.hint ||
+                dimension?.why ||
+                (current.input_type === "permission"
+                  ? "You decide what you’re comfortable sharing."
+                  : guided
+                    ? "Choose what fits, or tell us in your own words."
+                    : "Tell us in your own words. You can type or use your voice."),
             )}
           </p>
           {current.input_type === "permission" ? (
@@ -562,8 +716,17 @@ export function BaselineForm({
                   inputId={inputId}
                   answer={answer}
                   hideDetails
+                  hideHelper={
+                    current.presentation?.helper ===
+                    (current.hint || dimension?.why)
+                  }
                   onFocus={() => {}}
-                  onChange={(value) => change(current, { value })}
+                  onChange={(value) =>
+                    change(current, {
+                      value,
+                      status: value.trim() ? "FILLED" : "MISSING",
+                    })
+                  }
                   disabled={disabled || voiceBusy}
                 />
               )}
@@ -572,31 +735,59 @@ export function BaselineForm({
                   <div className="previous-answer-heading">
                     <Icon name="clock" size={18} />
                     <strong>{t("Your previous answer")}</strong>
-                    <time dateTime={previousAnswer.recorded_at}>{dateLabel(previousAnswer.recorded_at)}</time>
+                    <time dateTime={previousAnswer.recorded_at}>
+                      {dateLabel(previousAnswer.recorded_at)}
+                    </time>
                   </div>
-                  <p className="previous-answer-value">{previousAnswer.value}</p>
-                  <p className="field-hint">{t("Check whether this is still accurate for this visit. Nothing is filled in until you choose it.")}</p>
+                  <p className="previous-answer-value">
+                    {previousAnswer.value}
+                  </p>
+                  <p className="field-hint">
+                    {t(
+                      "Check whether this is still accurate for this visit. Nothing is filled in until you choose it.",
+                    )}
+                  </p>
                   <Button
                     className="secondary"
-                    disabled={navigationDisabled || answer.value === previousAnswer.value}
-                    onClick={() => change(current, { value: previousAnswer.value, status: "FILLED" })}
+                    disabled={
+                      navigationDisabled ||
+                      answer.value === previousAnswer.value
+                    }
+                    onClick={() =>
+                      change(current, {
+                        value: previousAnswer.value,
+                        status: "FILLED",
+                      })
+                    }
                   >
-                    <Icon name="check" size={16} />{t("Use this answer for this visit")}
+                    <Icon name="check" size={16} />
+                    {t("Use this answer for this visit")}
                   </Button>
                 </aside>
               )}
-              {current.key === "additional_information" && priorDetails.length > 0 && (
-                <details className="remembered-details">
-                  <summary><Icon name="file" size={18} />{t("Already recorded — no need to repeat")}</summary>
-                  {priorDetails.map((field) => (
-                    <div key={fieldId(field)}>
-                      <strong>{t(field.label)}</strong>
-                      <p>{answers[fieldId(field)].value}</p>
-                      <button type="button" className="text-button" disabled={navigationDisabled} onClick={() => goTo(field)}>{t("Edit")}</button>
-                    </div>
-                  ))}
-                </details>
-              )}
+              {current.key === "additional_information" &&
+                priorDetails.length > 0 && (
+                  <details className="remembered-details">
+                    <summary>
+                      <Icon name="file" size={18} />
+                      {t("Already recorded — no need to repeat")}
+                    </summary>
+                    {priorDetails.map((field) => (
+                      <div key={fieldId(field)}>
+                        <strong>{t(field.label)}</strong>
+                        <p>{answers[fieldId(field)].value}</p>
+                        <button
+                          type="button"
+                          className="text-button"
+                          disabled={navigationDisabled}
+                          onClick={() => goTo(field)}
+                        >
+                          {t("Edit")}
+                        </button>
+                      </div>
+                    ))}
+                  </details>
+                )}
               <div className="wizard-answer-status">
                 <button
                   type="button"
@@ -654,6 +845,7 @@ export function BaselineForm({
             <Button
               className="primary"
               disabled={navigationDisabled}
+              busy={organizing}
               onClick={next}
             >
               {t(
@@ -732,8 +924,11 @@ export function SynthesisSummary({
   const { t, locale } = useLocale();
   const [view, setView] = useState(doctor ? "clinician" : "patient");
   const [selectedSources, setSelectedSources] = useState(null);
-  const outdated = synthesis?.status === "live" &&
-    (synthesis.localization_outdated || !synthesis.locale || synthesis.locale !== (patientLocale || locale));
+  const outdated =
+    synthesis?.status === "live" &&
+    (synthesis.localization_outdated ||
+      !synthesis.locale ||
+      synthesis.locale !== (patientLocale || locale));
   const live = synthesis?.status === "live" && (!outdated || preserveApproved);
   const sources = synthesis?.sources || [];
   function citations(ids) {
@@ -774,9 +969,12 @@ export function SynthesisSummary({
               : t("This record contains structured notes")}
           </h3>
           <p>
-            {t(outdated
-              ? "Prepare the summary again to use your selected language. Your recorded answers remain saved."
-              : synthesis?.message || "Generate a concise AI summary from the information you’ve provided. Every statement is linked to the underlying facts.")}
+            {t(
+              outdated
+                ? "Prepare the summary again to use your selected language. Your recorded answers remain saved."
+                : synthesis?.message ||
+                    "Generate a concise AI summary from the information you’ve provided. Every statement is linked to the underlying facts.",
+            )}
           </p>
           {readOnly ? (
             <p className="field-hint">
@@ -802,7 +1000,13 @@ export function SynthesisSummary({
     : [];
   return (
     <section className="synthesis-summary">
-      {outdated && preserveApproved && <p className="notice notice-info" role="status">{t("This shared report keeps the language approved by the patient. Withdraw sharing before preparing a new version in another language.")}</p>}
+      {outdated && preserveApproved && (
+        <p className="notice notice-info" role="status">
+          {t(
+            "This shared report keeps the language approved by the patient. Withdraw sharing before preparing a new version in another language.",
+          )}
+        </p>
+      )}
       <div className="synthesis-heading">
         <div className="synthesis-label">
           <Icon name="sparkle" size={19} />
@@ -907,9 +1111,7 @@ export function SynthesisSummary({
                 {recordLabel(source.label, t)}
                 <span>{slotStatusLabel(source.status, t)}</span>
               </dt>
-              <dd>
-                {recordedValue(source.value, t)}
-              </dd>
+              <dd>{recordedValue(source.value, t)}</dd>
             </div>
           ))}
         </dl>
@@ -941,9 +1143,7 @@ export function SynthesisSummary({
                 <dt>{recordLabel(source.label, t)}</dt>
                 <dd>
                   {recordedValue(source.value, t)}
-                  <small>
-                    {slotStatusLabel(source.status, t)}
-                  </small>
+                  <small>{slotStatusLabel(source.status, t)}</small>
                 </dd>
               </div>
             ))}

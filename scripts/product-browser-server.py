@@ -14,7 +14,7 @@ TEST.mkdir(parents=True, exist_ok=True, mode=0o700)
 # This harness always uses an isolated DB, never the real application data.
 os.environ.update(PRODUCT_DB_PATH=str(TEST / 'test.sqlite3'), UPLOAD_DIR=str(TEST / 'uploads'),
                   OPENAI_API_KEY='', RESEND_API_KEY='', RESEND_FROM_EMAIL='', APP_ENV='local',
-                  APP_BASE_URL='http://127.0.0.1:8001', DOCTOR_EMAILS='', ENABLE_LEGACY_API='0', OPENAI_MODEL='gpt-6-astra')
+                  APP_BASE_URL='http://127.0.0.1:8001', DOCTOR_EMAILS='', ENABLE_LEGACY_API='0', OPENAI_MODEL='gpt-6-sol')
 sys.path.insert(0, str(ROOT / 'backend'))
 from app.product.database import init_db, get_connection, save_intake
 init_db()
@@ -86,7 +86,7 @@ if assessment_fixture.exists():
 from app.product import engine, forms, pipeline
 batch_seed = forms.initialize(engine.new_intake(
     {'id': 'browser-test-patient', 'email': 'patient@example.test', 'name': 'Alex Morgan'},
-    'gpt-6-astra', ['WF-01'], title='Synthetic grouped follow-up'))
+    'gpt-6-sol', ['WF-01'], title='Synthetic grouped follow-up'))
 batch_seed['id'] = 'browser-followup-batch'
 batch_seed['locale'] = 'en'
 batch_concern = batch_seed['concerns'][0]

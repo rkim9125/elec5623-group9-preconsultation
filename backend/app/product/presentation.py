@@ -67,6 +67,15 @@ EPISODE_LENGTH = choices("Less than a minute", "A few minutes", "Up to an hour",
 # Shared and recurring keys use the same neutral prompt only when their meaning
 # is the same across workflows. Topic-specific alternatives take precedence.
 COMMON = {
+    "symptom_onset_character": choices("Suddenly", "Gradually", "Hard to tell", multiple=False),
+    "symptom_episode_duration": EPISODE_LENGTH,
+    "severity": choices("Mild", "Moderate", "Severe", multiple=False,
+                        helper="Choose the intensity you feel. This is separate from how it affects your activities."),
+    "symptom_location": body_map("body", BODY_REGIONS),
+    "aggravating_factors": choices(("Nothing noticed", "I have not noticed anything that makes it worse."),
+                                    helper="Describe anything you have noticed makes it worse. You can say you are unsure."),
+    "relieving_factors": choices(("Nothing noticed", "I have not noticed anything that eases it."),
+                                  helper="Describe anything you have noticed helps. These are your observations, not treatment suggestions."),
     "appointment_goal": choices(("Understand my symptoms", "I would like to understand my symptoms."),
                                 ("Discuss next steps", "I would like to discuss next steps."),
                                 ("Review an existing concern", "I would like to review an existing health concern."),
@@ -106,6 +115,13 @@ TOPICS = {
     "WF-01": {
         "leg.pain_site": body_map("legs", LEG_REGIONS),
         "leg.pain_character": SENSATION,
+        "aggravating_factors": choices(("Movement", "Movement makes it worse."),
+                                      ("Standing", "Standing makes it worse."),
+                                      ("Sitting", "Sitting makes it worse."),
+                                      ("Nothing noticed", "I have not noticed anything that makes it worse.")),
+        "relieving_factors": choices(("Rest", "Rest eases it."),
+                                    ("Changing position", "Changing position eases it."),
+                                    ("Nothing noticed", "I have not noticed anything that eases it.")),
         "leg.activity_context": choices("Walking", "Running", "Climbing stairs", "Standing", "Sitting", "Resting", "Lying in bed"),
         "leg.change_factors": choices(("Changes with movement", "The pain changes with movement."),
                                       ("Changes with rest", "The pain changes with rest."),
@@ -263,4 +279,11 @@ TOPICS = {
 def for_field(workflow_id: str | None, key: str) -> dict | None:
     """Return an independent payload so request-specific changes cannot leak."""
     presentation = TOPICS.get(workflow_id, {}).get(key, COMMON.get(key))
-    return deepcopy(presentation) if presentation else None
+    result = deepcopy(presentation) if presentation else None
+    if result and key == 'severity' and workflow_id in {'WF-01', 'WF-02', 'WF-03', 'WF-04', 'WF-05'}:
+        result['pain_scale'] = True
+    if result and key in {'aggravating_factors', 'relieving_factors'}:
+        for option in result.get('options', []):
+            if option['label'] == 'Nothing noticed':
+                option['exclusive'] = True
+    return result
