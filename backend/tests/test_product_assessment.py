@@ -267,7 +267,7 @@ def test_provider_sends_strict_schema_and_both_media_types(report_app, monkeypat
     body = calls[0]
     assert body['store'] is False and body['model'] == 'gpt-6-sol'
     assert body['text']['format']['strict'] is True
-    content = body['input'][0]['content']
+    content = next(message['content'] for message in body['input'] if message['role'] == 'user')
     assert len([p for p in content if p['type'] == 'input_image']) == 1
     assert len([p for p in content if p['type'] == 'input_file']) == 1
     assert 'PRIVATE' not in json.dumps(body)

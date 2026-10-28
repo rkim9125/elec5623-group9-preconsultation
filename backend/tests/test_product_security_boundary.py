@@ -169,8 +169,8 @@ def test_model_payload_has_no_action_capability_or_other_patient_context(boundar
     with pytest.raises(ProviderUnavailable):
         OpenAIProvider().extract(boundary['alice'], attack)
     payload = captured[0]
-    assert attack in payload['input']
-    assert attack not in payload['instructions']
+    assert attack in next(message['content'] for message in payload['input'] if message['role'] == 'user')
+    assert attack not in payload['input'][0]['content'][0]['text']
     assert payload['store'] is False
     assert not ({'tools', 'tool_choice', 'previous_response_id', 'conversation', 'background'} & payload.keys())
     assert 'SYNTHETIC_BOB_PRIVATE_CANARY' not in json.dumps(payload)
@@ -251,6 +251,8 @@ def test_attachment_instruction_echo_is_not_returned_or_persisted(boundary, monk
     assert database.load_intake(b['bob']['id']) == before
     assert not ({'tools', 'tool_choice', 'previous_response_id', 'conversation'} & captured[0].keys())
     assert captured[0]['store'] is False
+    assert captured[0]['prompt_cache_options'] == {'mode': 'explicit', 'ttl': '30m'}
+    assert 'prompt_cache_breakpoint' not in json.dumps(captured[0])
 
 
 @pytest.mark.parametrize('provider', ['synthesis', 'assessment'])

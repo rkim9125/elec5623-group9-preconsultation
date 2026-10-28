@@ -15,6 +15,7 @@ from typing import Protocol
 import httpx
 
 from .config import get_settings, response_reasoning
+from . import prompt_cache
 from .output_safety import unsafe_model_instruction
 from .locales import language_instruction, translate_text, workflow_title, field_label, prose_matches_locale
 from .followup_copy import followup_copy
@@ -399,9 +400,10 @@ class OpenAIIntelligence:
         settings = get_settings()
         if not settings.openai_api_key:
             raise IntelligenceUnavailable('OpenAI is not configured. Your structured notes are saved; you can review them or retry later.')
-        payload = {'model': model, 'store': False, 'instructions': prompt,
+        payload = {'model': model, 'store': False,
                    **response_reasoning(model, careful=name == 'preparation_synthesis'),
-                   'input': json.dumps(data, ensure_ascii=False),
+                   **prompt_cache.request_fields(model, prompt, json.dumps(data, ensure_ascii=False),
+                       base_url=settings.openai_base_url, reusable=name == 'preparation_synthesis'),
                    'text': {'format': {'type': 'json_schema', 'name': name, 'schema': schema, 'strict': True}},
                    'max_output_tokens': max_output}
         try:
@@ -419,6 +421,7 @@ class OpenAIIntelligence:
             raise IntelligenceUnavailable(messages.get(response.status_code, f'OpenAI returned an error ({response.status_code}).') + ' Your notes are saved. No other model was substituted.')
         try:
             body = response.json()
+            prompt_cache.record_usage(body, model=model, operation=name, base_url=settings.openai_base_url)
             if not isinstance(body, dict) or body.get('status') != 'completed':
                 raise ValueError('incomplete')
             text = ''.join(part['text'] for item in body.get('output', []) if isinstance(item, dict) and item.get('type') == 'message'

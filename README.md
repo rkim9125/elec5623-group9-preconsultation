@@ -78,6 +78,7 @@ anything that doesn't fit.
 - [Frontend integration guide](docs/frontend-integration.md) — how to wire the UI to the backend
 - [Workflow catalogue](docs/workflow-catalogue.md) — 30 non-emergency consultation workflows, shared dialogue/data rules
 - [OLD CARTS symptom history](docs/oldcarts.md) — adaptive coverage, narrative prefill, patient review and remaining gaps
+- [GPT API prompt map](docs/gpt-prompts.md) — prompt definitions, request inputs, language rules and the legacy API path
 - [Setup](docs/setup.md)
 
 ## Patient frontend prototype

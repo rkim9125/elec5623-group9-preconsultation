@@ -265,7 +265,8 @@ def test_real_request_shape_bilingual_prompt_and_scaled_budget(monkeypatch):
     ai.OpenAIIntelligence().synthesize(model='gpt-6-sol',sources=[],concerns=[{'id':str(i),'title':'concern'} for i in range(12)])
     payload=captured[0]['json'];assert payload['store'] is False and payload['model']=='gpt-6-sol'
     assert payload['text']['format']['strict'] is True and 6500<payload['max_output_tokens']<=16000
-    assert 'Chinese' in payload['instructions'] and 'translate' in payload['instructions'] and 'synthetic-key' not in json.dumps(payload)
+    instructions = payload['input'][0]['content'][0]['text']
+    assert 'Chinese' in instructions and 'translate' in instructions and 'synthetic-key' not in json.dumps(payload)
 
 @pytest.mark.parametrize('status',[401,403,404,429,500])
 def test_provider_errors_hide_raw_bodies_and_never_switch_models(monkeypatch,status):

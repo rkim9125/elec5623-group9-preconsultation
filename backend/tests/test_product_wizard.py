@@ -197,8 +197,12 @@ def test_locale_reaches_extraction_and_ai_instructions(wizard_api, monkeypatch):
     provider.OpenAIProvider().extract(pipeline._extraction_view(state), '相談したいです')
     intelligence.OpenAIIntelligence().plan(model=state['model'], sources=[], concerns=[], targets=[], locale='ja')
     intelligence.OpenAIIntelligence().synthesize(model=state['model'], sources=[], concerns=[], locale='ja')
-    assert all(row['model'] == 'gpt-6-astra' and 'Japanese' in row['instructions'] for row in captured)
-    assert all(json.loads(row['input']).get('locale', json.loads(row['input']).get('context', {}).get('locale')) == 'ja' for row in captured)
+    for row in captured:
+        instructions = row.get('instructions') or row['input'][0]['content'][0]['text']
+        user_input = row['input'] if isinstance(row['input'], str) else next(m['content'] for m in row['input'] if m['role'] == 'user')
+        data = json.loads(user_input)
+        assert row['model'] == 'gpt-6-astra' and 'Japanese' in instructions
+        assert data.get('locale', data.get('context', {}).get('locale')) == 'ja'
 
 
 @pytest.mark.parametrize('value,translated', [('没有过敏', '没有已知过敏。'), ('アレルギーなし', 'アレルギーはありません。'), ('알레르기 없음', '알레르기가 없습니다.')])

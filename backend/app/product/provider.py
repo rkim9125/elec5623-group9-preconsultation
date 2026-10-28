@@ -11,6 +11,7 @@ from typing import Protocol
 import httpx
 
 from .config import get_settings, response_reasoning
+from . import prompt_cache
 from .locales import language_instruction
 from .workflows import WORKFLOWS, SIGNALS, question_definitions, SHARED_QUESTIONS
 
@@ -138,11 +139,16 @@ class OpenAIProvider:
             'session_fields': SHARED_QUESTIONS,
             'activation_signals': SIGNALS,
         }
+        reference = None
+        if prompt_cache.enabled(session['model'], settings.openai_base_url):
+            reference = {key: context.pop(key) for key in ('catalogue', 'session_fields', 'activation_signals')}
         payload = {
             'model': session['model'], 'store': False,
             **response_reasoning(session['model']),
-            'instructions': _SYSTEM + language_instruction(session.get('locale', 'en'), verbatim=True),
-            'input': json.dumps({'context': context, 'CURRENT_MESSAGE': text}, ensure_ascii=False),
+            **prompt_cache.request_fields(
+                session['model'], _SYSTEM + language_instruction(session.get('locale', 'en'), verbatim=True),
+                json.dumps({'context': context, 'CURRENT_MESSAGE': text}, ensure_ascii=False),
+                base_url=settings.openai_base_url, reference=reference),
             'text': {'format': {'type': 'json_schema', 'name': 'preconsultation_extraction', 'schema': EXTRACTION_SCHEMA, 'strict': True}},
             'max_output_tokens': 14000,
         }
@@ -169,6 +175,7 @@ class OpenAIProvider:
             raise ProviderUnavailable(message)
         try:
             result = response.json()
+            prompt_cache.record_usage(result, model=session['model'], operation='extraction', base_url=settings.openai_base_url)
             if result.get('status') != 'completed':
                 raise ProviderUnavailable('OpenAI did not complete extraction. Your message is saved; no incomplete output was accepted.')
             output_text = ''.join(part['text'] for item in result.get('output', []) if item.get('type') == 'message' for part in item.get('content', []) if part.get('type') == 'output_text')

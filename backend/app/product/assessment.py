@@ -19,6 +19,7 @@ import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from . import prompt_cache
 from .auth import check_rate_limit, csrf_protect, require_user
 from .output_safety import unsafe_model_instruction
 from .config import get_settings, response_reasoning
@@ -405,9 +406,10 @@ class OpenAIAssessment:
         try:
             response = httpx.post(settings.openai_base_url.rstrip('/') + '/responses',
                 headers={'Authorization': 'Bearer ' + settings.openai_api_key},
-                json={'model': model, 'store': False, 'instructions': prompt,
+                json={'model': model, 'store': False,
                       **response_reasoning(model, careful=True),
-                      'input': [{'role': 'user', 'content': content}],
+                      **prompt_cache.request_fields(model, prompt, [{'role': 'user', 'content': content}],
+                          base_url=settings.openai_base_url),
                       'text': {'format': {'type': 'json_schema', 'name': name, 'schema': schema, 'strict': True}},
                       'max_output_tokens': max_output}, timeout=httpx.Timeout(180, connect=10))
         except httpx.TimeoutException:
@@ -422,6 +424,7 @@ class OpenAIAssessment:
                                 message + ' Your preparation remains saved; no other model was substituted.')
         try:
             body = response.json()
+            prompt_cache.record_usage(body, model=model, operation=name, base_url=settings.openai_base_url)
             if body.get('status') != 'completed':
                 raise ValueError('incomplete')
             parts = [part for item in body.get('output', []) if item.get('type') == 'message' for part in item.get('content', [])]
