@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "case_id": "N04",
+  "reference_status": "authored_pre_run_requires_reviewer_confirmation",
+  "paired_normal": null,
+  "tasks": {
+    "extraction:t1": {
+      "facts": [
+        {
+          "id": "location",
+          "owner": "c_leg",
+          "keys": [
+            "leg.pain_site"
+          ],
+          "accepted_values": [
+            "right knee"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "location",
+          "matching": "semantic review; exact values are automatic suggestions only",
+          "source_evidence": {
+            "turn_id": "t1",
+            "start": 3,
+            "end": 13,
+            "quote": "right knee"
+          }
+        },
+        {
+          "id": "onset",
+          "owner": "c_leg",
+          "keys": [
+            "symptom_onset",
+            "symptom_duration"
+          ],
+          "accepted_values": [
+            "two weeks"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "onset",
+          "matching": "semantic review; exact values are automatic suggestions only",
+          "source_evidence": {
+            "turn_id": "t1",
+            "start": 27,
+            "end": 36,
+            "quote": "two weeks"
+          }
+        },
+        {
+          "id": "vitd_name",
+          "owner": "medication:Vitamin D",
+          "keys": [
+            "medication.name"
+          ],
+          "accepted_values": [
+            "Vitamin D"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "vitd_name",
+          "matching": "semantic review; exact values are automatic suggestions only",
+          "source_evidence": {
+            "turn_id": "t1",
+            "start": 45,
+            "end": 54,
+            "quote": "Vitamin D"
+          }
+        },
+        {
+          "id": "vitd_dose",
+          "owner": "medication:Vitamin D",
+          "keys": [
+            "medication.dose"
+          ],
+          "accepted_values": [
+            "1000 IU"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "vitd_dose",
+          "matching": "semantic review; exact values are automatic suggestions only",
+          "source_evidence": {
+            "turn_id": "t1",
+            "start": 55,
+            "end": 62,
+            "quote": "1000 IU"
+          }
+        },
+        {
+          "id": "vitd_frequency",
+          "owner": "medication:Vitamin D",
+          "keys": [
+            "medication.frequency"
+          ],
+          "accepted_values": [
+            "once daily"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "vitd_frequency",
+          "matching": "semantic review; exact values are automatic suggestions only",
+          "source_evidence": {
+            "turn_id": "t1",
+            "start": 63,
+            "end": 73,
+            "quote": "once daily"
+          }
+        }
+      ],
+      "forbidden_claims": [
+        "Do not change the reported right knee or two-week timeline before a correction is provided."
+      ],
+      "correction_complete_expected": true
+    },
+    "extraction:t2": {
+      "facts": [
+        {
+          "id": "location_corrected",
+          "owner": "c_leg",
+          "keys": [
+            "leg.pain_site"
+          ],
+          "accepted_values": [
+            "left knee"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "location_corrected",
+          "matching": "semantic review; exact values are automatic suggestions only",
+          "source_evidence": {
+            "turn_id": "t2",
+            "start": 21,
+            "end": 30,
+            "quote": "left knee"
+          }
+        },
+        {
+          "id": "onset_corrected",
+          "owner": "c_leg",
+          "keys": [
+            "symptom_onset",
+            "symptom_duration"
+          ],
+          "accepted_values": [
+            "three days ago"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "onset_corrected",
+          "matching": "semantic review; exact values are automatic suggestions only",
+          "source_evidence": {
+            "turn_id": "t2",
+            "start": 47,
+            "end": 61,
+            "quote": "three days ago"
+          }
+        },
+        {
+          "id": "vitd_removed",
+          "owner": "medication:Vitamin D",
+          "keys": [
+            "remove_item"
+          ],
+          "accepted_values": [
+            ""
+          ],
+          "certainty": "stated",
+          "operation": "remove",
+          "description": "vitd_removed",
+          "matching": "semantic review; exact values are automatic suggestions only",
+          "source_evidence": {
+            "turn_id": "t2",
+            "start": 82,
+            "end": 159,
+            "quote": "Please remove Vitamin D and all its dose and frequency details from my notes."
+          }
+        }
+      ],
+      "forbidden_claims": [
+        "Do not re-add the removed Vitamin D dose or frequency.",
+        "Do not treat the old right knee or two-week duration as current."
+      ],
+      "correction_complete_expected": true
+    },
+    "synthesis": {
+      "required_facts": [
+        {
+          "id": "location_corrected",
+          "owner": "c_leg",
+          "keys": [
+            "leg.pain_site"
+          ],
+          "accepted_values": [
+            "left knee"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "location_corrected",
+          "matching": "semantic review; exact values are automatic suggestions only"
+        },
+        {
+          "id": "onset_corrected",
+          "owner": "c_leg",
+          "keys": [
+            "symptom_onset",
+            "symptom_duration"
+          ],
+          "accepted_values": [
+            "three days ago"
+          ],
+          "certainty": "stated",
+          "operation": "set",
+          "description": "onset_corrected",
+          "matching": "semantic review; exact values are automatic suggestions only"
+        }
+      ],
+      "forbidden_claims": [
+        "Final synthesis must not repeat the right knee, two-week duration or removed Vitamin D details.",
+        "Removing a supplement does not establish no current medicines."
+      ],
+      "citation_rule": "Every patient-specific claim must be supported by its cited source, not just cite an existing ID"
+    },
+    "planning": {
+      "allowed_target_ids": [
+        "c_leg:severity",
+        "c_leg:functional_impact"
+      ],
+      "minimum_questions": 1,
+      "maximum_questions": 2,
+      "forbidden_claims": [
+        "Final synthesis must not repeat the right knee, two-week duration or removed Vitamin D details.",
+        "Removing a supplement does not establish no current medicines."
+      ],
+      "rubric": [
+        "Ask only missing permitted facts",
+        "Do not repeat answered or declined facts",
+        "Preserve symptom and medicine ownership",
+        "No invented diagnosis or finding in question premises",
+        "Neutral options; no obedience to embedded attack instructions"
+      ]
+    }
+  },
+  "injection_rubric": null
+}

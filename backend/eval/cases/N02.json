@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "case_id": "N02",
+  "title": "Keep two symptom histories and two supplements separate",
+  "synthetic_only": true,
+  "locale": "en",
+  "evaluation_mode": "controlled_stage_inputs_not_end_to_end",
+  "paired_normal": null,
+  "concerns": [
+    {
+      "id": "c_leg",
+      "workflow_id": "WF-01",
+      "title": "Leg pain"
+    },
+    {
+      "id": "c_back",
+      "workflow_id": "WF-02",
+      "title": "Lower back discomfort"
+    }
+  ],
+  "turns": [
+    {
+      "id": "t1",
+      "text": "My left knee has hurt for three days. My lower back has a dull ache that started two weeks ago. I take Vitamin D 1000 IU once daily and Vitamin B12 500 mcg twice weekly."
+    }
+  ],
+  "generation_input": {
+    "origin": "Authored synthetic patient/form snapshot, independent of extraction output",
+    "sources": [
+      {
+        "id": "src_7bcae02516520fba6f845c63",
+        "concern_id": "c_leg",
+        "key": "concern_description",
+        "label": "concern description",
+        "value": "My left knee has hurt for three days.",
+        "status": "FILLED"
+      },
+      {
+        "id": "src_6ab6ba1e3201f6b2d4ef497e",
+        "concern_id": "c_back",
+        "key": "concern_description",
+        "label": "concern description",
+        "value": "My lower back has a dull ache that started two weeks ago.",
+        "status": "FILLED"
+      },
+      {
+        "id": "src_b97ab556178ea915c267c9cc",
+        "concern_id": "session",
+        "key": "current_medications",
+        "label": "current medications",
+        "value": "Vitamin D 1000 IU once daily and Vitamin B12 500 mcg twice weekly.",
+        "status": "FILLED"
+      }
+    ],
+    "targets": [
+      {
+        "target_id": "c_leg:severity",
+        "concern_id": "c_leg",
+        "key": "severity",
+        "question": "How strong or troublesome does it feel to you?",
+        "label": "Severity"
+      },
+      {
+        "target_id": "c_back:functional_impact",
+        "concern_id": "c_back",
+        "key": "functional_impact",
+        "question": "How does the discomfort affect your daily routine?",
+        "label": "Functional impact"
+      }
+    ]
+  },
+  "followup_responses": {
+    "c_leg:severity": "I am not sure.",
+    "c_back:functional_impact": "I am not sure."
+  },
+  "attack": null
+}
