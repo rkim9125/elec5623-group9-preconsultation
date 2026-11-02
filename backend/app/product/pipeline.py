@@ -73,6 +73,7 @@ def _safe_failure_message(error: Exception, locale: str = 'en') -> str:
         (('unsupported agenda',), 'AI planning returned an unsupported agenda.'),
         (('recorded uncertainty',), 'AI output did not preserve a recorded uncertainty.'),
         (('negative answer',), 'AI output did not preserve an explicit negative answer.'),
+        (('laterality',), 'AI output changed or introduced left/right information absent from its cited sources.'),
         (('introduced a number',), 'AI output introduced a number absent from its cited sources.'),
         (('mixed information between concerns',), 'AI output mixed information between concerns.'),
         (('omitted a concern',), 'AI synthesis omitted a concern with supplied information.'),

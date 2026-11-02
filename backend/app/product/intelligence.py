@@ -141,7 +141,142 @@ _FORBIDDEN = re.compile(
 )
 _NEGATIVE_SOURCE = re.compile(r'(?i)\b(?:no(?: known)?|none|denies|never|not taking|do not|don.t|does not|doesn.t|without)\b|没有|沒有|無|无|否认|否認|未服|なし|ない|ありません|없|않')
 _NEGATIVE_OUTPUT = re.compile(r'(?i)\b(?:no|none|denies|denied|never|not|without|negative|hasn.t|haven.t|doesn.t|don.t)\b|没有|沒有|無|无|否认|否認|未服|なし|ない|ありません|없|않')
-_UNCERTAINTY = re.compile(r'(?i)\b(?:unknown|uncertain|unsure|not (?:yet )?(?:known|supplied|provided|collected|recorded|recalled|available|shared|stated|specified|confirmed)|missing|uncollected|skipped|chose not to|preferred not to|prefer not to|declin\w*|withheld|incomplete|not remember|cannot recall|could not recall|not sure|unavailable|unresolved)\b|未知|不确定|不確定|不清楚|未提供|未收集|未记录|未記錄|跳过|跳過|不愿|不願|未确认|未確認|不明|わから|未回答|回答を控|不確か|확실하지|모르|알 수 없|미제공|미확인|응답하지|건너뛰')
+_UNCERTAINTY = re.compile(
+    r'(?i)\b(?:unknown|uncertain|unsure|not (?:yet )?(?:been )?(?:known|supplied|provided|collected|'
+    r'recorded|recalled|available|shared|stated|specified|confirmed|completed|entered|filled(?: in)?|'
+    r'know|remember|recall|provide|supply|record|specify|say|quantified)|'
+    r'(?:don[’\x27]t|doesn[’\x27]t|didn[’\x27]t) (?:know|remember|recall)|'
+    r'(?:cannot|can[’\x27]t|could not|unable to) (?:recall|remember)|'
+    r'no (?:[\w-]+[ ,]+){0,18}(?:(?:was|were|is|are|has been|have been) )?'
+    r'(?:supplied|provided|collected|recorded|shared|stated|specified|entered)|'
+    r'(?:field|fields|entry|entries)\b[^.!?;]{0,100}\b(?:blank|empty|unfilled|no entr(?:y|ies)|no (?:further )?(?:symptom )?details)|'
+    r'missing|uncollected|unfilled|skipped|chose not to|preferred not to|prefers? not to|declin\w*|'
+    r'withheld|incomplete|not sure|unavailable|unresolved)\b|'
+    r'未知|不确定|不確定|不清楚|未提供|未收集|未记录|未記錄|跳过|跳過|不愿|不願|未确认|未確認|'
+    r'不明|わから|未回答|回答を控|不確か|확실하지|모르|알 수 없|미제공|미확인|응답하지|건너뛰'
+)
+
+# A conservative exception for a short, affirmative excerpt of a longer source.
+# These tokens remove reporting wrappers, not polarity, uncertainty or facts.
+_REPORTING_WORDS = set('''a an the i me my you your he his she her they their them we our it its
+    patient patients report reports reported reporting describe describes described says say
+    discuss discussed discussion named concern concerns symptom symptoms calls
+    is are was were am be been being has have had do does of in on at to for from with about
+    and that this these those as s per'''.split())
+_FACT_WORD_FORMS = {
+    'allergies': 'allergy', 'medicines': 'medicine', 'medications': 'medicine', 'medication': 'medicine',
+    'drugs': 'medicine', 'drug': 'medicine', 'vitamins': 'supplement', 'vitamin': 'supplement',
+    'supplements': 'supplement', 'aches': 'pain', 'ache': 'pain', 'aching': 'pain', 'pains': 'pain',
+    'discomfort': 'pain', 'episodes': 'episode', 'lasting': 'last', 'lasts': 'last',
+    'started': 'onset', 'starting': 'onset', 'began': 'onset', 'beginning': 'onset',
+    'gradually': 'gradual', 'resting': 'rest', 'rested': 'rest', 'tried': 'try', 'trying': 'try',
+    'comes': 'come', 'goes': 'go',
+}
+
+
+def _claim_parts(text: str) -> list[str]:
+    # Do not split lists at commas or "and": "no fever and chills" is still negative.
+    return [part.strip() for part in re.split(r'(?<!\d)[.!?。！？;；]+|\bbut\b', text, flags=re.I) if part.strip()]
+
+
+def _fact_words(text: str) -> set[str]:
+    return {_FACT_WORD_FORMS.get(word, word) for word in re.findall(r'[^\W_]+', text.casefold()) if word not in _REPORTING_WORDS}
+
+
+def _supported_affirmative_excerpt(text: str, cited: list[dict]) -> bool:
+    """Allow only explicit known wording to bypass an unrelated status/negation.
+
+    This is lexical overlap, not semantic entailment. Unsupported paraphrases keep
+    the existing conservative rejection; a FILLED citation alone is insufficient.
+    """
+    if _NEGATIVE_OUTPUT.search(text) or _UNCERTAINTY.search(text):
+        return False
+    wanted = _fact_words(text)
+    positive, protected = set(), set()
+    for source in cited:
+        for part in _claim_parts(source.get('value') or ''):
+            words = _fact_words(part)
+            if source['status'] != 'FILLED' or _NEGATIVE_SOURCE.search(part) or _NEGATIVE_OUTPUT.search(part) or _UNCERTAINTY.search(part):
+                protected.update(words)
+            else:
+                positive.update(words)
+    return bool(wanted) and wanted.issubset(positive) and not wanted.intersection(protected)
+
+
+def _requires_negative(text: str, source: dict, cited: list[dict]) -> bool:
+    """Keep negation when discussing its topic; allow other facts in a mixed source.
+
+    Pure negative/short answers stay strict. In mixed prose, each output clause
+    must overlap an affirmative source clause and avoid the negative topics.
+    This exception is deliberately lexical and is not a general fact checker.
+    """
+    positive, negative = set(), set()
+    for part in _claim_parts(source.get('value') or ''):
+        words = _fact_words(part)
+        if _NEGATIVE_SOURCE.search(part) or _NEGATIVE_OUTPUT.search(part) or _UNCERTAINTY.search(part):
+            negative.update(words)
+        else:
+            positive.update(words)
+    if not positive:
+        return True
+    # A paragraph may also summarize affirmative facts from its other citations.
+    for other in cited:
+        if other['status'] == 'FILLED':
+            for part in _claim_parts(other.get('value') or ''):
+                if not (_NEGATIVE_SOURCE.search(part) or _NEGATIVE_OUTPUT.search(part) or _UNCERTAINTY.search(part)):
+                    positive.update(_fact_words(part))
+    for part in _claim_parts(text):
+        words = _fact_words(part)
+        if words.intersection(negative) or not words.intersection(positive):
+            return True
+    return False
+
+
+# Bind side to a named body part, rather than pooling "left" and "right" across
+# all citations. This intentionally covers explicit wording, not arbitrary prose.
+_BODY_TERMS = {
+    'knee': r'knees?|膝|무릎', 'shoulder': r'shoulders?|肩|어깨',
+    'wrist': r'wrists?|手首|手腕|손목', 'ankle': r'ankles?|足首|脚踝|腳踝|발목',
+    'calf': r'calf|calves|ふくらはぎ|小腿|종아리',
+    'leg': r'legs?|腿|脚|腳|다리', 'arm': r'arms?|腕|팔',
+    'hand': r'hands?|手|손', 'foot': r'feet|foot|足|발',
+    'eye': r'eyes?|眼|目|눈', 'ear': r'ears?|耳|귀',
+    'hip': r'hips?|股関節|髋|髖|엉덩이', 'elbow': r'elbows?|肘|팔꿈치',
+}
+_BODY_PATTERN = '|'.join(f'(?P<{key}>{value})' for key, value in _BODY_TERMS.items())
+_SIDE_PATTERN = r'left|right|both|bilateral|左(?:側|侧)?|右(?:側|侧)?|両|双|雙|양쪽|왼쪽|오른쪽'
+_SIDE_BEFORE_BODY = re.compile(
+    r'(?<![a-z])(?P<side>' + _SIDE_PATTERN + r')(?:(?:[- ](?:sided?|of|the|lower|upper|my|your|his|her|their))?[- ]*)'
+    r'(?P<body>' + _BODY_PATTERN + r')(?![a-z])', re.I)
+_SIDE_AFTER_BODY = re.compile(
+    r'(?<![a-z])(?P<body>' + _BODY_PATTERN + r')'
+    r'(?:\s+(?:pain|aching|ache|discomfort|is|on|in|the|my|your|his|her|their|side)){0,6}'
+    r'\s+(?P<side>left|right|both|bilateral)\b', re.I)
+
+
+def _laterality_facts(text: str) -> set[tuple[str, str]]:
+    facts = set()
+    for pattern in (_SIDE_BEFORE_BODY, _SIDE_AFTER_BODY):
+        for match in pattern.finditer(text):
+            body = next(key for key in _BODY_TERMS if match.group(key))
+            side = match['side'].casefold()
+            sides = ('left',) if side.startswith(('left', '左', '왼')) else ('right',) if side.startswith(('right', '右', '오른')) else ('left', 'right')
+            facts.update((body, value) for value in sides)
+    return facts
+
+
+def _check_laterality(text: str, cited: list[dict]) -> None:
+    supplied = {fact for source in cited for fact in _laterality_facts(source.get('value') or '')}
+    # Structured side-only fields need their anatomical label/key to be readable.
+    for source in cited:
+        value = (source.get('value') or '').strip()
+        if re.fullmatch(_SIDE_PATTERN, value, flags=re.I):
+            label = str(source.get('key', '')).replace('_', ' ').replace('.', ' ') + ' ' + str(source.get('label', ''))
+            for body, pattern in _BODY_TERMS.items():
+                if re.search(r'(?<![a-z])(?:' + pattern + r')(?![a-z])', label, flags=re.I):
+                    supplied.update(_laterality_facts(value + ' ' + body))
+    if not _laterality_facts(text).issubset(supplied):
+        raise IntelligenceUnavailable('AI output changed or introduced laterality in its cited sources. Your structured notes remain available.')
 
 
 def source_id(owner: str, key: str, value: object, status: str) -> str:
@@ -264,12 +399,15 @@ def _validate_cited(entry: object, sources: dict[str, dict], *, text_key: str = 
         if owner is not None and source['concern_id'] != owner:
             raise IntelligenceUnavailable('AI output mixed information between concerns. Your structured notes remain available.')
         cited.append(source)
-    # A solely uncertain/omitted source cannot support a positive factual assertion.
-    if any(s['status'] != 'FILLED' for s in cited) and not _UNCERTAINTY.search(text):
+    # A known excerpt can cite a mixed record without repeating unrelated gaps.
+    # Never let an arbitrary FILLED citation turn an unknown into a definite fact.
+    if (any(s['status'] != 'FILLED' for s in cited) and not _UNCERTAINTY.search(text)
+            and not _supported_affirmative_excerpt(text, cited)):
         raise IntelligenceUnavailable('AI output did not preserve a recorded uncertainty. Your structured notes remain available.')
     negative = [s for s in cited if s['status'] == 'FILLED' and _NEGATIVE_SOURCE.search(s.get('value') or '')]
-    if negative and not _NEGATIVE_OUTPUT.search(text):
+    if any(_requires_negative(text, source, cited) for source in negative) and not _NEGATIVE_OUTPUT.search(text):
         raise IntelligenceUnavailable('AI output did not preserve an explicit negative answer. Your structured notes remain available.')
+    _check_laterality(text, cited)
     # New numeric readings, dates and doses may not appear without source support.
     supplied_numbers = {n for s in cited for n in _numeric_tokens(s.get('value') or '')}
     output_numbers = _numeric_tokens(text)

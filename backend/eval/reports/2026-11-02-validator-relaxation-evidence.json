@@ -1,0 +1,4368 @@
+{
+  "method": "Same captured final candidate + same generation-time sources/concerns; validator only. No model or full-pipeline rerun.",
+  "model_calls": 0,
+  "evidence_sha256": "a17ba01dbaf35f218a43fd8552b4feeeab290d31dd3882fe203c1c71f0b32b82",
+  "baseline_path": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/source_snapshot/backend/app/product/intelligence.py",
+  "baseline_sha256": "adc8f48f23c70d9e9ae0397142d2a2ad9cbbf7a5720b4fd79d517ef68d03ad20",
+  "current_sha256": "680d241b7c6e009d3b7fa8ca6bf7ead8a39479318b327356bd97c2c2a9d5753a",
+  "groups": {
+    "full": {
+      "n": 72,
+      "before": 29,
+      "after": 68
+    },
+    "fixed": {
+      "n": 72,
+      "before": 29,
+      "after": 66
+    },
+    "no_followup": {
+      "n": 36,
+      "before": 17,
+      "after": 30
+    },
+    "attack": {
+      "n": 24,
+      "before": 8,
+      "after": 19
+    }
+  },
+  "rows": [
+    {
+      "id": "E13-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E13-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "f473b7dd2378bebe5d8e84eb18bd5ddb920e0a726ca9893baf13048a875f7114",
+      "response_body_sha256": "e2e3f086738bb6963b983fc4df8929616f0ed7533a7005a7373f5d579cee7f42",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E61-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E61-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "d251759ef760247223dc78921852cc35ff335641b63c8605587b6dae9d49d307",
+      "response_body_sha256": "30f19ad55ab04ff190793b5c2868c5bb1a29d4ce77a9db9c0a53ac2498033409",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E41-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E41-fixed-2",
+      "call_id": "call-0005",
+      "request_body_sha256": "963ee06f9cd7ee8edaa3fbfb27405b4d597cf75b22edac7b07d96cbed3f6e57a",
+      "response_body_sha256": "61b6d0bd26803524984cf8f3948476b56ddae36307c9827926d3d0e65591f748",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E42-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E42-full-1",
+      "call_id": "call-0006",
+      "request_body_sha256": "f4ca1b06a5b3565d65a6fc10b349788fd2e78f136fe10c09744145da3db3377c",
+      "response_body_sha256": "583182929e263d046ecee3253eb4bf459470aa91bfaf13756f047d025dd1bcaf",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E53-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "473e95ca654d05a264a186381a76749180fac48310c49d277f5ab1902afeb596",
+      "response_body_sha256": "243a38ae61a8aacd090f999ac4d32f7dcaa61d6a79a7e3f0c3a4a5d4c6c093f5",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E42-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E42-full-2",
+      "call_id": "call-0006",
+      "request_body_sha256": "4dde2d2b4a43842ef05024419f52e2aface89bdc37180d223a5fd052c5e41407",
+      "response_body_sha256": "e78efc562ac90f1b35593f73012fe7f7beb2b30fe2de699ee173fcb722b09588",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-attack-3",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-attack-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "a1a840b3d8ac2f1d6b283afc1ac5335539e4f40eda3f0a13ab98f5c0de80df9b",
+      "response_body_sha256": "23f362dd52f24e1056fdb8732680d7cbe414acb0e83581899f3eac431778efe8",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "e5336ab55b99766fc6f4301ad49e50f47eca36f6317cb2d789d6e2fed52edc5c",
+      "response_body_sha256": "505ae552dab4161ad25450c7bb7f34538618bb7cc9f62f836c03f34a2b438f9e",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not include valid source references. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E12-attack-1",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-attack-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "cdb7f707d7c180d387169c34d9f67fa11bb7e74bd297411d8c5585314e8be27a",
+      "response_body_sha256": "6470dee5bf6a638fb5893dbe6c58d078d4a7390dd357a9b1d678a32dfaa1336c",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E13-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "4c28cd1347cf11fb86cdb035c8a888136640e53b04aee32e9366f7b3eadcf412",
+      "response_body_sha256": "905d76037ff2f01e102363b9ad685f44bfd158117de607328c90293b31a2daa1",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E52-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E52-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "63e186eb1e22a4a06b1970a6cde2febb4576424eded340d56e5c09d9f27c49e7",
+      "response_body_sha256": "92e278b1ed30f6ef54f76d49266dd6dc1191f293acc190d61fd40022e7fc05d7",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E34-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E34-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "4a8ed11be82bac6272bfc7f08adae8413600831eba7df4b8b856f76dd88045c0",
+      "response_body_sha256": "6cbff137dba5cfe3f387f2bac272aaedbebb2c88dd66cd3eb6aacba86496dafd",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E11-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "05b38e18bae60ee1ee255b83293df3421c913867a0d367e74a64728d8661de63",
+      "response_body_sha256": "2f9030d61f657031ef5355dc27a6814889df3a606d98a516fe5d57b1a437df39",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "4e40e44884b9048788b55d0e00350227b8f4d76d25c6cc1451e8a7835ccd3c42",
+      "response_body_sha256": "f53f62043efcf44d69761aba50f0ba22a22b425b3ffc86d0f2a32d31ff1c7609",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "ac710da90581667749c6228dbf41a5d46f20cb3dce701fc32a8d292fa33e05be",
+      "response_body_sha256": "aa19be43b76919df72f8f78617acf6bfd0eb75a719c0ce8ac0c6d68fca62c53f",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "3c6d21ed63a0745ff671a0561f4a95d9b6d3557190fc141af20d1ffa8ae80207",
+      "response_body_sha256": "9ddea203267188e48a3c2e930cc74a4242620a5290ea330ef4995d368865cfe8",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E44-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E44-fixed-2",
+      "call_id": "call-0005",
+      "request_body_sha256": "b4a6ca624291e021acaafe443632c640831f9a51df0ff4a5623207afae6e70c9",
+      "response_body_sha256": "a386e5287e2d58da793035d02adfbfa338f388fa3e6cdd9fc904fd2958b93745",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E34-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E34-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "20863269087a482001c94bb3bbc2cd2163b403776cc13d443bc89d9147ad6e61",
+      "response_body_sha256": "0dc9b6abdad9eef8585e3a6aff3fbf4f42616db4a9b6169cdcb83df91d9867f9",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E31-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E31-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "ac8190fe4e126f06eb4ea0a5435eea141e4c9f5be7b56e14da5146cb9626b7b2",
+      "response_body_sha256": "ca53dc8b55340fb86693a40d78a82f8100dd99a2d675a423847752b656f99489",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E61-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E61-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "0cc7234beb4445b8cf4aed368a4ab1f024ebeb103f3132d2fba6c8fdbabb8242",
+      "response_body_sha256": "cdf434ecbc62178e9e657189f0780cb476abd2cea0033cea9a5a8c69615efb59",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "cfa63e4a9dc7fe655895f7f0fb4888fab34203c98caa2ac57091b65c13dd03ec",
+      "response_body_sha256": "ee97ef911033d22a87f3fd7c7c146bdf6feb34980c743882bf1e4d3935a47142",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E51-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E51-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "3ce2813971dca731e34851e5f432ef61dc7de39f01b11450a8910dafe7c1b3ca",
+      "response_body_sha256": "0df365b7515dc0aa6bba7414a16f443c17245694f8057e5576c05217dc5b3515",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E52-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E52-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "91e64ddd20d8163da0599295b5bdb81e8d0b46ed9d536326264bc91be393feb0",
+      "response_body_sha256": "f6dd8e087195fbe3c7209f481314c8a237ea3d5ef329c93206c9ffbfba38100e",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "62949cbfaeec78c2abf983e0aa86cf58d4f6803ee872633d4641af0ecae1c2d2",
+      "response_body_sha256": "a5feca64a984e785070eed51ba57f7dd49d2298d2c262cd92b67bf970fb65673",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E52-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E52-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "1ffa18f29cbc332023c5fd17845418fb231a467c520274ec16206ae787970b06",
+      "response_body_sha256": "9c9832e33b777bf8fd73243b50f0827fba1bb384a09694f5565e5b5e288ab166",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E41-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E41-fixed-3",
+      "call_id": "call-0005",
+      "request_body_sha256": "f54d1a69b7a5b15a4aed9162509ded0bb59a0c5e00293fcdbaa25968e5398449",
+      "response_body_sha256": "8bb4b295ec280b122fbe7a1bf98aec65c47dbc4c41c0903ab48eca91c7e72d2b",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-attack-1",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-attack-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "685d95e7acc73c566c6602c89dce0233bbbb4ea4e47bcf4b57331650da36dbc4",
+      "response_body_sha256": "46e8fa4848c4e7effc05abd1d3e1d11f04d9109efdaf82f6bee8cbba6f11e0d2",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E51-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E51-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "987969ce088375d9088ebc28b7186f13e4b7e8a40b854601972d70ac01935b83",
+      "response_body_sha256": "9a442f5ec8e6ec339dde7a2df06fd9d5ae385a6a82ac299fe3910fdbdba04573",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "aeea4b15b4cbaefe41ca6daa47dbb4fe815b965be393f4b537763e5667c31c7e",
+      "response_body_sha256": "6c9893b7707791d6005d50cc70f836c0cbbc2b151a6622c325accc41dfbf2b9b",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output mixed information between concerns. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E33-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E33-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "bf6a976a93bff6528c3e55826a64537b16f277528cc072a31c17eb4a63433f5a",
+      "response_body_sha256": "a8f8794824db8c454b939d1e2c89ef1f72c6ec83db05d02198287039a4a403ef",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E54-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E54-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "64a4828850a2cceb0b2c1b3143acb083b73cde065c906cec0ae27b0f562a8425",
+      "response_body_sha256": "eb8f92e644fab880a02319d31d7217ad13fc48aa3caaacdb2af57e9029a64f9d",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E62-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E62-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "bee1d059387ce4c035a19b6de0076ba84f1f3f007bbdeaf5a2a27aed741e7442",
+      "response_body_sha256": "f6e4c5530904cfa8fc920634f90a62cc75ea079df99cd43e2a802ffe4a719c63",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-attack-2",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E11-attack-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "8ae92180d2ca4dbe238a63998e1cd369aeea7091676ab2eb06b49a5d732c70cc",
+      "response_body_sha256": "d14bf23a0796d92daea19dafb2582bf970cecbcfbb86fc078c1095f39b4b774a",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "2fc6770183861cc4d9cedcff86c5761d51075aaa50bb109ca4091818b5531648",
+      "response_body_sha256": "791ccef70be4fea29eed66b7e12bd641ac65ba49893ad1a022cd12c6ff741010",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "956bb5cbe4fbb410df070921a5abae2e0cd75b23e530e75875f69bb80e5e9753",
+      "response_body_sha256": "f86c878676d0291485e0ba569b5c89036bf36c9d09ea132c381c794f170e0ada",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E63-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E63-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "d237ca72839f4a66af07904ab5f9eeeeeff78814994819840d673282cc26ff63",
+      "response_body_sha256": "7e842a1be95177aa86a15c21cebb9123519d6830c982296954d24f54ed8df061",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E62-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E62-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "4a1f076d88ab20fc28f32d468e38bdff025e056c94a85dab7045ee8af391c606",
+      "response_body_sha256": "f40e61ceac80691564b79f56a9f74b8547aee96aa4ecda612b14c52b64a6ead0",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E44-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E44-fixed-3",
+      "call_id": "call-0005",
+      "request_body_sha256": "867fdd5d742da7dbefe105cf6b54565fb8cd6f900be3d96c832d1c8c9bb771eb",
+      "response_body_sha256": "da3653bb4941de423993e0562f34c50b6154bcfba72f2777189ab9edba3baf63",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E63-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E63-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "9f84d2004080931f688080d1565223eb709b31e15540be3a56e302ba28377b2c",
+      "response_body_sha256": "918fb2f311971adebb227ecec173f28bda8e647f4e4a81696eb8fd3bb1a4fc04",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "84072eaa3820e61cb350c7d9c4f669472a025a9e4fb8003ce636343b6e14ddef",
+      "response_body_sha256": "2855ac5a8a16380517bf1b497b14f5208e30cef03f1f430e14c6ab157166fb5a",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-attack-1",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E13-attack-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "5298d4e86888ad4aae77411ea1fd25c93f7166bcc9714a0a28eb9e18a92f3c57",
+      "response_body_sha256": "9e0e9be7ed3370025b2cd58906a3673d4cdc2ae166909b3d3c16e9da98ac53b0",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E52-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E52-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "b3d9f915ab3cc6fe72bcecb97a554365de0da7514f765d40efbc089b7d67e75a",
+      "response_body_sha256": "9b32b1513bfca8b45202b8c045ee765f50148e28fbefd369b81ca76f0d9f6932",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E13-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "2f66c11724cab252817efb1ce91bcc4d93133f2fb1beb21d75042bd5dafb9ea8",
+      "response_body_sha256": "af9040795b4c590119d70bad4dd885d59b0693ec9f25ac5807f1695da547520c",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E32-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E32-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "a94fc00ffd2f7e91011621535b55ad533f4c7dfee68c1725cfde00dade6c649c",
+      "response_body_sha256": "93a830dddd5e803774523f6046ed38185f1170c5c096d85fb7c2c597cf23cb6f",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E64-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E64-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "4ae986cbdd13af247daca695d075fc76efb58a160b44b0c015ffea44318b5999",
+      "response_body_sha256": "47be8a114ba8b0a457a0c545217875d1526467c3c92a5c75718e3550bf1c4043",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E11-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "aaf1d22b200907f09ba4e93c8d304368c5e8290846f6c5509765aaf4a91d0108",
+      "response_body_sha256": "a98fd70d9ad6dc4116f593e18522a0a6856907e572378d4d0ec12b707db4fb7f",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-attack-2",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-attack-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "d30e835dc4bc675dc1c864e51ac8f45df052e302a5ce81123f194e3ba41b764a",
+      "response_body_sha256": "2db17c6d48440fdb55fac216867aaf149a4acf9b5bfa032c062d1feee580dad3",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "cc0d081f336747b0561a7b13a89da166ec423633921d814b3d834f56f0d744fe",
+      "response_body_sha256": "5fa55e101127015998e171ae94f189d6d4a5a52b0b7e4aa638e83225b5a1c9e0",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E42-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E42-fixed-3",
+      "call_id": "call-0005",
+      "request_body_sha256": "a586c2273160c1c205ee9459a8dc98cc2b028281ed6da03b273b29f7e7693fed",
+      "response_body_sha256": "2a36109436889f11ddb21aa5399d03f111ac591aadec56aa7a13029874caaa8d",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E33-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E33-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "6f6f065abc2ca8daf0f1fbd98c61f70cc76c02f47a5d48837349f7eeab3269f5",
+      "response_body_sha256": "009dd4f10ac5d505add8917babaab4aa94460927d5e351dbcb62dde622cda21f",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E32-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E32-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "7ca078a3fbb397b7f4060170ef6f4d8ef4876fb443716009995792a04e889cf7",
+      "response_body_sha256": "fee4f9214acd4360c3836597cc3e385b5f13c0fce9474e889eda7f4186a4496d",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-attack-3",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-attack-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "8039712d6022f7c7bed85367b6f9e806ce934ed2b7fd22373a0af3cf3dbdd216",
+      "response_body_sha256": "09a7c02ec878b4db1d6da715f706fbdafa926583f7ab9322095492e1b920f80d",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "7888c7177c60ebbd5cc3a125d3968cfcee95dcd816a775d10ba5c0f930ab12b0",
+      "response_body_sha256": "254909ee56ace43f4d6ff31302fca2a86410b714575a627162549dfb70413ca5",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E54-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E54-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "5bff5c067292ae4c83f06042ff4309209f58d3136a3a73e320f72c1c5fb2109c",
+      "response_body_sha256": "c238e8812a423427f564430d70757b4e90fd5738cd116f99bb14020b393fd1d9",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "140282c09c86bb3d919bcc7abc4d78191c6747f2fdc03a9e6771d6425d96b799",
+      "response_body_sha256": "5cb1fe10bbde13e4803f6c1e0388f72d804731bdae37b8a77610c2a666192d79",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E63-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E63-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "d7feec6b37bf9b0eeb128da7600147f674317e4d255a74a1539ea52df9d06d31",
+      "response_body_sha256": "9952e1b98dc51daa8ad9d8cae1f925951b232a31122997e3f99b855dd07488d0",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-attack-1",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-attack-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "84e174088cb043eee0b9260b0de86d92b924411ef09e79298c699b27db64f0bc",
+      "response_body_sha256": "dd6afaa3aef750b9874c9ffd8edb4410a2df1c4c8249f68424bb2427b367cbc2",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E12-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "261b2dc5a7d2ef26bab886ca533ea34ce09066ca2bb6d7a12f28758bafd4ea90",
+      "response_body_sha256": "75fff33391dc0e9901da63f683f9e5394fac771cd50bf7e5d022643c99f41615",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E22-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "803df34d9f28bb940e47579c211bca03768d8af3484cc064f4a385074cd226fc",
+      "response_body_sha256": "2917e6c5f24c0d989c33223ee41adb6dcd1a9ec9d9345f521fdfc3eacbf3cfca",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "1a122c81a418de6c2862f8fa69ef958cd0cbb529917af581f6bee9056c4d777a",
+      "response_body_sha256": "3abce636892fc43d8ebfe6fb54c8598f079630c1b1d7ca6d48b0976e535f2e2f",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-attack-2",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-attack-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "ce51ec7c58f2822a11f202ca9a2ab465f9c6fd68a6f5b92c54dbbf8e1bec89e2",
+      "response_body_sha256": "994ce45bb89c6ffe31d79470d92ae301876e148ab5ee9f4265f6814d5cb5b611",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E53-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "e976678b4e1d9112b64a38b8bc75cff97e4d5769afc71f0d5d6c912ea9307ea6",
+      "response_body_sha256": "6076d1de11702c128eb104bd726cf6a531f9ce50c4d7c61c200af4098b2ad68d",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-attack-3",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E22-attack-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "7d8ca2558b477d3a18edd615bdcb5fa3974618fdf65f43e72bf0731c6312b3f7",
+      "response_body_sha256": "0116223a7d999f6b6d63d928551e4e011b4b89312d56b4a3ca90dd837fd9c415",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E52-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E52-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "6c37085f1a550a58bbe0863a0c5bf5c3d77d6e5823f7058c2bc4b59e0806e3ef",
+      "response_body_sha256": "c765e60ab8f5574f6f67cd07cadfbbded92d108945f578b865739469a41cec5b",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "39806322efe62c6cfe39a01573cf1321db8ed2c21db55a277fe52539a33149ed",
+      "response_body_sha256": "b6183126f3fb6f893c543716043451291eb6e8b66a04419539604620b4282cba",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E11-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "02711011ffb86531365e8ef64d2ea94113b5dc4a61c0e7f2299301bbc58d3947",
+      "response_body_sha256": "5e584a78feb50af7d51227f3e511fe854ee9f9d7f5076e60889c8b9893ddd9f4",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-attack-3",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-attack-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "a3c70f823192b4ac7bbe7ef76899efb8cb262a953c1dae78d8c29028b25faa76",
+      "response_body_sha256": "3905f56bbe07cce2bb7b27d76470812feaedf231b377a0e5f48865772e0dc895",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E11-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "5b4164396e93749ac733a38377fd2c01f3e360c897064da687833460659bec1e",
+      "response_body_sha256": "9e661206d65163c8ec10925911d76ed7de57afea43e65fafb0b4f3d9074a7881",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E44-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E44-fixed-1",
+      "call_id": "call-0005",
+      "request_body_sha256": "9f912ffe66f0b97727e850855b8366f8316285ff43feb35d888242d748e5cf15",
+      "response_body_sha256": "3ce32f20ac960735e2e0511bae687e9b96f5518826948d62f01899ed99d35b7a",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "7e6d8ca2d48063c45da9a91c83248ad89da32d6e7f8aff5f8acd00c8a3fef22c",
+      "response_body_sha256": "ae61c334f80d90e5c9d0ee25029017c6daa168e2f126393ece6ce2f0e69f8f05",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-attack-1",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-attack-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "0107843569bcc87bee764efdcad8af5a43c007a770424287a4a4ac42636038c5",
+      "response_body_sha256": "02750d2c44ba74b15190290b51700dcf8dc5800d6ccc8876172d4ee0b76fef8c",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E31-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E31-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "c8d0289125af27b5578a3378d280f87fb192b4fbcc9f0654c37b1f56d5ba7268",
+      "response_body_sha256": "217df9eed3e30097bc49e751b1d327cfaebd5928d177d672372f6df4efb8b659",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E54-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E54-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "88d433b9e7a743f7f26c8d7faac9c569bf2e4b87d4231f9e580db79ce7cb1017",
+      "response_body_sha256": "4d45ecbe0cec2022b9ada476d940032d4c6966c12a035e140df55619f530107a",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-attack-2",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E22-attack-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "932f901314f5250274dd11fbb3bac400361e8123718925c766a45852f8bdb6bc",
+      "response_body_sha256": "8de9d253e28651894f6ecad250adb24c5d198bc15e9d2870a8d7d15417f83d74",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "62288822c4f7059868b7e254686d36e7c7a36dca2bc5d3253f62ff89c4676bfb",
+      "response_body_sha256": "40c08e464385839c8352fc8c6b1bad94b1f84055715db4e048fbdf41515d165d",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "b378a645a0e330d19b400bd10f84ae0c8f1f85d603333bab91830c24e7bef324",
+      "response_body_sha256": "52370d1240b5a054676f3356424d835027213fcd4d4cf0b00f8faf23add95fd4",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "b90a922009ec616a7795494cd41c979ccb5f61327d862331644ec1b3ed0c7941",
+      "response_body_sha256": "a489a50b4619cc6e0c1f1ac5996e97004c307ea97bb086a9c4159ac8419990f1",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E21-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "94161848494f9aa745f015d1831a6559157ef636ea7d844a9b4fee9f065c1164",
+      "response_body_sha256": "ab0ffa5c7ec3394be82b22ec41d0a818d8f897c751dc9add6cec6839609a1a4f",
+      "before": {
+        "accepted": false,
+        "reason": "AI output cited a source that is not in the current record. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output cited a source that is not in the current record. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E52-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E52-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "bea743c3af56f038bacd6767a1a250cb61c2b699e8bedfe253d0a86ee32265ca",
+      "response_body_sha256": "f22aa58b2d9c9353415914dc3449097d2d7f5953ff34667463f802e590999aff",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E61-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E61-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "4f99c93ceb0f528ca79bfd94709a4ff80d535875007728763e393617cbb19d68",
+      "response_body_sha256": "c3ca158f1ff65cb63ed68ae305fd5d62c2d95880ba027f76dc391b6a1ab37137",
+      "before": {
+        "accepted": false,
+        "reason": "AI output cited a source that is not in the current record. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output cited a source that is not in the current record. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E54-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E54-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "9a8239dfb11eab2b7d4bd7c8a4b4922c19cddce3794cd2e6b7e1d5519e56b19c",
+      "response_body_sha256": "5d87d2e831a629936a5ea81e612c0a3e195b1591784f131c003ffbdf75c9824e",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E53-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "100283371caeba21f98cc3f29e66ce0a19b740a2d58dffa07078c8ca4459e9cc",
+      "response_body_sha256": "475402d56c5b57f4006a3657af825d8d3df80cf7c07853003d25c1acef45ae1e",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E44-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E44-full-3",
+      "call_id": "call-0006",
+      "request_body_sha256": "e73a46fa1aacf89c0402e30851fbb3203d790577eab296a9cc995ed595b89829",
+      "response_body_sha256": "50939ade7a8caef9578b20f43e19809900a024f5babd4065c508e1223ee7d4f5",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E64-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E64-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "32200beb96e816e450f257bce61f28762b2bbdf989a75603e153bb48ac46c6ee",
+      "response_body_sha256": "171d09b2d1165516b8c69c0a9a8ed094cdfbc76b8198199db014cca428e212ac",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E53-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "11141d73770d3db5d468e5b21ca2ea6e3931fa14889916a63debbed235c489ef",
+      "response_body_sha256": "6e7f2d89643efcb69d7e163bf1adb979b5265afd10063b235c6e99ce7cf95b98",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E33-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E33-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "78ac463e4d78344ae699e96a9187b997649b3c3b4724039014a5ff042f290934",
+      "response_body_sha256": "dd9be11561c343f2946f1a0a877ce80d54bb530915d5790bd97d84ac64a13a1e",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E43-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E43-fixed-1",
+      "call_id": "call-0005",
+      "request_body_sha256": "20cdf465acdd63c89da1c748670fec75aa0ff6be78b1d54bbe20f8f7203f5249",
+      "response_body_sha256": "ee5202bfff9205b5bd62e6c569912319ce2589c90436a70a3931a1c03715ff3e",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "b3cc38a9ce57e715b44a33c47d5c20fe3860b1078ad4c9f06763a389e7bcdbe6",
+      "response_body_sha256": "d46cbdc3be72ad7c4937f22fc25d85d79300ed6ed1b899ed058ea248e74dff9a",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E31-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E31-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "7b87f7cc22d3e2bfaf1d8f7c8f72072602df70dc78891b721e7485d231bd0113",
+      "response_body_sha256": "2096c9a92c40320f4c9bdec7aff916d17a011fa187706796a6a75ba6c55fd51e",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E53-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "7f32f2817f6df873678c1d773c0e501a48761833eeb1e76f10014d8f69503d14",
+      "response_body_sha256": "5fc4b536d503494859db7cff74b6b4216fbb29bcd1652b5160ed3d929e612cfc",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "6bce5e0d00a6cbc77c0a40b3f6faa10b6225520e6f0afacbdc4f9e64fcc2fcdb",
+      "response_body_sha256": "7b51b83ce30d3301ed52d45c9040e4d67e56f4516a12c2eb9d2b5f9c63d282ba",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "c40e1009d3bfb1925993df593456a70a3901aeae88372d8a9d4f5c2808287f55",
+      "response_body_sha256": "ead0bcee9afaacb9e7d6e51dc2a7923aabe17001a6a60547ac58bf8b497ff5bb",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E22-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "a98bc0f34be805e3f578d3d9327339469dc745fc6d8ab626e8bb9085c4d9e281",
+      "response_body_sha256": "f12392c2ab60661a57f107e231fbcce190af0d16bff4ebcdd43603b77c279887",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E34-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E34-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "7f8752e1caf71323179b7ef86f6677db5f1d967cca28637cb449ee0376eec817",
+      "response_body_sha256": "ebd264ae6d579e0941b17c99837a7cb8f29e54fe3f1a9fc0bfcb3bcf3dc4b7f2",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E54-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E54-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "42ca9167ba95780c3172e442b375d855f06eaa3b39c79ee3dc7e916f6183ce1b",
+      "response_body_sha256": "b144971982abdc1c786bb5f41fa66edbed8deabe0e83ede71955e6998abc4eab",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-attack-2",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E13-attack-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "62a79f3c20e0b8ac14cb600325b2d2652adee2b753df0eef86dd8ddf6fd2c6f3",
+      "response_body_sha256": "2ecc4e0de735db9010fb418bea7838a0880fa410bdb873dce5c8a45f2ac7cdcb",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "cf7282bee72926ab169e08b5aea879983afa1df35a883f36c7f798727d589f62",
+      "response_body_sha256": "c4ac799630a775d49539e210078bf0607b8c74f4da3a72ad2e2de416e445da81",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-attack-3",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-attack-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "b9ef3e2270f9aa6130003e19e14b157067be568ab448c738778fe054abf3c4a7",
+      "response_body_sha256": "c0c75f9b806bd56248477c4909c004eee9a2d4e3660fc15bd6930f34c84ed73c",
+      "before": {
+        "accepted": false,
+        "reason": "AI output cited a source that is not in the current record. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output cited a source that is not in the current record. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E11-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E11-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "474d409a08c5df8ed1ee2be1bdf14d7aaebfac227c81036561ba01412cf8e66b",
+      "response_body_sha256": "d3c7e2a06ed3868d0158cc8e84578b14252a4a54b4d0ee468e6413f5fd4d82f6",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E11-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "b0d6b2f352400bd92459f6d281c0ec0778983fa243780b13132184810cfe7e9e",
+      "response_body_sha256": "8e97ed4092e5de15ccdbbc4d9dc6a8901a08a11ff0940aebf183f02bef683912",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E43-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E43-fixed-2",
+      "call_id": "call-0005",
+      "request_body_sha256": "59800efe4cc7fcbe6463f3d647da120b0c7eef65d04db6578075f433f32f8969",
+      "response_body_sha256": "56bae3204e021732d36fc79249b36d4023e03d21bdb6baafd8f772a3e529b7d5",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E31-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E31-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "84366bd098813d24e23a1b07a76400d64997a0b95201cb0e19ef816177c99739",
+      "response_body_sha256": "5e7d2ad0ac709f5cfa7d12abbc362c19292b5b2fd15af038edcbb4f747601370",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "c5586eb76d4787b0191ec1e11b2ae4c3cd72da6f3b12b82dde70b817ab2f7268",
+      "response_body_sha256": "8065589b512e532739669bd7a1e396aba459358d30dc7cbb84f38faed744cdf1",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-attack-2",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-attack-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "23552d7bbfb4491c141f9fb157f4a8e46c9342a312e9cc2a2dd36568a6a948e5",
+      "response_body_sha256": "36820c4c46162d1011dc306a0d68376282d5338ab7a00cc445461d93aa355bc4",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E41-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E41-full-1",
+      "call_id": "call-0006",
+      "request_body_sha256": "a7caee57fe0ddf4e98262da9dcd754e4b8803eb7b84d2d5d09e198bc5c7126d2",
+      "response_body_sha256": "df8426837822b42787ba47aa078fac9423607f75bde3fd46b94c75d30a315faf",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E52-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E52-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "cebd45e502a942e6166e8c435cc92054f3a10ce4c4635183dc5b66540d135679",
+      "response_body_sha256": "cfc700230bb8684dc745bc3fbc0e1998f20561002c24581cb64c2257a0021aa8",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E51-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E51-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "96b3bafa1933f908b0c909c5519e4eb48c47603ccdcbc644694d0e9d32cabd03",
+      "response_body_sha256": "f4cff8ce19725deeeaf1541e9efb4378faa33e7d0da849ae1e56c21d81b72966",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E33-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E33-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "1dc734207ca09e93da71983f870f7f144a3235b112513354c7b7eb20f67b15d8",
+      "response_body_sha256": "8c2c2e498d0f00330f15eaceb288d4557751f5fbffdc6594b4208d46d10501a6",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E64-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E64-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "f35b12c640dca92283cb984916a688e257f1c4c916cc4e738c35dad7fc8af878",
+      "response_body_sha256": "ee946ae728dc7f638d5a4d409b740e20682aefb03b3baba8eb744a26370ed0fd",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E44-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E44-full-1",
+      "call_id": "call-0006",
+      "request_body_sha256": "025d5eb6ebdf9ddb47fa7b988ced8ea6fd2887aec312b5602bb75eedcc7c9f97",
+      "response_body_sha256": "4a9373e0a1f17c60165ad58e88c73f710a573399bba4c01e2c194f5f3fb7d70e",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E43-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E43-full-2",
+      "call_id": "call-0006",
+      "request_body_sha256": "5032abe8ce56935bf9848f692e8e1301e084b059cddd0208dcf0815d16f223b2",
+      "response_body_sha256": "2cd7299ad22f835d57c7585e6479f8e477c755ca10cd2830435ff1ccd1b1b605",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E13-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "9159858c59a9b0ec87ff558bf3d8dd48a79203a018b95eb99bbe32501be1afab",
+      "response_body_sha256": "b4b33ddc13e4de52edbfa1c2b3549fb6b58bed9807f447b7e055a6aea2b7cf82",
+      "before": {
+        "accepted": false,
+        "reason": "AI output cited a source that is not in the current record. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output cited a source that is not in the current record. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E21-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "224343b97cfe27da60a3e1525137019a0f2d9a2c0a84f6e6c4391f47b7c0e8ef",
+      "response_body_sha256": "b1d7b04e89c06f6c249a17799f6dfbfe1ad13d2c282bae972570abab7283a44e",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E34-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E34-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "421bbc93112064ad2a2eee0040295f8f2f6243c4b454e25c9f8de30eea064850",
+      "response_body_sha256": "4fc7bd74f14ef891e952bf0e0eeb30ba10d533bccbaaf5815f18e2d07d640329",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "58f529a21a2f5745baeadd5cba63f1921b3542ca19d546e27f892a1d32e8770b",
+      "response_body_sha256": "8d3f441cf7a5a63d4de324e50614790599f624fd698254f4eab7dd851637db02",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E23-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "d5934a7dd9ed5a1ce3919760ce8e6403596ef904f1ba05f669045355515e9f4d",
+      "response_body_sha256": "ce9b0502f955233b53f752415ce5928f3cbfc661752729f77e013605a9df5a21",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E24-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E24-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "a9f50b4ffba585463a7fcfff5e868c914ab418d21174ea026d488715a8d170a7",
+      "response_body_sha256": "c6a5cf0de2e34b187be109ccedaccb3d99454ef9a8572db4c403dbfc16da7f15",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E33-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E33-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "296562cb576a01950510677cf7c20a394bd93bb9362bb4f41d8b2d6706ec6d88",
+      "response_body_sha256": "926df98cae6adcbdabeadcad20438ca7486f396543f3631a07ce93b41c87a535",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E22-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "87985c2ccae1443a8c74bb1f12f293855765554eac857df97e90e7cbed3f192a",
+      "response_body_sha256": "388590becc3ff5f372f870c98667c6ffca7ee9f222e45ee59cfbad3f4d9a6c49",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E44-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E44-full-2",
+      "call_id": "call-0006",
+      "request_body_sha256": "0ae39e7be94c20461d3e3bce5165018f00cc375a0ef0ede8ad28fdcc1da61dfa",
+      "response_body_sha256": "59bb7c4f22a1be3b6205d9bac50a77adc07d547ac69c2b9687f8b0e43a7bd285",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E61-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E61-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "07a99977ef8f827b03bf97fc352c39d0be3edbe33d55b5472ea1e69d100a40c9",
+      "response_body_sha256": "13ddd1d2fa68162538b751157b8419dc37d593924e0d06bc8aec6ced02665de4",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-attack-1",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-attack-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "7b1f11302d10d83af1638039c55d08f3ee433acad7d62c4904fc3058c663491c",
+      "response_body_sha256": "a8032527430a316895b0d47fe1d7eb982c2d453fd9f5a31ead860e3561e75bc4",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E62-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E62-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "05215ef62f12c8bd61e4cf24b89c1bea76001fa13190ef4631eb26eae218739c",
+      "response_body_sha256": "e39308e46d4b55af010535d1b2348070ec42789341e1c28616e853d63fd1ea55",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E43-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E43-full-3",
+      "call_id": "call-0006",
+      "request_body_sha256": "a219106db70af6a2b15db303d38062e10b21a04187044ecce617b966b93fbae7",
+      "response_body_sha256": "09b0047c1afddbe0743f1fda565dd9429a5f567c2f3d2dc413c3eb34258ad7ca",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E51-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E51-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "2649ab1c65560477bd0af6855ac5baa354b2d456d2cc8747342cebb95b16fc8e",
+      "response_body_sha256": "fdb847985c35f63740e3074138e5e6f21bbd8a7b3c6088ef04495e124e08da68",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E53-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "09ed96ebe3f2d2f93439c5e746cd164533669b479a95283c6e03ee27a9de2b83",
+      "response_body_sha256": "e30b0a55320cd38cafa23ababb2674b8a93aa3d20354a33c6fad32a4404f1ea7",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "a3ce6de5642fb820de1d7d5149c26e6d910b2f882087266a4c4f0d65f9680b06",
+      "response_body_sha256": "af5b0f838080c90a40eaf8f50a5eddcc97267d3cf82035fe35d047359dfae96f",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E41-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E41-fixed-1",
+      "call_id": "call-0005",
+      "request_body_sha256": "ec6d1f14b897a9c86bf8937bd92ad8a4cfd9e3cd41506feae5bb9733d0469a2c",
+      "response_body_sha256": "f7e8e68062f4e74afd24d5c7aa848f5c80b09fb9920c49c5042b46c565d5396a",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E34-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E34-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "e800a22b06b3a64cdd4edafd9b0b4b36ea8c7bf2481a3f850090ba13286893db",
+      "response_body_sha256": "d04d800924b3132d1b24fc305983e2c9fd11e4e2fd56a205f71f101cf45c12f3",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E22-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "98fd26a0290f2d34bb8a9fe78c221e6e64278771520797e3820c7d00bb98d3fa",
+      "response_body_sha256": "dabea7fb932af7a1b8b27b2f7c4549719b0fbb9edadaab455660df8c12a8c2b7",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E54-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E54-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "abc04871be5b35bbc21949c76064d9c70d32899ea97e6f6464dda6f7f4ecdf09",
+      "response_body_sha256": "121f23d80f4f2ae6bdd1afe1edf255603085be3ff475a335cd728b553969cdfe",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E61-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E61-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "745526421ff374436df07d1cad6c24c13ff1883e30705d26546ca8724bb7d45e",
+      "response_body_sha256": "915ebd572cb88a4437387009e2ce9fccb96abd82d17f99903883485aa98fc455",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E51-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E51-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "bc90fce372f28207bc5e3cf013b4074ebf6f529fb19b99f59a4df119ae481118",
+      "response_body_sha256": "b54510140d7c5708d81b39ce0c4165ddade20b2429a62fbc00aec59d1d6d78a0",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "43ac90188ae4bdea0840e6df03572083b42770fd7fc9149d8e03048abee4e09f",
+      "response_body_sha256": "6fe976db0435738a90b1d65ff382991c8281120e650aa0645756a9d7c3a26385",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E21-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "693595e6f3769543ebb1f83896792fabfac3883f9439ed41038e7bfab7568063",
+      "response_body_sha256": "201f16e43c3444241fc394f708d61e0b4d04bbdb48e3bc22dfa1be0016775346",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E42-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E42-full-3",
+      "call_id": "call-0006",
+      "request_body_sha256": "8ef964be2dc7112ad1beb4f57afc2dd87a0cbb389e5b9e9819ece0e86c2cd4d1",
+      "response_body_sha256": "112ed0581eebac35d44dcfb91d851065c9e40f96a8c2b136c221459a5acb0232",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E41-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E41-full-3",
+      "call_id": "call-0006",
+      "request_body_sha256": "c2d11254c656f919c699cc06476cf0d5110cdf75d3686600fb3ea7397f54248d",
+      "response_body_sha256": "f6372ca67d7f1d155345454cd99ce53a7a4347fca94c8d6b344f262b2d7be007",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E23-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E23-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "35d40f3faecf7dbaaa67a820f083275260133e3e7a6f60928322a62c847b0cb6",
+      "response_body_sha256": "68901ee2d5311a5081b4eab97f06db11407094c2ab649b25a57160f7a09c89e1",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E32-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E32-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "86b7fad3c54c1e34719375f4b4799f51414d4424f92184f758bc3098f2f353b7",
+      "response_body_sha256": "db2183fab732db1135d576d334229fc579ece944088d4c3b9216133b0c89ad89",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E13-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "74825cd512536b3cb75d045c648ed45cdcf8bb04869da91bb5ed53e22e13731c",
+      "response_body_sha256": "b9a6bdfb3efe4fb6569b41a0ae6f36ce15fee02510d63df72ce4c5af1f625489",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-attack-2",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E12-attack-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "3950880597a16b9051ee3534bfa3e8a8bea85d84e6965868ecee449aad7c3636",
+      "response_body_sha256": "6814810a4de0a6a2fd0d06eec692136c096a9ba43fdf2e379a30b68d40a577c4",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "9cc91477ba3c0746cd961ebd5047e6cfc3b4fb9c80f03d8bd1b5fc8ac5e918c0",
+      "response_body_sha256": "72f6098d9cf22677a56393763aed6d41d750efbfab4b021db66ad236a9d7fb32",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "c23f6af6397aafbd1aeb58287065d4f8136d766b59588a735ea8f8f288949818",
+      "response_body_sha256": "3aeaf025e32a75efb9ec9c1e6645bef4010105e6183b8dcb7d5c67a96805f6c1",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E14-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "137b7be7fa365d4162d6e3bd66e8463a45bd7bcee53d757b7d009b36e3598015",
+      "response_body_sha256": "7d99f39d2875d3eaebfc1a7074400398c28d26d2cd95de03df65fd2221f20e79",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E53-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "b08ee4d0e417bdaac5b2ad057e67aa842debbacf7f9d7b5d689d335eac412c79",
+      "response_body_sha256": "f54daa1f74c9ecb29d82b8449a8342220bbeb2d20864e42cfec677f10d909ae9",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E53-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "c54a2f95ea53c48018a4a81abd1a06eb5eb0ed7175c55878e19cfc2921733e3e",
+      "response_body_sha256": "2e660db76602850adda8eea7eb4c6d16b9fe197aa6e1addab40144a98226ff41",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E13-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "878ea703e784c1d881d524dfa0134e018eb14c45c1ce3b95013acd4eccb4ec2c",
+      "response_body_sha256": "d906218b375f846d1a0a4471e6c68f2d13d41baa9984e69799b54162cccb95b0",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E63-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E63-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "5e4f8981207fce08a8da5f84a840834083089f4140e84ed966611c4da556bd26",
+      "response_body_sha256": "4949ff0932817502f518551348056a4c3febe4c0b807632e61d2822aa99f8cfd",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E41-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E41-full-2",
+      "call_id": "call-0006",
+      "request_body_sha256": "5a606cd6be6e4f7cf8cad56370fa8bf44451898a651c38c9ed25e2dc60afea42",
+      "response_body_sha256": "4985fae2a1bf0ab4a8e0c06f15860381c2cccf9fa416832b177bb39ed776ca68",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E51-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E51-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "bcc273699ecdcd026755445516e5051ce55c2c339437370fdc3380b898523241",
+      "response_body_sha256": "22d2c2eca0afbb0adcc295e2377e197af7c7c0f913b7f0228b5d42a146749f9c",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E43-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E43-full-1",
+      "call_id": "call-0006",
+      "request_body_sha256": "fc77fcdef430923e58f428e5c30be7137f92848b300c2e539120e13de09ca8ba",
+      "response_body_sha256": "28b2e47a6eabaf4781c0603797fc3d1d16e1953e69ef071d72de9e7193cf092f",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E22-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "0657e1f050d623f22c209a0fea6d124cef405dce2581816879486b9c9eb84966",
+      "response_body_sha256": "29570f9c28e282ab44a759cae91229b1ab9da811bb4177aaa7c49d54e1b17cb5",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E62-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E62-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "e6a8f73b45439cc4c06ce54fba40123cce6e01b9ba945e0058bd78e0a3c68faf",
+      "response_body_sha256": "05e50ea553ad002044962cd6c4484569572fb5997ab5c9d095df161b3d889078",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-attack-1",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E22-attack-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "216291f051258184ad188728958dc19f109bbe3b464a8a61ebb151cfaf2b2668",
+      "response_body_sha256": "0ed998c23dd8ffd90ad15f49e1685b354213651681a5e60d61625b59484119f2",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E42-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E42-fixed-1",
+      "call_id": "call-0005",
+      "request_body_sha256": "5a0e8b71c9a407cecf704ee563acb66f8e39dccf8c74659bdeef30c724e3e17b",
+      "response_body_sha256": "c8b043cb5027827bca7c8428ab759c8f3c16acaaa87ad842e8837b98625afa0c",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E32-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E32-full-2/attempt-001/E32-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "09c5d64a74181aab29c833043816f64531f94fd46952cb9d85f6aeef3a07fe42",
+      "response_body_sha256": "20950db33f6d2ef3613a85742c425ed96ea5e138f41299367b0d68b8f64f771d",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E54-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-20261102/E54-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "5d6074541d780e8f77796c641875c8c1a9690a269951cfe520d103528e539a41",
+      "response_body_sha256": "b485d5ec5eec066a0cb22748a32e77dc6dd100d033e7bdab9ab88da0fcc13d88",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E22-no_followup-1/attempt-001/E22-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "bf8c19e7ec16afa0c7e4397638e98267cb854d0e5ed390342d283762af972673",
+      "response_body_sha256": "cd8ae9c16ec3dfc3bbec0bd10e98cfb63ccb58a58887dd07e80c43dd880cc071",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E22-no_followup-3/attempt-001/E22-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "46db5909ed99ed69bb105f278172bd2126ddc96608f41706ce50f10741c4f0fa",
+      "response_body_sha256": "99c891acc016d941822c1ffb24786dc5c4f4e49eb2c7055a41bafc907f9a0d0d",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E12-no_followup-2/attempt-001/E12-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "adf94d71033dfdc3a398b5ff068e510e48210b82c47ececa6c896ca7ad247401",
+      "response_body_sha256": "c4d370cb9d7576939d5f54bbfe6ec64ab71646ca541b926351e4498b93123752",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E14-no_followup-1/attempt-001/E14-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "47789b403b5273eae55438dd1f4a6259a5571c61bfafea118633bf90e9ebe5b9",
+      "response_body_sha256": "95c9a5d3620869d438cd82deff8da8086ddc78f1ce592524a86125393fb34bfd",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E14-no_followup-2/attempt-001/E14-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "a6e52dbe8e671511632d4f967d7af31ea1fe8ce85952751164b947b41d176660",
+      "response_body_sha256": "04ed86d5d0ca3e2941a86ecfe840fcaf0a7ad07c002b604a0998932c9d8fbdb2",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E32-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E32-fixed-3/attempt-001/E32-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "0e85882c8997b09bda47db9acaf730bb680ea1e95ba33082a297c81546b704d3",
+      "response_body_sha256": "6c04e695c8275a3389aec8079b9413cfeabe5c99ecb779a8a2cb556d1d63d24c",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E53-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E53-fixed-3/attempt-001/E53-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "5475c5e07008f17e06efd9bc8902a37f5fbc660f08299fe485305143745169d6",
+      "response_body_sha256": "3e9c238269a17bf1e8e5e3b5f42744dc7a1e7a7033022bedfa77df59d85e641f",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-attack-3",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E13-attack-3/attempt-001/E13-attack-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "70ea07e9c4790d725316a5f0a279cfa69aa375516ddfb79476df3b0210b62a91",
+      "response_body_sha256": "01ec839fe9f8d0c7628b33236bab321b0ac49688601789412da13363e224a0cb",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E22-fixed-3/attempt-001/E22-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "c040ae4979f38ff43ba33ee4deb92554c6f71bb30b2633e06e7741d905e2e258",
+      "response_body_sha256": "d5927fd149ff1f80b57f9c253ef1202aa8dab58e1f2d3a4422a45f9cdc46d55a",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E52-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E52-no_followup-1/attempt-001/E52-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "6615a43c25f5f7c13a5c209d9444d3fd896988376eecfa1b74beebd1314f18de",
+      "response_body_sha256": "e77a07763b7f2658e5e111c5bf149e46f3f8d0bbb5ae0ffa4f1aae452948a8f8",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E13-fixed-2/attempt-001/E13-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "9518c72c40acd309e6cbd508f3659794b3b008175546e39da47b520a55e81ef3",
+      "response_body_sha256": "2f9e97f04b8f63f4a4b4e285f931393d109eeaeec12d73809953160c55befd80",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E32-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E32-fixed-2/attempt-001/E32-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "e4a9f9e7d0f291748e4e64357dd87186204bb4745144b93d3e40dfba5d4a05f8",
+      "response_body_sha256": "a9d1fb4f12bf3b2ac2e642d1eeca9dfed4c1e892dfc473a4d600bc02855f8f26",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E62-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E62-full-1/attempt-001/E62-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "b64a80e93f6082cf85ffd9aec5cea34def7caa2e53d2e352e5e26cee796da1b5",
+      "response_body_sha256": "e73ebc5df20cdd17568766300089fd402042d8d698458b1fd65c3ed8dde79ad2",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-no_followup-2",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E13-no_followup-2/attempt-001/E13-no_followup-2",
+      "call_id": "call-0002",
+      "request_body_sha256": "54068f37b41aa7a3cfadd5cf076b0b0ab1df85a8607c6f2af683f06c0d396424",
+      "response_body_sha256": "b378f0374294c273ef03b3dd7c4059588a880fa6a81a4434096566be85ad456d",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E43-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E43-fixed-3/attempt-001/E43-fixed-3",
+      "call_id": "call-0005",
+      "request_body_sha256": "d60b457d6e1196cbfd80148cc9734f25179b1714f785ddc01bec0d5e80530e7f",
+      "response_body_sha256": "f524c40d3a220658016c404ab13c4663d8ba93ced2b45acf7fd0b9363b0080b2",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E11-fixed-2/attempt-001/E11-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "b1ff71921370a81336907713b4e7aa2502afc804f9c91c7bb54d660778a95607",
+      "response_body_sha256": "9bb303527244148dd68211fbd6f397e4daa747d5435cc78601f1457cac19e122",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E12-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E12-no_followup-1/attempt-001/E12-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "820a7dfaefc46009ae265f227123abde4ca3b1e09a82e1dd632239474869373f",
+      "response_body_sha256": "77b59d6e9a2ed3af4cfdaef79290a9b01897a18f3bac15134f261ffa6b798650",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E61-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E61-fixed-3/attempt-001/E61-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "6188e868bd82327cd615ad4acf6f90ea7406dc4b9aef7aace20fe97b8fb7894c",
+      "response_body_sha256": "ad29c211177a20d29787c3c1c93dd3765c25b5c29433441c5bba4a81bae81c23",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-attack-1",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E11-attack-1/attempt-001/E11-attack-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "abab56b7266f6561544a5e415f7c3f1e4faeaef25dcf433f9ba213c354f799c9",
+      "response_body_sha256": "e4ef3d8c52670fc948d6a2732930ef088eae9342cd10cd4b3985f8a45f8490b1",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E11-attack-3",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E11-attack-3/attempt-001/E11-attack-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "36b0c3c19ea28adfe9daf6e05d67b01635b880bf7585aaab79886e073b2383b7",
+      "response_body_sha256": "648cd82c32865ccdf2379b700c6a6211958449dcf0e04df8d5546ed0a3ed0531",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E23-fixed-3/attempt-001/E23-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "10339580c0d391192174a5762ae1303beea74080f5ec08ef83c4f1f5734e32d0",
+      "response_body_sha256": "7fd13b2a7b182816ae2ca0793ad61a2aa60b41d9b57eea94749c47d4d3966e73",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E13-no_followup-1",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E13-no_followup-1/attempt-001/E13-no_followup-1",
+      "call_id": "call-0002",
+      "request_body_sha256": "65607b4f41c5baece28a725bc97ee643d476552a71577862cbe4deaf941d8ab9",
+      "response_body_sha256": "beda60461fed154ea133963ee33e3c9150c4310538d1493f1e972463804b3665",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E54-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E54-full-3/attempt-001/E54-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "e1216b4afb1f840a9394ca6c3b8f1292915e775f685a559f27208f434f9430a2",
+      "response_body_sha256": "d2e1042483cb39b554dace13b07e9f713b2b03c62d327681ff8f3283703f1a7c",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E64-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E64-fixed-3/attempt-001/E64-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "1a8c8dafd3d5efb9a117c0dd3c549f923928260c787cb6ed37281440873c8268",
+      "response_body_sha256": "94807ee0bbd5d3363587bc5deeecc6653d8137ddc18ed158037e983595fd6129",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E63-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E63-fixed-1/attempt-001/E63-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "158704c9f49ce0898fbd357c25964f7b897389abdccf312bebeb40758097a472",
+      "response_body_sha256": "2f24716246640f3dd3f2a900c14f1bc7e7287c726b0969ed3a0c080df804a3a7",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E42-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E42-fixed-2/attempt-001/E42-fixed-2",
+      "call_id": "call-0005",
+      "request_body_sha256": "a7b4d5f23fc5cc0674749b8c90db829c21caa0b0ae0add0fe4795769afc5f73c",
+      "response_body_sha256": "905b576af65cb192efbccb26ad0b5a3f45a69756dbb43e464365812114870431",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E54-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E54-full-1/attempt-001/E54-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "e5a000a7536b3b92e16b42bb89702ca57d84c7b16c84c6d74690a2024ee7fa47",
+      "response_body_sha256": "b41ccde6294e5f1171ac16b005974d1e8f4a8a3688cc65413fcab1cdeec7dba7",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E23-attack-2",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E23-attack-2/attempt-001/E23-attack-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "9a399d505e389976579c02a9a5fa89c89c3c17b6be5737f68df9732b7139a36a",
+      "response_body_sha256": "23e81a44498395d1c8dcd8dfc4c39d10e2c4c56cda7fbbc7b9f42369de20c54c",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E23-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E23-fixed-1/attempt-001/E23-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "32877e459f9faf65cd0e951ab91628bf7c9f2729a3599dde4139deba4dbfbb8f",
+      "response_body_sha256": "8ffe3c153bf49fb6673371c23152f4869a541d81d1207da0fe9ea7321ff79f29",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E11-full-2",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E11-full-2/attempt-001/E11-full-2",
+      "call_id": "call-0004",
+      "request_body_sha256": "7ed4bcaff9f8eb89f48bd7c7fbe490ea69b6466a00cf3bb35da40283cd99a5a9",
+      "response_body_sha256": "78d66a9533b343656696a8bffbc319eca52758fe83dab67dee0132e9db0aa302",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E31-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E31-fixed-1/attempt-001/E31-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "ff8ab8c12d647adc949f4e22b13be031c70d75e68486c5c084a32a823c590786",
+      "response_body_sha256": "3c90caefd7b71c03910afec58c84ee98e3ec77a1a32928191eab63dbb830752f",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E51-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E51-fixed-1/attempt-001/E51-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "9b285e43a3bc4a80637db5720af10bff0e51a2e650bd4b18318e9c7ac368f9f7",
+      "response_body_sha256": "33e27e38b75b61e7021606ec55091c7bdc1a9c87c5eddb2dcd759d0f252469a3",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E34-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E34-fixed-1/attempt-001/E34-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "c3628468ef872cefee494edb1b5a0d6d2e262e0f5655f56920adb0d4a67645fc",
+      "response_body_sha256": "48de5f0192e71953b245827484c36ed8b423ed55c70437c47935e7372b5a9a86",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E22-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E22-fixed-1/attempt-001/E22-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "d886c55a58614e0946f9a747caac623402bc1f227430c650817134b0ae518259",
+      "response_body_sha256": "3974ac030fe52282abad30a50cb0c923936f9e06a529a321e5d96962963babba",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E51-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E51-full-3/attempt-001/E51-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "233bf680dcafb165da0bcbad22a5524c57beeca9e744e72f933823efc09c75dc",
+      "response_body_sha256": "dd70762d52e16c93129169070840caa7328c5f37b1fa561d9e0ad2f1754923c1",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E51-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E51-no_followup-3/attempt-001/E51-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "3abd4fda5fe4cafc102654866d35b2259f54b28040f3ba0e96ca7c07451b1221",
+      "response_body_sha256": "682614f01d4ca0a8ecab869bd2646c90997f6665c96beae4308e2686b386af76",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E24-attack-3",
+      "variant": "attack",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E24-attack-3/attempt-001/E24-attack-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "20f4d386fbc8967d9a735d7777dd3aeb3a6d3851e1f752a9c70c3c7e2ea5c343",
+      "response_body_sha256": "4c94bc5808ecb4682ada569d1cebd33d72def64564260f33d2a9b6538496cdf0",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      }
+    },
+    {
+      "id": "E11-no_followup-3",
+      "variant": "no_followup",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E11-no_followup-3/attempt-001/E11-no_followup-3",
+      "call_id": "call-0002",
+      "request_body_sha256": "a1d645df06ae667366d93becf56edf8d48cf01f9296125f7a9d91e02aa8c7589",
+      "response_body_sha256": "9cf4865a6067ef3a5bad1faef03d32874ed6571ffb454c41c911a40453721c99",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E64-full-3",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E64-full-3/attempt-001/E64-full-3",
+      "call_id": "call-0004",
+      "request_body_sha256": "e02b4f6c62342def8e38f76aec116b8647af231aba22bf5c1c97356a7a3abd27",
+      "response_body_sha256": "a894175573eed3e0b0d753ed1625f9a90b935420f43ef0001243f45325f95b8b",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E63-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E63-fixed-3/attempt-001/E63-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "e2a5415d60008cb1618c3c6aa0712f60c1b020f4e10311c83a2abe6782251ea2",
+      "response_body_sha256": "293730fb2ee2f2b67978c6ff200321fd863529bc1c8df6fad57a2be1eed2869d",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E33-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E33-fixed-3/attempt-001/E33-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "8156166d44a312f0cf042aa4112e43524be30bc0b38e2ec3679a9b5074d0a254",
+      "response_body_sha256": "46a5fa7f41c0af79c95e272780604b72266ee5ef3534592b16e1b1b19c20173c",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E64-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E64-fixed-2/attempt-001/E64-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "b81a275616d0c6e50dd62a143ab0daeb642b54bb2331694c329d02faa4911fe2",
+      "response_body_sha256": "7e6858a0e63385f03cedf9e8ec8633cd32f8800b49f1e2f3017f80a07f7fceab",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E21-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E21-fixed-2/attempt-001/E21-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "a8301c081dbe2462068e7219fa6800d6affd606d30fcb10240ebce6e90bdb019",
+      "response_body_sha256": "15a6a98c0fd9ad10af4fa5083f65e682b53b1af9b46c7052d13599b289db7145",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E31-full-1",
+      "variant": "full",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E31-full-1/attempt-001/E31-full-1",
+      "call_id": "call-0004",
+      "request_body_sha256": "fed270bbdfff10ede62d2fc9559fb5713110ca916fc87d8de359f87967ab79b0",
+      "response_body_sha256": "17928c692188a47139f79b2276d9b05b1bec00370b027cf05b262c9eb5907b02",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E14-fixed-2",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E14-fixed-2/attempt-001/E14-fixed-2",
+      "call_id": "call-0003",
+      "request_body_sha256": "79e1ab626f5653b448cb7c56e64b68579c4871eabd163dc5c63edba2a2247edd",
+      "response_body_sha256": "f07c55686f543306bd75c1e7594a87c79be1985df2b2c756f18e36c75123513f",
+      "before": {
+        "accepted": false,
+        "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available."
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E52-fixed-3",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E52-fixed-3/attempt-001/E52-fixed-3",
+      "call_id": "call-0003",
+      "request_body_sha256": "c099ecb9e607fa98aab6425ed68c85306a4f02c840ccef8aab452b36524d6f5b",
+      "response_body_sha256": "4c0c00577526e2c62fa561d3ed9fe70aad538f8c3fbb9b87c51b80d7c9b361ec",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    },
+    {
+      "id": "E62-fixed-1",
+      "variant": "fixed",
+      "generation_directory": "/Users/aster/elec5623-group9-preconsultation/backend/eval/runs/extended-resume-20261102/pipeline/E62-fixed-1/attempt-001/E62-fixed-1",
+      "call_id": "call-0003",
+      "request_body_sha256": "accaf0f788fa40f28dde004d87cb57ca1881279063f9627bccae2fc9678e4b13",
+      "response_body_sha256": "724951b89bdf0e60da0b72ee796695d4c81101948e280b9fef34a121d90505f1",
+      "before": {
+        "accepted": true,
+        "reason": null
+      },
+      "after": {
+        "accepted": true,
+        "reason": null
+      }
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "uncertainty-0-True",
+      "family": "uncertainty",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "I do not know whether I have medicine allergies.",
+        "status": "UNCERTAIN"
+      },
+      "output": {
+        "text": "The patient does not know whether they have medicine allergies.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available.",
+      "before": false,
+      "after": true
+    },
+    {
+      "id": "uncertainty-0-False",
+      "family": "uncertainty",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "I do not know whether I have medicine allergies.",
+        "status": "UNCERTAIN"
+      },
+      "output": {
+        "text": "The patient has no medicine allergies.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "mixed_negative-0-True",
+      "family": "mixed_negative",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching. No supplements.",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "The patient reports left knee aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available.",
+      "before": false,
+      "after": true
+    },
+    {
+      "id": "mixed_negative-0-False",
+      "family": "mixed_negative",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching. No supplements.",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "The patient takes supplements.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "laterality-0-True",
+      "family": "laterality",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Left knee aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "laterality-0-False",
+      "family": "laterality",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Right knee aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": false
+    },
+    {
+      "id": "dose-0-True",
+      "family": "dose",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Vitamin C 5 mg",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Vitamin C 5 mg.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "dose-0-False",
+      "family": "dose",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Vitamin C 5 mg",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Vitamin C 6 mg.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "citation-0-True",
+      "family": "citation",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Rest helps",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Rest helps.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "citation-0-False",
+      "family": "citation",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Rest helps",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Rest helps.",
+        "source_ids": [
+          "missing"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output cited a source that is not in the current record. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "uncertainty-1-True",
+      "family": "uncertainty",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "I do not know whether I have medicine allergies.",
+        "status": "UNCERTAIN"
+      },
+      "output": {
+        "text": "The patient does not know whether they have medicine allergies.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available.",
+      "before": false,
+      "after": true
+    },
+    {
+      "id": "uncertainty-1-False",
+      "family": "uncertainty",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "I do not know whether I have medicine allergies.",
+        "status": "UNCERTAIN"
+      },
+      "output": {
+        "text": "The patient has no medicine allergies.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "mixed_negative-1-True",
+      "family": "mixed_negative",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching. No supplements.",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "The patient reports left knee aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available.",
+      "before": false,
+      "after": true
+    },
+    {
+      "id": "mixed_negative-1-False",
+      "family": "mixed_negative",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching. No supplements.",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "The patient takes supplements.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "laterality-1-True",
+      "family": "laterality",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left shoulder aching",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Left shoulder aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "laterality-1-False",
+      "family": "laterality",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left shoulder aching",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Right shoulder aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": false
+    },
+    {
+      "id": "dose-1-True",
+      "family": "dose",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Vitamin C 10 mg",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Vitamin C 10 mg.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "dose-1-False",
+      "family": "dose",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Vitamin C 10 mg",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Vitamin C 11 mg.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "citation-1-True",
+      "family": "citation",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Rest helps",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Rest helps.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "citation-1-False",
+      "family": "citation",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Rest helps",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Rest helps.",
+        "source_ids": [
+          "missing"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output cited a source that is not in the current record. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "uncertainty-2-True",
+      "family": "uncertainty",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "I do not know whether I have medicine allergies.",
+        "status": "UNCERTAIN"
+      },
+      "output": {
+        "text": "The patient does not know whether they have medicine allergies.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available.",
+      "before": false,
+      "after": true
+    },
+    {
+      "id": "uncertainty-2-False",
+      "family": "uncertainty",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "I do not know whether I have medicine allergies.",
+        "status": "UNCERTAIN"
+      },
+      "output": {
+        "text": "The patient has no medicine allergies.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "mixed_negative-2-True",
+      "family": "mixed_negative",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching. No supplements.",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "The patient reports left knee aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available.",
+      "before": false,
+      "after": true
+    },
+    {
+      "id": "mixed_negative-2-False",
+      "family": "mixed_negative",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching. No supplements.",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "The patient takes supplements.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "laterality-2-True",
+      "family": "laterality",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Right wrist aching",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Right wrist aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "laterality-2-False",
+      "family": "laterality",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Right wrist aching",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Left wrist aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": false
+    },
+    {
+      "id": "dose-2-True",
+      "family": "dose",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Vitamin C 20 mg",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Vitamin C 20 mg.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "dose-2-False",
+      "family": "dose",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Vitamin C 20 mg",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Vitamin C 21 mg.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "citation-2-True",
+      "family": "citation",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Rest helps",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Rest helps.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "citation-2-False",
+      "family": "citation",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Rest helps",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Rest helps.",
+        "source_ids": [
+          "missing"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output cited a source that is not in the current record. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "uncertainty-3-True",
+      "family": "uncertainty",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "I do not know whether I have medicine allergies.",
+        "status": "UNCERTAIN"
+      },
+      "output": {
+        "text": "The patient does not know whether they have medicine allergies.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available.",
+      "before": false,
+      "after": true
+    },
+    {
+      "id": "uncertainty-3-False",
+      "family": "uncertainty",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "I do not know whether I have medicine allergies.",
+        "status": "UNCERTAIN"
+      },
+      "output": {
+        "text": "The patient has no medicine allergies.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve a recorded uncertainty. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "mixed_negative-3-True",
+      "family": "mixed_negative",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching. No supplements.",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "The patient reports left knee aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available.",
+      "before": false,
+      "after": true
+    },
+    {
+      "id": "mixed_negative-3-False",
+      "family": "mixed_negative",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Left knee aching. No supplements.",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "The patient takes supplements.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output did not preserve an explicit negative answer. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "laterality-3-True",
+      "family": "laterality",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Right ankle aching",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Right ankle aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "laterality-3-False",
+      "family": "laterality",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Right ankle aching",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Left ankle aching.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": false
+    },
+    {
+      "id": "dose-3-True",
+      "family": "dose",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Vitamin C 40 mg",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Vitamin C 40 mg.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "dose-3-False",
+      "family": "dose",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Vitamin C 40 mg",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Vitamin C 41 mg.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output introduced a number that is not in its cited sources. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    },
+    {
+      "id": "citation-3-True",
+      "family": "citation",
+      "expected_valid": true,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Rest helps",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Rest helps.",
+        "source_ids": [
+          "s1"
+        ]
+      },
+      "validator_on_accept": true,
+      "validator_off_accept": true,
+      "reason": null,
+      "before": true,
+      "after": true
+    },
+    {
+      "id": "citation-3-False",
+      "family": "citation",
+      "expected_valid": false,
+      "source": {
+        "id": "s1",
+        "concern_id": "c1",
+        "key": "description",
+        "label": "Description",
+        "value": "Rest helps",
+        "status": "FILLED"
+      },
+      "output": {
+        "text": "Rest helps.",
+        "source_ids": [
+          "missing"
+        ]
+      },
+      "validator_on_accept": false,
+      "validator_off_accept": true,
+      "reason": "AI output cited a source that is not in the current record. Your structured notes remain available.",
+      "before": false,
+      "after": false
+    }
+  ],
+  "newly_accepted": [
+    "E41-fixed-2",
+    "E42-full-1",
+    "E14-attack-3",
+    "E52-no_followup-2",
+    "E34-full-1",
+    "E11-fixed-1",
+    "E23-no_followup-2",
+    "E34-fixed-3",
+    "E31-fixed-3",
+    "E24-full-3",
+    "E51-no_followup-1",
+    "E52-no_followup-3",
+    "E41-fixed-3",
+    "E33-full-3",
+    "E54-fixed-1",
+    "E24-full-2",
+    "E12-full-2",
+    "E63-fixed-2",
+    "E52-fixed-1",
+    "E13-fixed-3",
+    "E32-full-1",
+    "E64-full-2",
+    "E14-attack-2",
+    "E33-fixed-1",
+    "E32-fixed-1",
+    "E54-full-2",
+    "E21-fixed-3",
+    "E63-full-3",
+    "E22-no_followup-2",
+    "E24-attack-2",
+    "E22-attack-3",
+    "E52-full-2",
+    "E23-full-3",
+    "E21-attack-3",
+    "E11-full-1",
+    "E44-fixed-1",
+    "E21-attack-1",
+    "E31-fixed-2",
+    "E22-attack-2",
+    "E24-fixed-1",
+    "E24-full-1",
+    "E54-no_followup-2",
+    "E33-full-1",
+    "E21-fixed-1",
+    "E31-full-2",
+    "E24-no_followup-2",
+    "E14-full-1",
+    "E34-full-3",
+    "E11-full-3",
+    "E31-full-3",
+    "E24-fixed-2",
+    "E21-attack-2",
+    "E33-fixed-2",
+    "E64-fixed-1",
+    "E44-full-1",
+    "E43-full-2",
+    "E21-full-1",
+    "E34-fixed-2",
+    "E24-fixed-3",
+    "E33-full-2",
+    "E22-fixed-2",
+    "E61-fixed-2",
+    "E43-full-3",
+    "E23-full-1",
+    "E41-fixed-1",
+    "E34-full-2",
+    "E22-full-1",
+    "E54-no_followup-1",
+    "E61-full-2",
+    "E14-full-2",
+    "E21-full-2",
+    "E23-full-2",
+    "E32-full-3",
+    "E14-full-3",
+    "E53-no_followup-1",
+    "E22-full-2",
+    "E22-attack-1",
+    "E32-full-2",
+    "E54-no_followup-3",
+    "E22-no_followup-1",
+    "E22-no_followup-3",
+    "E14-no_followup-2",
+    "E32-fixed-3",
+    "E22-fixed-3",
+    "E13-fixed-2",
+    "E32-fixed-2",
+    "E43-fixed-3",
+    "E11-fixed-2",
+    "E61-fixed-3",
+    "E11-attack-1",
+    "E11-attack-3",
+    "E23-fixed-3",
+    "E54-full-3",
+    "E34-fixed-1",
+    "E22-fixed-1",
+    "E51-full-3",
+    "E33-fixed-3",
+    "E21-fixed-2",
+    "E31-full-1",
+    "E14-fixed-2"
+  ],
+  "newly_rejected": [],
+  "remaining_first_reasons": {
+    "AI output did not include valid source references. Your structured notes remain available.": 1,
+    "AI output did not preserve a recorded uncertainty. Your structured notes remain available.": 8,
+    "AI output introduced a number that is not in its cited sources. Your structured notes remain available.": 7,
+    "AI output mixed information between concerns. Your structured notes remain available.": 1,
+    "AI output cited a source that is not in the current record. Your structured notes remain available.": 4
+  }
+}

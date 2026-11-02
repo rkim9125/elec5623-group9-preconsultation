@@ -37,12 +37,11 @@ def test_unknown_output_is_not_counted_as_delivered():
     assert answer_key('How long does each episode last?')=='symptom_episode_duration'
     assert answer_key('Did it start suddenly or gradually?')=='symptom_onset_character'
 
-def test_validator_bank_exposes_both_error_directions():
+def test_validator_bank_regressions_accept_valid_and_reject_invalid():
     rows=validators()
     assert len(rows)==40
     assert sum(r['expected_valid'] for r in rows)==20
-    assert any(r['expected_valid'] and not r['validator_on_accept'] for r in rows)
-    assert any(not r['expected_valid'] and r['validator_on_accept'] for r in rows)
+    assert all(r['validator_on_accept'] == r['expected_valid'] for r in rows)
 
 def test_credit_exhaustion_stops_next_trial_before_network(tmp_path):
     import httpx,time
