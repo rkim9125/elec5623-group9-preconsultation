@@ -1,5 +1,29 @@
 # AI 응답 정확성과 사실 추출 및 Prompt Injection 평가 방법
 
+2026-11-02 추가 실행: [파이프라인·비교·제거·장애 평가 보고서](reports/2026-11-02-pipeline-evaluation.ko.md).
+신규 실행기와 원본 상태 연결 실험은 아래의 2026-10-28 단계별 평가와 구분한다.
+추가 보고서는 API 크레딧 부족으로 미완료된 의미 재채점·캐시 비교를 명시하며, 기존 점수를 대체하지 않는다.
+
+비용 중단 항목의 후속 결과는 [재개 실험 보고서](reports/2026-11-02-pipeline-resumed-evaluation.ko.md)에 별도로 기록한다.
+`extended_resume.py`는 원응답의 크레딧 오류로 대상을 고정하고, 기존 결과를 보존한 채 새 시도 폴더를 만든다.
+완료된 과제·채점·캐시 묶음은 건너뛰며, 첫 크레딧 부족 이후에는 공유 차단 파일로 추가 호출을 막는다.
+
+```sh
+# 호출 없이 재개 범위 확인
+backend/.venv/bin/python backend/eval/extended_resume.py \
+  --source backend/eval/runs/extended-20261102 \
+  --output backend/eval/runs/extended-resume-20261102
+
+# 실제 호출: 소규모 채점 검증 → 오류 영향 과제 → 수정 채점 → 캐시 비교
+backend/.venv/bin/python backend/eval/extended_resume.py \
+  --source backend/eval/runs/extended-20261102 \
+  --output backend/eval/runs/extended-resume-20261102 \
+  --live --stage all --workers 4
+```
+
+`--stage`는 `preflight`, `calibration`, `pipeline`, `grading`, `cache`, `all`을 지원한다.
+이 실행은 원본 24개 시나리오·276개 조합을 유지한다. 의미 점수는 같은 모델의 자동 채점 관측치이며, 잔여 채점 문제는 후속 보고서에 명시한다.
+
 백엔드 코드가 동결된 상태에서 합성 환자 데이터를 사용해 AI의 응답을 평가한다. 평가 대상은 **응답의 사실 정확성, 환자 사실의 추출 정확성, 공격 지시를 무시하면서 정상 문진 정보를 처리하는 능력**이다. 시나리오별로 1회 실행하고 실제 모델 입력과 원본 출력을 근거로 채점한다.
 
 DB 저장, 로그인, 서버 권한, API 입력 검증, 장애 복구, 부하 성능은 평가 대상에서 제외한다. 다국어 비교도 제외하고 모든 테스트의 입력·출력 언어를 영어로 고정한다. 보고서는 한국어로 작성한다.
