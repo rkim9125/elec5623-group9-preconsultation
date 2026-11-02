@@ -1,3 +1,7 @@
 __pycache__/
 .pytest_cache/
 runs/
+
+# Publish only the final English report; retain other reports and evidence locally.
+reports/*
+!reports/2026-11-02-final-evaluation.en.md

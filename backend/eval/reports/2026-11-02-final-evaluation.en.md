@@ -2,9 +2,9 @@
 
 Evaluation as of: 2026-11-02 · Target model: `gpt-6-sol` · Main analysis: 24 synthetic scenarios, 276 trial combinations
 
-English translation of `2026-11-02-final-evaluation.ko.md`. The Korean original is retained locally and is not included in this commit.
+English translation of `2026-11-02-final-evaluation.ko.md`. This is the only report tracked under `backend/eval/reports/`; the Korean original, earlier reports, evidence JSON files, and screenshots are retained locally.
 
-This final report consolidates [Reference 1: Integrated Pipeline Evaluation](2026-11-02-pipeline-integrated-evaluation.ko.md) and [Reference 2: Validator Relaxation and Replay](2026-11-02-validator-relaxation.ko.md). It links the revised validation results from Reference 2 to the **same 276 trial combinations** in Reference 1 and recomputes the aggregates using the existing LLM grades for those same candidates. The original experiment records and both reference reports have been preserved.
+This final report consolidates Reference 1, Integrated Pipeline Evaluation (`2026-11-02-pipeline-integrated-evaluation.ko.md`), and Reference 2, Validator Relaxation and Replay (`2026-11-02-validator-relaxation.ko.md`). It links the revised validation results from Reference 2 to the **same 276 trial combinations** in Reference 1 and recomputes the aggregates using the existing LLM grades for those same candidates. The original experiment records and both reference reports have been preserved in the local archive.
 
 **In the final analysis, 68 of the 72 stored summaries in the Full condition (94.4%) passed the revised validator.** Across all product conditions, passes increased from 83/204 to **183/204 (89.7%)**. Including the 72 previously received Generic summaries, **255 of 276 trials (92.4%)** meet the acceptance criterion after revision. Of these, a provisional **236/276 trials (85.5%)** also meet the content criteria in the existing LLM grades.
 
@@ -340,14 +340,14 @@ The validator changes are recorded in commit `7326158`; the preceding evaluation
 
 | Material | Role |
 |---|---|
-| [Reference 1: Integrated Pipeline Evaluation](2026-11-02-pipeline-integrated-evaluation.ko.md) | Original 276-trial analysis, functionality, costs, comparisons, and validator issues |
-| [Reference 2: Validator Relaxation](2026-11-02-validator-relaxation.ko.md) | Implementation changes, replay of 204 product candidates, 40 boundary cases, and tests |
-| [Evidence JSON for the Original 276 Trials](2026-11-02-pipeline-resumed-evidence.json) | `combined_rows`, `rejected_raw_reviews`, costs, caching, and existing grades |
-| [Validator Replay Evidence JSON](2026-11-02-validator-relaxation-evidence.json) | Decisions before and after revision, original request/response hashes by candidate, and boundary cases |
-| Final aggregation evidence: `2026-11-02-final-evaluation-evidence.json` (local archive; not included in this commit) | 276 linked rows, current acceptance/content metrics, category results, paired comparisons, and candidate/input hashes |
+| Reference 1: `2026-11-02-pipeline-integrated-evaluation.ko.md` (local archive) | Original 276-trial analysis, functionality, costs, comparisons, and validator issues |
+| Reference 2: `2026-11-02-validator-relaxation.ko.md` (local archive) | Implementation changes, replay of 204 product candidates, 40 boundary cases, and tests |
+| Original cohort evidence: `2026-11-02-pipeline-resumed-evidence.json` (local archive) | `combined_rows`, `rejected_raw_reviews`, costs, caching, and existing grades |
+| Validator replay evidence: `2026-11-02-validator-relaxation-evidence.json` (local archive) | Decisions before and after revision, original request/response hashes by candidate, and boundary cases |
+| Final aggregation evidence: `2026-11-02-final-evaluation-evidence.json` (local archive) | 276 linked rows, current acceptance/content metrics, category results, paired comparisons, and candidate/input hashes |
 | [Validator Replay Tool](../validator_replay.py) · [Existing Grading Rubric](../extended_grading.py) | Replay without model calls and the stored rubric v2 |
 
-Original requests and responses are preserved in `backend/eval/runs/extended-20261102/`, and follow-up records in `backend/eval/runs/extended-resume-20261102/`. The `runs/` directory remains subject to the existing Git exclusion policy. The final aggregation JSON is retained locally under `backend/eval/reports/` and is not included in this commit. Each row in that JSON provides a `grading_directory` and candidate hash. Original request/response hashes can be traced through the linked validator evidence JSON.
+Original requests and responses are preserved in `backend/eval/runs/extended-20261102/`, and follow-up records in `backend/eval/runs/extended-resume-20261102/`. The `runs/` directory remains subject to the existing Git exclusion policy. The supporting reports and evidence JSON files listed above are retained locally under `backend/eval/reports/` and excluded from the current repository tree. Reproducing the replay or aggregation requires these local archives. Each row in the final aggregation JSON provides a `grading_directory` and candidate hash; original request/response hashes can be traced through the locally archived validator evidence JSON.
 
 The aggregation rules are:
 
